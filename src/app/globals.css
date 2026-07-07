@@ -1,0 +1,81 @@
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap");
+@import "tailwindcss";
+
+:root,
+[data-theme="light"] {
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #e8e8ed;
+  --bg-tertiary: #d1d1d6;
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --accent: #aeaeb2;
+  --border: #d1d1d6;
+  --modal-bg: #f5f5f7;
+  --header-bg: rgba(245, 245, 247, 0.72);
+  --placeholder: #c7c7cc;
+  --placeholder-dark: #aeaeb2;
+  --hero-particle: #aeaeb2;
+  --hero-particle-alt: #86868b;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0a0a0b;
+  --bg-secondary: #111113;
+  --bg-tertiary: #1d1d1f;
+  --text-primary: #e8e8ed;
+  --text-secondary: #6e6e73;
+  --accent: #6e6e73;
+  --border: #2c2c2e;
+  --modal-bg: #0a0a0b;
+  --header-bg: rgba(10, 10, 11, 0.72);
+  --placeholder: #2c2c2e;
+  --placeholder-dark: #3a3a3c;
+  --hero-particle: #6e6e73;
+  --hero-particle-alt: #48484a;
+}
+
+@theme inline {
+  --font-sans: "Satoshi", system-ui, sans-serif;
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Satoshi", system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::selection {
+  background-color: var(--accent);
+  color: var(--text-primary);
+}
