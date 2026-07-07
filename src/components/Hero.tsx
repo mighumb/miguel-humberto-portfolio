@@ -55,7 +55,7 @@ export default function Hero() {
           Portfolio
         </p>
         <h1 className="text-4xl font-light tracking-tight text-text-primary md:text-6xl lg:text-7xl">
-          Your Name
+          Miguel Humberto
         </h1>
         <p className="mt-4 text-lg font-medium text-text-secondary md:text-xl">
           {t.role}

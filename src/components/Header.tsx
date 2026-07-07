@@ -23,7 +23,7 @@ export default function Header() {
           href="#"
           className="text-sm font-medium tracking-tight text-text-primary transition-opacity hover:opacity-70 md:text-base"
         >
-          Your Name
+          Miguel Humberto
         </a>
 
         <nav className="flex items-center gap-4 md:gap-6" aria-label="Site controls">

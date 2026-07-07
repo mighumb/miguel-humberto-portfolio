@@ -3,7 +3,7 @@ import Providers from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Your Name — AI Creative Producer",
+  title: "Miguel Humberto — AI Creative Producer",
   description: "Portfolio wireframe — AI-generated content, workflows, and creative production.",
 };
 

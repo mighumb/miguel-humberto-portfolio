@@ -41,7 +41,7 @@ export default function Contact() {
 
         <footer className="mt-24 border-t border-border pt-8">
           <p className="text-xs text-text-secondary">
-            © {new Date().getFullYear()} Your Name
+            © {new Date().getFullYear()} Miguel Humberto
           </p>
         </footer>
       </div>

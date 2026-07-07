@@ -1,10 +1,10 @@
-# AI Creative Producer — Portfolio Wireframe
+# Miguel Humberto — AI Creative Producer Portfolio
 
-Interactive wireframe for an AI creative portfolio targeting the ElevenLabs AI Creative Producer role.
+Interactive portfolio for AI-generated content, workflows, and creative production.
 
 ## Features
 
-- **Hero** — Single-column layout with fluid 3D particle scene (React Three Fiber) + typography below
+- **Hero** — Fluid 3D particle scene (React Three Fiber) with typography overlay
 - **Projects** — Staggered 2-column grid, 4:3 thumbnails, hover video playback
 - **Modal** — Fullscreen opaque project detail with 6 zones (deliverable, context, all deliverables, process, tools, links)
 - **i18n** — EN default, FR toggle
@@ -27,6 +27,6 @@ Open [http://localhost:3000](http://localhost:3000).
 - React Three Fiber + Three.js
 - TypeScript
 
-## Wireframe Status
+## Deploy
 
-All content is placeholder. Replace project data in `src/lib/projects.ts` and translations in `src/lib/i18n.ts` as you build out real projects.
+Deploy to Vercel from the `main` branch. Project name: `miguel-humberto-portfolio`.
