@@ -7,7 +7,7 @@ export const translations = {
     scrollHint: "Scroll to explore",
     projects: "Work",
     viewProject: "View project",
-    manifestoTitle: "Manifesto",
+    manifestoTitle: "Who I am",
     manifesto: [
       "I operate at the intersection of storytelling, prompting, and production at scale.",
       "Image, video, audio — I prototype, test, and document.",
@@ -48,7 +48,7 @@ export const translations = {
     scrollHint: "Défiler pour explorer",
     projects: "Projets",
     viewProject: "Voir le projet",
-    manifestoTitle: "Manifeste",
+    manifestoTitle: "Qui je suis",
     manifesto: [
       "J'évolue à l'intersection de la narration, du prompting et de la production à grande échelle.",
       "Image, vidéo, audio — je prototype, teste et documente.",

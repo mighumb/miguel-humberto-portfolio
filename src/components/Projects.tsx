@@ -43,7 +43,7 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="relative z-10 pb-24 md:pb-32"
+      className="relative z-10 pb-8 md:pb-10"
       aria-label={t.projects}
     >
       <h2 className="sr-only">{t.projects}</h2>
@@ -61,7 +61,7 @@ export default function Projects() {
         <div className="work-scroll-stage relative">
           <div
             ref={scrollRef}
-            className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-20 pt-0 md:gap-10"
+            className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-12 pt-0 md:gap-10 md:pb-14"
           >
             <ScrollGutter />
             {projects.map((project, index) => (
