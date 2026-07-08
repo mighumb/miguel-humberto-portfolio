@@ -38,13 +38,16 @@ export function useWorkScrollFocus(itemCount: number) {
         Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 20;
 
       cards.forEach((card) => {
+        const body = card.querySelector<HTMLElement>(".work-card-body");
         const visual = card.querySelector<HTMLElement>(".work-card-visual");
 
         if (reducedMotion) {
-          card.style.transform = "";
+          card.style.zIndex = "";
+          if (body) {
+            body.style.transform = "";
+            body.style.opacity = "";
+          }
           if (visual) {
-            visual.style.opacity = "";
-            visual.style.transform = "";
             visual.style.filter = "";
             visual.style.boxShadow = "";
             visual.style.setProperty("--media-scale", "1");
@@ -68,16 +71,19 @@ export function useWorkScrollFocus(itemCount: number) {
         const mediaScale = 1.06 - progress * 0.06;
         const mediaShift = progress * -12;
 
-        card.style.transform = `translateY(${translateY}px)`;
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
 
-        if (visual) {
-          visual.style.opacity = `${opacity}`;
-          visual.style.transform = [
+        if (body) {
+          body.style.transform = [
+            `translateY(${translateY}px)`,
             `translateZ(${translateZ}px)`,
             `rotateY(${rotateY}deg)`,
             `scale(${scale})`,
           ].join(" ");
+          body.style.opacity = `${opacity}`;
+        }
+
+        if (visual) {
           visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
           visual.style.boxShadow =
             progress > 0.02

@@ -90,23 +90,22 @@ body {
 }
 
 .work-card-focus {
-  transform-origin: bottom center;
-  will-change: transform, opacity;
   background: transparent;
+}
+
+.work-card-body {
+  transform-origin: bottom center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
 }
 
 .work-card-meta {
   background: transparent;
-  box-shadow: none;
-  filter: none;
-  transform: none;
 }
 
 .work-card-visual {
-  transform-origin: bottom center;
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  will-change: transform, filter;
+  will-change: filter;
 }
 
 .work-scroll-3d {
@@ -129,13 +128,12 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .work-card-focus {
+  .work-card-body {
     transform: none !important;
+    opacity: 1 !important;
   }
 
   .work-card-visual {
-    opacity: 1 !important;
-    transform: none !important;
     filter: none !important;
     box-shadow: none !important;
   }
