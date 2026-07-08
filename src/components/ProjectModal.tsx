@@ -93,7 +93,7 @@ export default function ProjectModal({
           <button
             type="button"
             onClick={onPrev}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:text-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
             aria-label="Previous project"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -103,7 +103,7 @@ export default function ProjectModal({
           <button
             type="button"
             onClick={onNext}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:text-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
             aria-label="Next project"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -113,7 +113,7 @@ export default function ProjectModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:text-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
             aria-label="Close"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -150,7 +150,7 @@ export default function ProjectModal({
             <h2 className="text-2xl font-medium tracking-tight text-text-primary md:text-4xl">
               {project.title[locale]}
             </h2>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               {project.tags.map((tag) => (
                 <span
                   key={tag}
