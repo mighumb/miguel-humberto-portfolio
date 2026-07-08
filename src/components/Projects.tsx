@@ -8,6 +8,7 @@ import { projects, type Project } from "@/lib/projects";
 import {
   getFocusedWorkCardIndex,
   scrollWorkCarouselToIndex,
+  whenWorkCarouselScrollSettles,
 } from "@/lib/workCarouselNav";
 import { stopWorkCarouselMotion } from "@/lib/workDragScroll";
 import {
@@ -145,6 +146,9 @@ export default function Projects() {
   const activeProjectRef = useRef(activeProject);
   const closedViaTransitionRef = useRef(false);
   const [focusedCardIndex, setFocusedCardIndex] = useState(0);
+  const pinnedCardIndexRef = useRef<number | null>(null);
+  const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
+  const scrollSettleTimerRef = useRef(0);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -166,7 +170,12 @@ export default function Projects() {
     if (!container) return;
 
     const updateFocusedIndex = () => {
-      setFocusedCardIndex(getFocusedWorkCardIndex(container));
+      if (pinnedCardIndexRef.current !== null) return;
+
+      window.clearTimeout(scrollSettleTimerRef.current);
+      scrollSettleTimerRef.current = window.setTimeout(() => {
+        setFocusedCardIndex(getFocusedWorkCardIndex(container));
+      }, 120);
     };
 
     updateFocusedIndex();
@@ -174,6 +183,7 @@ export default function Projects() {
     window.addEventListener("resize", updateFocusedIndex);
 
     return () => {
+      window.clearTimeout(scrollSettleTimerRef.current);
       container.removeEventListener("scroll", updateFocusedIndex);
       window.removeEventListener("resize", updateFocusedIndex);
     };
@@ -185,15 +195,34 @@ export default function Projects() {
       if (!container || carouselNavDisabled) return;
 
       stopWorkCarouselMotion(container);
+      scrollSettleCleanupRef.current?.();
+      scrollSettleCleanupRef.current = null;
 
-      const currentIndex = getFocusedWorkCardIndex(container);
+      const currentIndex =
+        pinnedCardIndexRef.current ?? getFocusedWorkCardIndex(container);
       const nextIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
       if (nextIndex < 0 || nextIndex >= projects.length) return;
 
-      scrollWorkCarouselToIndex(container, nextIndex);
+      pinnedCardIndexRef.current = nextIndex;
       setFocusedCardIndex(nextIndex);
+      scrollWorkCarouselToIndex(container, nextIndex);
+
+      scrollSettleCleanupRef.current = whenWorkCarouselScrollSettles(container, () => {
+        pinnedCardIndexRef.current = null;
+        scrollSettleCleanupRef.current = null;
+        setFocusedCardIndex(getFocusedWorkCardIndex(container));
+      });
     },
     [scrollRef, carouselNavDisabled],
+  );
+
+  useLayoutEffect(
+    () => () => {
+      scrollSettleCleanupRef.current?.();
+      scrollSettleCleanupRef.current = null;
+      pinnedCardIndexRef.current = null;
+    },
+    [],
   );
 
   phaseRef.current = phase;
@@ -401,11 +430,7 @@ export default function Projects() {
       <h2 className="sr-only">{t.projects}</h2>
 
       <div className="mb-6 flex items-center gap-4 px-6 md:mb-8 md:px-10">
-        <span
-          className="text-xs tracking-widest text-text-secondary uppercase tabular-nums"
-          aria-live="polite"
-          aria-atomic="true"
-        >
+        <span className="text-xs tracking-widest text-text-secondary uppercase tabular-nums">
           {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
           {String(projects.length).padStart(2, "0")}
         </span>

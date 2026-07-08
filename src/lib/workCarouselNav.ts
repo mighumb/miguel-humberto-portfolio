@@ -52,3 +52,36 @@ export function scrollWorkCarouselToIndex(
     behavior: smooth && !reducedMotion ? "smooth" : "auto",
   });
 }
+
+export function whenWorkCarouselScrollSettles(
+  container: HTMLElement,
+  onSettled: () => void,
+) {
+  const supportsScrollEnd = "onscrollend" in HTMLElement.prototype;
+
+  if (supportsScrollEnd) {
+    container.addEventListener("scrollend", onSettled, { once: true });
+    return () => container.removeEventListener("scrollend", onSettled);
+  }
+
+  let timer = 0;
+
+  const finish = () => {
+    container.removeEventListener("scroll", onScroll);
+    window.clearTimeout(timer);
+    onSettled();
+  };
+
+  const onScroll = () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(finish, 120);
+  };
+
+  container.addEventListener("scroll", onScroll, { passive: true });
+  timer = window.setTimeout(finish, 800);
+
+  return () => {
+    container.removeEventListener("scroll", onScroll);
+    window.clearTimeout(timer);
+  };
+}
