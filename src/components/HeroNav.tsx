@@ -11,7 +11,7 @@ export default function HeroNav() {
 
   return (
     <nav
-      className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-6 pt-6 md:px-10 md:pt-8"
+      className="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-6 pt-4 md:px-10 md:pt-5"
       aria-label="Site navigation"
     >
       <a
