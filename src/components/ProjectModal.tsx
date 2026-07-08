@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, type ReactNode } from "react";
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
+import { MODAL_LEAVE_MS, prefersReducedMotion } from "@/lib/motion";
 import { type Project } from "@/lib/projects";
+
+type ModalMotion = "entering" | "visible" | "leaving";
 
 interface ProjectModalProps {
   project: Project;
@@ -48,11 +58,59 @@ export default function ProjectModal({
   const t = translations[locale];
   const mt = t.modal;
   const modalRef = useRef<HTMLDivElement>(null);
+  const leaveTimerRef = useRef<number | null>(null);
+  const skipProjectSwitchRef = useRef(true);
+  const [motion, setMotion] = useState<ModalMotion>(
+    prefersReducedMotion() ? "visible" : "entering",
+  );
+  const [heroVisible, setHeroVisible] = useState(true);
 
   useScrollLock(true);
 
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setMotion("visible"));
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (leaveTimerRef.current !== null) {
+        window.clearTimeout(leaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  const requestClose = useCallback(() => {
+    if (prefersReducedMotion()) {
+      onClose();
+      return;
+    }
+
+    setMotion("leaving");
+    leaveTimerRef.current = window.setTimeout(onClose, MODAL_LEAVE_MS);
+  }, [onClose]);
+
   useLayoutEffect(() => {
     modalRef.current?.scrollTo({ top: 0, left: 0 });
+
+    if (skipProjectSwitchRef.current) {
+      skipProjectSwitchRef.current = false;
+      return;
+    }
+
+    if (prefersReducedMotion()) return;
+
+    setHeroVisible(false);
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setHeroVisible(true));
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [project.id]);
 
   useEffect(() => {
@@ -76,11 +134,11 @@ export default function ProjectModal({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
       if (e.key === "ArrowLeft") onPrev();
       if (e.key === "ArrowRight") onNext();
     },
-    [onClose, onPrev, onNext],
+    [requestClose, onPrev, onNext],
   );
 
   useEffect(() => {
@@ -92,19 +150,27 @@ export default function ProjectModal({
 
   return createPortal(
     <div
-      ref={modalRef}
-      className="project-modal fixed inset-0 z-[200] overflow-y-auto overscroll-contain"
-      style={{ background: "var(--modal-bg)" }}
+      className="project-modal fixed inset-0 z-[200]"
       role="dialog"
       aria-modal="true"
       aria-label={project.title[locale]}
     >
       <div
-        className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
-        style={{
-          background: "var(--modal-bg)",
-        }}
+        className={`project-modal-backdrop fixed inset-0 ${motion}`}
+        aria-hidden
+      />
+
+      <div
+        ref={modalRef}
+        className="project-modal-scroll relative z-[1] h-full overflow-y-auto overscroll-contain"
       >
+        <div className={`project-modal-panel ${motion}`}>
+          <div
+            className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
+            style={{
+              background: "var(--modal-bg)",
+            }}
+          >
         <span className="text-xs tracking-widest text-text-secondary uppercase">
           {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </span>
@@ -132,7 +198,7 @@ export default function ProjectModal({
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
             aria-label="Close"
           >
@@ -146,7 +212,9 @@ export default function ProjectModal({
       <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
         <div className="pt-8 md:pt-12">
           <div
-            className="aspect-video w-full overflow-hidden rounded-xl"
+            className={`project-modal-hero aspect-video w-full overflow-hidden rounded-xl ${
+              heroVisible ? "is-visible" : "is-switching"
+            }`}
             style={{ background: "var(--placeholder)" }}
           >
             {project.hasVideo && project.videoUrl ? (
@@ -276,6 +344,8 @@ export default function ProjectModal({
             )}
           </div>
         </section>
+      </div>
+        </div>
       </div>
     </div>,
     document.body,
