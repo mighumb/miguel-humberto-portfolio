@@ -117,5 +117,34 @@ export function useWorkScrollFocus(
     };
   }, [itemCount, pauseMode, snapshotRef]);
 
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    if (pauseMode === "open" || pauseMode === "flight") return;
+
+    const onWheel = (event: WheelEvent) => {
+      const absX = Math.abs(event.deltaX);
+      const absY = Math.abs(event.deltaY);
+
+      if (absX > absY) return;
+
+      const goingRight = event.deltaY > 0;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      const atStart = container.scrollLeft <= 0;
+      const atEnd = container.scrollLeft >= maxScroll - 1;
+
+      if ((goingRight && atEnd) || (!goingRight && atStart)) return;
+
+      event.preventDefault();
+      container.scrollLeft += event.deltaY;
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", onWheel);
+    };
+  }, [itemCount, pauseMode]);
+
   return { scrollRef, setCardRef };
 }
