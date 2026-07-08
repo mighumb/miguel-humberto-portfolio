@@ -27,7 +27,9 @@ export default function Contact() {
 
           <div className="flex flex-wrap items-center justify-center gap-6">
             <a
-              href="#"
+              href="https://www.linkedin.com/in/miguel-humberto-a15b4794/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-sm text-text-secondary transition-colors hover:text-text-primary"
             >
               {t.linkedin}
