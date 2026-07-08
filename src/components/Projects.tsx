@@ -39,14 +39,10 @@ export default function Projects() {
   };
 
   return (
-    <section id="projects" className="pb-24 md:pb-32">
-      <div className="mx-auto max-w-7xl px-6 md:px-10">
-        <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
-          {t.projects}
-        </h2>
-      </div>
+    <section id="projects" className="pb-24 md:pb-32" aria-label={t.projects}>
+      <h2 className="sr-only">{t.projects}</h2>
 
-      <div className="relative mt-12 md:mt-16">
+      <div className="relative">
         <div
           className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-bg-primary to-transparent md:w-12"
           aria-hidden
@@ -56,13 +52,12 @@ export default function Projects() {
           aria-hidden
         />
 
-        <div className="work-scroll flex items-start gap-5 overflow-x-auto overscroll-x-contain pb-4 snap-x snap-proximity scroll-smooth md:gap-8">
+        <div className="work-scroll flex items-start gap-5 overflow-x-auto overscroll-x-contain pb-4 pt-2 snap-x snap-proximity scroll-smooth md:gap-8">
           <ScrollGutter />
-          {projects.map((project, index) => (
+          {projects.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}
-              index={index}
               onOpen={openProject}
             />
           ))}

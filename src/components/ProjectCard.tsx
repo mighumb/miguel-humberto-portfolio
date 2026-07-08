@@ -5,20 +5,16 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
 
-const VERTICAL_OFFSETS = ["", "md:mt-16", "md:mt-8", "md:mt-20", "", "md:mt-12"] as const;
-
 interface ProjectCardProps {
   project: Project;
-  index: number;
   onOpen: (project: Project) => void;
 }
 
-export default function ProjectCard({ project, index, onOpen }: ProjectCardProps) {
+export default function ProjectCard({ project, onOpen }: ProjectCardProps) {
   const { locale } = useLocale();
   const t = translations[locale];
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHovering, setIsHovering] = useState(false);
-  const offset = VERTICAL_OFFSETS[index % VERTICAL_OFFSETS.length];
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -37,7 +33,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
 
   return (
     <article
-      className={`group w-[76vw] shrink-0 snap-start sm:w-[26rem] md:w-[32rem] ${offset}`}
+      className="group w-[78vw] max-w-[64rem] shrink-0 snap-start md:w-[75vw] lg:w-[72vw]"
     >
       <button
         type="button"
