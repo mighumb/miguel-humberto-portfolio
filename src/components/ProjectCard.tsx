@@ -4,8 +4,9 @@ import { forwardRef, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
+import type { Project } from "@/lib/projects";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
-import { type Project } from "@/lib/projects";
+import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
 interface ProjectCardProps {
   project: Project;
@@ -40,6 +41,8 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   };
 
   const handleOpen = () => {
+    if (shouldIgnoreWorkCardClick(visualRef.current)) return;
+
     const visual = visualRef.current;
     const title = titleRef.current;
     const card = visual?.closest<HTMLElement>("[data-project-id]");
@@ -95,7 +98,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[88vw] max-w-[68rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
+      className="work-card-focus group w-[88vw] max-w-[68rem] shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">

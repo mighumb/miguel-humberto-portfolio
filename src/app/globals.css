@@ -219,6 +219,21 @@ html.modal-open .project-modal {
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.work-scroll.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.work-scroll.is-dragging * {
+  user-select: none;
+}
+
+.work-scroll .work-card-focus {
+  cursor: inherit;
 }
 
 .work-scroll::-webkit-scrollbar {
