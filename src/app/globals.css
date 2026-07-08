@@ -103,22 +103,27 @@ body {
 }
 
 .is-shared-hidden {
-  visibility: hidden;
+  opacity: 0;
+}
+
+.project-shared-flight {
+  transition: opacity 0.1s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .project-modal-backdrop,
+  .project-shared-flight,
   .project-shared-flight-thumb,
   .project-shared-flight-title {
     transition: none !important;
   }
 }
 
-html.modal-open main {
+html.modal-main-hidden main {
   visibility: hidden;
 }
 
-html.modal-open .ambient-background {
+html.modal-main-hidden .ambient-background {
   visibility: hidden;
 }
 

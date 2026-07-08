@@ -38,4 +38,18 @@ export function toRect(domRect: DOMRect): ElementRect {
   };
 }
 
+export function measureCardOrigin(projectId: string, showVideo = false): CardOrigin | null {
+  const card = document.querySelector(`[data-project-id="${projectId}"]`);
+  const visual = card?.querySelector<HTMLElement>(".work-card-visual");
+  const title = card?.querySelector<HTMLElement>(".work-card-title");
+  if (!visual || !title) return null;
+
+  return {
+    thumbnail: toRect(visual.getBoundingClientRect()),
+    title: toRect(title.getBoundingClientRect()),
+    titleFontSize: getComputedStyle(title).fontSize,
+    showVideo,
+  };
+}
+
 export const SHARED_TRANSITION_MS = 560;

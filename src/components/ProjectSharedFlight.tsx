@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   prefersReducedMotion,
@@ -15,6 +15,7 @@ interface ProjectSharedFlightProps {
   locale: Locale;
   flight: FlightPair;
   showVideo: boolean;
+  onLanding: () => void;
   onComplete: () => void;
 }
 
@@ -95,22 +96,24 @@ export default function ProjectSharedFlight({
   locale,
   flight,
   showVideo,
+  onLanding,
   onComplete,
 }: ProjectSharedFlightProps) {
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
   const [titleFrame, setTitleFrame] = useState(flight.title.from);
   const [titleFontSize, setTitleFontSize] = useState(flight.title.fromFontSize);
-  const [mounted, setMounted] = useState(false);
-  const [done, setDone] = useState(false);
+  const [opacity, setOpacity] = useState(1);
+  const completedRef = useRef(false);
+  const thumbRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (prefersReducedMotion()) {
       onComplete();
       return;
     }
 
-    setMounted(true);
-    setDone(false);
+    completedRef.current = false;
+    setOpacity(1);
     setThumbFrame(flight.thumbnail.from);
     setTitleFrame(flight.title.from);
     setTitleFontSize(flight.title.fromFontSize);
@@ -126,24 +129,36 @@ export default function ProjectSharedFlight({
     return () => cancelAnimationFrame(start);
   }, [flight, onComplete]);
 
-  if (!mounted || typeof document === "undefined") return null;
+  const finish = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onLanding();
+    setOpacity(0);
+    window.setTimeout(onComplete, 100);
+  };
+
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div
-      className={`project-shared-flight pointer-events-none fixed inset-0 z-[220] ${done ? "is-done" : ""}`}
+      className="project-shared-flight pointer-events-none fixed inset-0 z-[220]"
+      style={{ opacity }}
       aria-hidden
-      onTransitionEnd={(event) => {
-        if (event.propertyName !== "width" || done) return;
-        setDone(true);
-        onComplete();
-      }}
     >
-      <FlightThumbnail project={project} showVideo={showVideo} frame={thumbFrame} />
-      <FlightTitle
-        title={project.title[locale]}
-        frame={titleFrame}
-        fontSize={titleFontSize}
-      />
+      <div
+        ref={thumbRef}
+        onTransitionEnd={(event) => {
+          if (event.propertyName !== "width" || event.currentTarget !== thumbRef.current) return;
+          finish();
+        }}
+      >
+        <FlightThumbnail project={project} showVideo={showVideo} frame={thumbFrame} />
+        <FlightTitle
+          title={project.title[locale]}
+          frame={titleFrame}
+          fontSize={titleFontSize}
+        />
+      </div>
     </div>,
     document.body,
   );

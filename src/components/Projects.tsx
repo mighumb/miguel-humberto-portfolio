@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useLayoutEffect } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useWorkScrollFocus } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
 import {
   prefersReducedMotion,
+  measureCardOrigin,
   type CardOrigin,
   type FlightPair,
   type ModalTargets,
@@ -33,7 +34,25 @@ export default function Projects() {
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
+  const phaseRef = useRef(phase);
+  const cardOriginRef = useRef(cardOrigin);
+  const activeProjectRef = useRef(activeProject);
   const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, !!activeProject);
+
+  phaseRef.current = phase;
+  cardOriginRef.current = cardOrigin;
+  activeProjectRef.current = activeProject;
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (phase === "open") {
+      root.classList.add("modal-main-hidden");
+    } else {
+      root.classList.remove("modal-main-hidden");
+    }
+
+    return () => root.classList.remove("modal-main-hidden");
+  }, [phase]);
 
   const resetTransition = useCallback(() => {
     setPhase("idle");
@@ -60,49 +79,65 @@ export default function Projects() {
       return;
     }
 
-    setCardOrigin(origin);
-    setFlightShowVideo(origin.showVideo);
-    setSharedHiddenId(project.id);
+    const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
+
+    setCardOrigin(freshOrigin);
+    setFlightShowVideo(freshOrigin.showVideo);
     setSharedContentVisible(false);
     setPhase("opening");
   }, []);
 
-  const handleFlightTargetsReady = useCallback(
-    (targets: ModalTargets) => {
-      if (phase !== "opening" || !cardOrigin) return;
+  const handleFlightTargetsReady = useCallback((targets: ModalTargets) => {
+    if (phaseRef.current !== "opening") return;
 
-      setFlight((current) => {
-        if (current) return current;
+    const project = activeProjectRef.current;
+    const origin = cardOriginRef.current;
+    if (!project || !origin) return;
 
-        return {
-          direction: "open",
-          thumbnail: { from: cardOrigin.thumbnail, to: targets.thumbnail },
-          title: {
-            from: cardOrigin.title,
-            to: targets.title,
-            fromFontSize: cardOrigin.titleFontSize,
-            toFontSize: targets.titleFontSize,
-          },
-        };
-      });
-    },
-    [phase, cardOrigin],
-  );
+    const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
+
+    setFlight((current) => {
+      if (current) return current;
+
+      return {
+        direction: "open",
+        thumbnail: { from: freshOrigin.thumbnail, to: targets.thumbnail },
+        title: {
+          from: freshOrigin.title,
+          to: targets.title,
+          fromFontSize: freshOrigin.titleFontSize,
+          toFontSize: targets.titleFontSize,
+        },
+      };
+    });
+    setSharedHiddenId(project.id);
+  }, []);
+
+  const handleFlightLanding = useCallback(() => {
+    if (phaseRef.current === "opening") {
+      setSharedContentVisible(true);
+      setPhase("open");
+    }
+    if (phaseRef.current === "closing") {
+      setSharedHiddenId(null);
+    }
+  }, []);
 
   const handleFlightComplete = useCallback(() => {
-    if (phase === "opening") {
-      setSharedContentVisible(true);
-      setFlight(null);
-      setPhase("open");
+    setFlight(null);
+
+    if (phaseRef.current === "opening") {
       setSharedHiddenId(null);
       setCardOrigin(null);
       return;
     }
 
-    if (phase === "closing") {
-      closeModal();
+    if (phaseRef.current === "closing") {
+      requestAnimationFrame(() => {
+        closeModal();
+      });
     }
-  }, [phase, closeModal]);
+  }, [closeModal]);
 
   const requestClose = useCallback(() => {
     if (!activeProject || prefersReducedMotion()) {
@@ -111,42 +146,35 @@ export default function Projects() {
     }
 
     const modalTargets = measureRef.current?.();
-    const card = document.querySelector(`[data-project-id="${activeProject.id}"]`);
-    const visual = card?.querySelector<HTMLElement>(".work-card-visual");
-    const title = card?.querySelector<HTMLElement>(".work-card-title");
-
-    if (!modalTargets || !visual || !title) {
+    if (!modalTargets) {
       closeModal();
       return;
     }
 
+    setPhase("closing");
     setSharedContentVisible(false);
     setSharedHiddenId(activeProject.id);
-    setPhase("closing");
+
+    const cardOriginAtClose = measureCardOrigin(activeProject.id, flightShowVideo);
+    if (!cardOriginAtClose) {
+      closeModal();
+      return;
+    }
+
     setFlight({
       direction: "close",
       thumbnail: {
         from: modalTargets.thumbnail,
-        to: {
-          top: visual.getBoundingClientRect().top,
-          left: visual.getBoundingClientRect().left,
-          width: visual.getBoundingClientRect().width,
-          height: visual.getBoundingClientRect().height,
-        },
+        to: cardOriginAtClose.thumbnail,
       },
       title: {
         from: modalTargets.title,
-        to: {
-          top: title.getBoundingClientRect().top,
-          left: title.getBoundingClientRect().left,
-          width: title.getBoundingClientRect().width,
-          height: title.getBoundingClientRect().height,
-        },
+        to: cardOriginAtClose.title,
         fromFontSize: modalTargets.titleFontSize,
-        toFontSize: getComputedStyle(title).fontSize,
+        toFontSize: cardOriginAtClose.titleFontSize,
       },
     });
-  }, [activeProject, closeModal]);
+  }, [activeProject, closeModal, flightShowVideo]);
 
   const navigate = (direction: "prev" | "next") => {
     const newIndex =
@@ -221,6 +249,7 @@ export default function Projects() {
           locale={locale}
           flight={flight}
           showVideo={flightShowVideo}
+          onLanding={handleFlightLanding}
           onComplete={handleFlightComplete}
         />
       )}
