@@ -176,7 +176,7 @@ export default function ProjectModal({
               <button
                 type="button"
                 onClick={onPrev}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
                 aria-label="Previous project"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -186,7 +186,7 @@ export default function ProjectModal({
               <button
                 type="button"
                 onClick={onNext}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
                 aria-label="Next project"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -196,7 +196,7 @@ export default function ProjectModal({
               <button
                 type="button"
                 onClick={onRequestClose}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
                 aria-label="Close"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>

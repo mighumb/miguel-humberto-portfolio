@@ -51,7 +51,7 @@ function WorkCarouselNav({
   disabled?: boolean;
 }) {
   const buttonClass =
-    "flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:pointer-events-none disabled:opacity-35";
+    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35";
 
   return (
     <div className="flex items-center gap-2" aria-label="Carousel navigation">

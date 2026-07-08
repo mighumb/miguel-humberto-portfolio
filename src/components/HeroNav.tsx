@@ -17,7 +17,7 @@ export default function HeroNav() {
       <a
         href="#"
         onClick={(event) => event.preventDefault()}
-        className="text-sm font-medium tracking-tight text-text-primary transition-opacity hover:opacity-70 md:text-base"
+        className="text-sm font-medium tracking-tight text-text-primary transition-opacity hover:opacity-70 md:text-base cursor-pointer"
       >
         Miguel Humberto
       </a>
@@ -31,7 +31,7 @@ export default function HeroNav() {
           <button
             type="button"
             onClick={() => setLocale("en")}
-            className={`rounded-full px-3 py-1.5 transition-colors ${
+            className={`cursor-pointer rounded-full px-3 py-1.5 transition-colors ${
               locale === "en"
                 ? "bg-bg-tertiary text-text-primary"
                 : "text-text-secondary hover:text-text-primary"
@@ -43,7 +43,7 @@ export default function HeroNav() {
           <button
             type="button"
             onClick={() => setLocale("fr")}
-            className={`rounded-full px-3 py-1.5 transition-colors ${
+            className={`cursor-pointer rounded-full px-3 py-1.5 transition-colors ${
               locale === "fr"
                 ? "bg-bg-tertiary text-text-primary"
                 : "text-text-secondary hover:text-text-primary"
@@ -57,7 +57,7 @@ export default function HeroNav() {
         <button
           type="button"
           onClick={toggleTheme}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
           aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
         >
           {theme === "light" ? (
@@ -88,7 +88,7 @@ export default function HeroNav() {
             event.preventDefault();
             document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
           }}
-          className="hidden text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:block"
+          className="hidden cursor-pointer text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:block"
         >
           {t.header.contact}
         </a>
