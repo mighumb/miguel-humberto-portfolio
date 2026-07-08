@@ -10,10 +10,7 @@ export default function Manifesto() {
   return (
     <section className="border-t border-border bg-bg-secondary">
       <div className="mx-auto max-w-3xl px-6 py-24 text-center md:px-10 md:py-32">
-        <p className="mb-3 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
-          02
-        </p>
-        <h2 className="mb-12 text-3xl font-light tracking-tight text-text-primary md:text-5xl">
+        <h2 className="mb-12 text-3xl font-light tracking-tight text-text-primary md:mb-20 md:text-5xl">
           {t.manifestoTitle}
         </h2>
         <div className="space-y-6">
