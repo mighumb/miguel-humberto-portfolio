@@ -1,10 +1,21 @@
 let lockCount = 0;
+let savedScrollX = 0;
 let savedScrollY = 0;
+
+function restoreScrollPosition() {
+  const root = document.documentElement;
+  const previousBehavior = root.style.scrollBehavior;
+
+  root.style.scrollBehavior = "auto";
+  window.scrollTo(savedScrollX, savedScrollY);
+  root.style.scrollBehavior = previousBehavior;
+}
 
 export function lockScroll() {
   if (typeof document === "undefined") return;
 
   if (lockCount === 0) {
+    savedScrollX = window.scrollX;
     savedScrollY = window.scrollY;
     const { style: bodyStyle } = document.body;
     const { style: htmlStyle } = document.documentElement;
@@ -39,5 +50,6 @@ export function unlockScroll() {
   bodyStyle.overflow = "";
   htmlStyle.overflow = "";
   document.documentElement.classList.remove("modal-open");
-  window.scrollTo(0, savedScrollY);
+
+  restoreScrollPosition();
 }
