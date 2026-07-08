@@ -19,7 +19,7 @@ export default function Contact() {
 
         <div className="mt-12 flex flex-col items-center gap-6">
           <a
-            href="mailto:hello@yourname.com"
+            href={`mailto:${t.email}`}
             className="text-lg font-medium text-text-primary transition-opacity hover:opacity-70"
           >
             {t.email}

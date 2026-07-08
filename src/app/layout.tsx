@@ -3,8 +3,9 @@ import Providers from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Miguel Humberto — AI Creative Producer",
-  description: "Portfolio wireframe — AI-generated content, workflows, and creative production.",
+  title: "Miguel Humberto, AI Creative Producer",
+  description:
+    "Gen AI creative workflows from concept to delivery. Portfolio of Miguel Humberto.",
 };
 
 export default function RootLayout({
