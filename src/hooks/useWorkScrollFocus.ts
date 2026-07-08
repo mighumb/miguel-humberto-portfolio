@@ -64,8 +64,6 @@ export function useWorkScrollFocus(itemCount: number) {
             visual.style.opacity = "";
             visual.style.filter = "";
             visual.style.boxShadow = "";
-            visual.style.setProperty("--media-scale", "1");
-            visual.style.setProperty("--media-shift", "0px");
           }
           if (meta) {
             meta.style.transform = "";
@@ -86,8 +84,6 @@ export function useWorkScrollFocus(itemCount: number) {
         const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
         const opacity = 1 - progress * 0.12;
         const blur = progress * MAX_BLUR;
-        const mediaScale = 1 - progress * 0.06;
-        const mediaShift = progress * -12;
 
         card.style.transform = `translateY(${translateY}px)`;
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
@@ -101,12 +97,7 @@ export function useWorkScrollFocus(itemCount: number) {
           ].join(" ");
           visual.style.opacity = `${opacity}`;
           visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
-          visual.style.boxShadow =
-            progress > 0.02
-              ? `0 ${14 + progress * 22}px ${36 + progress * 30}px rgba(0, 0, 0, ${0.06 + progress * 0.11})`
-              : "0 24px 48px rgba(0, 0, 0, 0.08)";
-          visual.style.setProperty("--media-scale", `${mediaScale}`);
-          visual.style.setProperty("--media-shift", `${mediaShift}px`);
+          visual.style.boxShadow = "";
         }
 
         if (meta) {

@@ -120,12 +120,6 @@ body {
   transform-style: preserve-3d;
 }
 
-.work-card-media-inner {
-  transform: translateX(var(--media-shift, 0px)) scale(var(--media-scale, 1));
-  transform-origin: center center;
-  will-change: transform;
-}
-
 [data-theme="dark"] .work-card-focus {
   --card-shadow: rgba(0, 0, 0, 0.35);
 }
@@ -146,9 +140,5 @@ body {
     opacity: 1 !important;
     filter: none !important;
     box-shadow: none !important;
-  }
-
-  .work-card-media-inner {
-    transform: none !important;
   }
 }
