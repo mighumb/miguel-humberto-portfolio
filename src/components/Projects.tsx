@@ -2,22 +2,24 @@
 
 import { useState, useCallback, useRef, useLayoutEffect, type RefObject } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
-import { useWorkScrollFocus, type CarouselPauseMode, applyAllCardPerspectives } from "@/hooks/useWorkScrollFocus";
+import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
 import {
   prefersReducedMotion,
   measureCardOrigin,
+  buildCloseFlight,
   type CardOrigin,
+  type CardPerspective,
   type FlightPair,
   type ModalTargets,
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
 import {
   FLAT_PERSPECTIVE,
-  applyCardPerspective,
+  captureCardPerspectives,
+  restoreCardPerspectives,
 } from "@/lib/workCardFocus";
-import { runFlipClose } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -41,6 +43,19 @@ function restoreWorkScroll(
   }
 }
 
+function restoreFrozenCarousel(
+  scrollRef: RefObject<HTMLDivElement | null>,
+  savedWorkScrollLeft: number,
+  snapshot: Map<string, CardPerspective> | null,
+) {
+  restoreWorkScroll(scrollRef, savedWorkScrollLeft);
+
+  const container = scrollRef.current;
+  if (container && snapshot) {
+    restoreCardPerspectives(container, snapshot);
+  }
+}
+
 export default function Projects() {
   const { locale } = useLocale();
   const t = translations[locale];
@@ -55,16 +70,15 @@ export default function Projects() {
   const [flightVideoTime, setFlightVideoTime] = useState(0);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
-  const flipCleanupRef = useRef<(() => void) | null>(null);
   const openFlightRef = useRef<FlightPair | null>(null);
   const prevPhaseRef = useRef<TransitionPhase>("idle");
   const hadActiveProjectRef = useRef(false);
   const savedWorkScrollLeftRef = useRef(0);
+  const carouselSnapshotRef = useRef<Map<string, CardPerspective> | null>(null);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
-  const cardPerspectiveRef = useRef(cardOrigin?.perspective ?? FLAT_PERSPECTIVE);
   const activeProjectRef = useRef(activeProject);
-  const closedViaFlipRef = useRef(false);
+  const closedViaTransitionRef = useRef(false);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -73,18 +87,19 @@ export default function Projects() {
         ? "flight"
         : false;
 
-  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, pauseCarousel);
+  const { scrollRef, setCardRef } = useWorkScrollFocus(
+    projects.length,
+    pauseCarousel,
+    carouselSnapshotRef,
+  );
 
   phaseRef.current = phase;
   cardOriginRef.current = cardOrigin;
-  if (cardOrigin) {
-    cardPerspectiveRef.current = cardOrigin.perspective;
-  }
   activeProjectRef.current = activeProject;
 
   useLayoutEffect(() => {
     const root = document.documentElement;
-    if (phase === "open") {
+    if (phase === "opening" || phase === "open" || phase === "closing") {
       root.classList.add("modal-main-hidden");
     } else {
       root.classList.remove("modal-main-hidden");
@@ -94,22 +109,24 @@ export default function Projects() {
   }, [phase]);
 
   useLayoutEffect(() => {
-    if (closedViaFlipRef.current) {
-      closedViaFlipRef.current = false;
+    if (closedViaTransitionRef.current) {
+      closedViaTransitionRef.current = false;
       hadActiveProjectRef.current = false;
       return;
     }
 
     if (hadActiveProjectRef.current && !activeProject) {
-      restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
+      restoreFrozenCarousel(
+        scrollRef,
+        savedWorkScrollLeftRef.current,
+        carouselSnapshotRef.current,
+      );
     }
 
     hadActiveProjectRef.current = activeProject !== null;
   }, [activeProject, scrollRef]);
 
   const resetTransition = useCallback(() => {
-    flipCleanupRef.current?.();
-    flipCleanupRef.current = null;
     document.documentElement.classList.remove("is-closing-flip");
     setPhase("idle");
     setCardOrigin(null);
@@ -137,55 +154,31 @@ export default function Projects() {
 
     const project = activeProjectRef.current;
     const modalTargets = closeTargetsRef.current;
-    if (!project || !modalTargets) {
+    const snapshot = carouselSnapshotRef.current;
+    if (!project || !modalTargets || !snapshot) {
       closeModal();
       return;
     }
 
-    restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
+    restoreFrozenCarousel(scrollRef, savedWorkScrollLeftRef.current, snapshot);
 
-    const container = scrollRef.current;
-    if (container) {
-      applyAllCardPerspectives(container);
+    const measuredOrigin = measureCardOrigin(project.id, flightShowVideo);
+    if (!measuredOrigin) {
+      closeModal();
+      return;
     }
 
-    const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
-    const perspective = cardPerspectiveRef.current;
-
-    if (card) {
-      applyCardPerspective(card, perspective);
-    }
-
-    flipCleanupRef.current?.();
-    flipCleanupRef.current = runFlipClose({
-      projectId: project.id,
-      modalTargets,
-      onComplete: () => {
-        restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
-
-        if (container) {
-          applyAllCardPerspectives(container);
-        } else if (card) {
-          applyCardPerspective(card, perspective);
-        }
-
-        closedViaFlipRef.current = true;
-        flipCleanupRef.current = null;
-        closeModal();
-      },
-    });
-
-    return () => {
-      flipCleanupRef.current?.();
-      flipCleanupRef.current = null;
-    };
-  }, [phase, closeModal, scrollRef]);
+    const closeFlight = buildCloseFlight(modalTargets, measuredOrigin);
+    openFlightRef.current = closeFlight;
+    setFlight(closeFlight);
+  }, [phase, closeModal, scrollRef, flightShowVideo]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
     const index = projects.findIndex((p) => p.id === project.id);
 
     if (scrollRef.current) {
       savedWorkScrollLeftRef.current = scrollRef.current.scrollLeft;
+      carouselSnapshotRef.current = captureCardPerspectives(scrollRef.current);
     }
 
     setActiveIndex(index);
@@ -248,6 +241,20 @@ export default function Projects() {
     setFlight(null);
   }, []);
 
+  const handleFlightComplete = useCallback(() => {
+    if (phaseRef.current !== "closing") return;
+
+    restoreFrozenCarousel(
+      scrollRef,
+      savedWorkScrollLeftRef.current,
+      carouselSnapshotRef.current,
+    );
+
+    closedViaTransitionRef.current = true;
+    setFlight(null);
+    closeModal();
+  }, [closeModal, scrollRef]);
+
   const requestClose = useCallback(() => {
     if (!activeProject || prefersReducedMotion()) {
       closeModal();
@@ -262,7 +269,7 @@ export default function Projects() {
 
     closeTargetsRef.current = modalTargets;
     setSharedContentVisible(false);
-    setSharedHiddenId(null);
+    setSharedHiddenId(activeProject.id);
     setPhase("closing");
   }, [activeProject, closeModal]);
 
@@ -342,7 +349,7 @@ export default function Projects() {
         />
       )}
 
-      {activeProject && flight?.direction === "open" && (
+      {activeProject && flight && (
         <ProjectSharedFlight
           project={activeProject}
           locale={locale}
@@ -350,6 +357,7 @@ export default function Projects() {
           showVideo={flightShowVideo}
           videoTime={flightVideoTime}
           onLanding={handleFlightLanding}
+          onComplete={handleFlightComplete}
         />
       )}
     </section>

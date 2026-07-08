@@ -1,24 +1,25 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import {
   applyCardPerspective,
   computeCardFocus,
   flightFilterStyle,
   flightTransformStyle,
   resetCardPerspective,
+  restoreCardPerspectives,
+  type CardPerspective,
 } from "@/lib/workCardFocus";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
 
-export function applyAllCardPerspectives(container: HTMLElement) {
-  const cards = container.querySelectorAll<HTMLElement>("[data-project-id]");
-  cards.forEach((card) => {
-    applyCardPerspective(card, computeCardFocus(card, container));
-  });
-}
+export { restoreCardPerspectives };
 
-export function useWorkScrollFocus(itemCount: number, pauseMode: CarouselPauseMode = false) {
+export function useWorkScrollFocus(
+  itemCount: number,
+  pauseMode: CarouselPauseMode = false,
+  snapshotRef?: React.RefObject<Map<string, CardPerspective> | null>,
+) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
@@ -39,6 +40,12 @@ export function useWorkScrollFocus(itemCount: number, pauseMode: CarouselPauseMo
     // Do not reset to flat — that causes sibling cards to pop on close.
     if (pauseMode === "open" || pauseMode === "flight") {
       return;
+    }
+
+    const snapshot = snapshotRef?.current;
+    if (snapshot) {
+      restoreCardPerspectives(container, snapshot);
+      snapshotRef.current = null;
     }
 
     if (pauseMode === "closing") {
@@ -101,7 +108,7 @@ export function useWorkScrollFocus(itemCount: number, pauseMode: CarouselPauseMo
       container.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [itemCount, pauseMode]);
+  }, [itemCount, pauseMode, snapshotRef]);
 
   return { scrollRef, setCardRef };
 }

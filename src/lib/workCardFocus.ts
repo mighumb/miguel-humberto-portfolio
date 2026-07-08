@@ -89,6 +89,34 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   body.style.filter = flightFilterStyle(perspective);
 }
 
+export function captureCardPerspectives(container: HTMLElement): Map<string, CardPerspective> {
+  const snapshot = new Map<string, CardPerspective>();
+
+  container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
+    const id = card.getAttribute("data-project-id");
+    if (id) {
+      snapshot.set(id, computeCardFocus(card, container));
+    }
+  });
+
+  return snapshot;
+}
+
+export function restoreCardPerspectives(
+  container: HTMLElement,
+  snapshot: Map<string, CardPerspective>,
+): void {
+  container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
+    const id = card.getAttribute("data-project-id");
+    if (!id) return;
+
+    const perspective = snapshot.get(id);
+    if (perspective) {
+      applyCardPerspective(card, perspective);
+    }
+  });
+}
+
 export function resetCardPerspective(card: HTMLElement) {
   card.style.transform = "";
   card.style.zIndex = "";

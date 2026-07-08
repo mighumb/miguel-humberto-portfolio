@@ -19,6 +19,7 @@ interface ProjectSharedFlightProps {
   showVideo: boolean;
   videoTime: number;
   onLanding: (handoffVideoTime?: number) => void;
+  onComplete: () => void;
 }
 
 function frameStyle(frame: ElementRect) {
@@ -152,6 +153,7 @@ export default function ProjectSharedFlight({
   showVideo,
   videoTime,
   onLanding,
+  onComplete,
 }: ProjectSharedFlightProps) {
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
   const [titleFrame, setTitleFrame] = useState(flight.title.from);
@@ -165,13 +167,18 @@ export default function ProjectSharedFlight({
   const completedRef = useRef(false);
   const thumbRef = useRef<HTMLDivElement>(null);
   const onLandingRef = useRef(onLanding);
+  const onCompleteRef = useRef(onComplete);
   onLandingRef.current = onLanding;
+  onCompleteRef.current = onComplete;
 
   const finish = useCallback(() => {
     if (completedRef.current) return;
     completedRef.current = true;
 
-    if (flight.direction === "close") return;
+    if (flight.direction === "close") {
+      onCompleteRef.current();
+      return;
+    }
 
     const flightVideo = thumbRef.current?.querySelector<HTMLVideoElement>("video");
     const handoffVideoTime =
@@ -181,7 +188,11 @@ export default function ProjectSharedFlight({
 
   useLayoutEffect(() => {
     if (prefersReducedMotion()) {
-      onLandingRef.current();
+      if (flight.direction === "close") {
+        onCompleteRef.current();
+      } else {
+        onLandingRef.current();
+      }
       return;
     }
 
