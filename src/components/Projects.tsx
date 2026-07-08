@@ -12,6 +12,7 @@ import {
   type FlightPair,
   type ModalTargets,
 } from "@/lib/motion";
+import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -34,7 +35,8 @@ export default function Projects() {
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
-  const lastOpenedCardRef = useRef<HTMLElement | null>(null);
+  const hadActiveProjectRef = useRef(false);
+  const savedWorkScrollLeftRef = useRef(0);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
@@ -55,6 +57,20 @@ export default function Projects() {
     return () => root.classList.remove("modal-main-hidden");
   }, [phase]);
 
+  useLayoutEffect(() => {
+    if (hadActiveProjectRef.current && !activeProject) {
+      const { x, y } = getSavedScrollPosition();
+      snapScrollTo(x, y);
+
+      const container = scrollRef.current;
+      if (container) {
+        container.scrollLeft = savedWorkScrollLeftRef.current;
+      }
+    }
+
+    hadActiveProjectRef.current = activeProject !== null;
+  }, [activeProject, scrollRef]);
+
   const resetTransition = useCallback(() => {
     setPhase("idle");
     setCardOrigin(null);
@@ -65,7 +81,9 @@ export default function Projects() {
   }, []);
 
   const closeModal = useCallback(() => {
-    lastOpenedCardRef.current?.focus({ preventScroll: true });
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setActiveProject(null);
     resetTransition();
   }, [resetTransition]);
@@ -82,14 +100,16 @@ export default function Projects() {
     }
 
     const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
-    const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
-    lastOpenedCardRef.current = card;
+
+    if (scrollRef.current) {
+      savedWorkScrollLeftRef.current = scrollRef.current.scrollLeft;
+    }
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
     setSharedContentVisible(false);
     setPhase("opening");
-  }, []);
+  }, [scrollRef]);
 
   const handleFlightTargetsReady = useCallback((targets: ModalTargets) => {
     if (phaseRef.current !== "opening") return;

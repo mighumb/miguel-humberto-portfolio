@@ -16,6 +16,7 @@ export default function HeroNav() {
     >
       <a
         href="#"
+        onClick={(event) => event.preventDefault()}
         className="text-sm font-medium tracking-tight text-text-primary transition-opacity hover:opacity-70 md:text-base"
       >
         Miguel Humberto
@@ -83,6 +84,10 @@ export default function HeroNav() {
 
         <a
           href="#contact"
+          onClick={(event) => {
+            event.preventDefault();
+            document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
           className="hidden text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:block"
         >
           {t.header.contact}

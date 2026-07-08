@@ -50,11 +50,15 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+}
+
+html.scroll-snap,
+html.scroll-snap * {
+  scroll-behavior: auto !important;
 }
 
 html.modal-open {
-  scroll-behavior: auto;
   overflow: hidden;
   overscroll-behavior: none;
 }

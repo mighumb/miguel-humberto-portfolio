@@ -1,9 +1,53 @@
 let lockCount = 0;
+let savedScrollX = 0;
+let savedScrollY = 0;
+
+export function getSavedScrollPosition() {
+  return { x: savedScrollX, y: savedScrollY };
+}
+
+export function snapScrollTo(x: number, y: number) {
+  if (typeof window === "undefined") return;
+
+  const html = document.documentElement;
+  const body = document.body;
+  const previousHtmlBehavior = html.style.scrollBehavior;
+  const previousBodyBehavior = body.style.scrollBehavior;
+
+  html.classList.add("scroll-snap");
+  html.style.scrollBehavior = "auto";
+  body.style.scrollBehavior = "auto";
+
+  window.scrollTo(x, y);
+  html.scrollLeft = x;
+  html.scrollTop = y;
+  body.scrollLeft = x;
+  body.scrollTop = y;
+
+  requestAnimationFrame(() => {
+    window.scrollTo(x, y);
+    html.scrollLeft = x;
+    html.scrollTop = y;
+    body.scrollLeft = x;
+    body.scrollTop = y;
+
+    html.style.scrollBehavior = previousHtmlBehavior;
+    body.style.scrollBehavior = previousBodyBehavior;
+    html.classList.remove("scroll-snap");
+  });
+}
 
 export function lockScroll() {
   if (typeof document === "undefined") return;
 
   if (lockCount === 0) {
+    savedScrollX = window.scrollX;
+    savedScrollY = window.scrollY;
+
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     const { style: bodyStyle } = document.body;
     const { style: htmlStyle } = document.documentElement;
@@ -27,6 +71,8 @@ export function unlockScroll() {
   lockCount -= 1;
   if (lockCount > 0) return;
 
+  const { x, y } = getSavedScrollPosition();
+
   const { style: bodyStyle } = document.body;
   const { style: htmlStyle } = document.documentElement;
 
@@ -35,4 +81,6 @@ export function unlockScroll() {
   bodyStyle.overflow = "";
   htmlStyle.overscrollBehavior = "";
   document.documentElement.classList.remove("modal-open");
+
+  snapScrollTo(x, y);
 }
