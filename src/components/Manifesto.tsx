@@ -13,11 +13,11 @@ export default function Manifesto() {
         <h2 className="mb-8 text-3xl font-light tracking-tight text-text-primary md:mb-12 md:text-5xl">
           {t.manifestoTitle}
         </h2>
-        <div className="space-y-6">
+        <div className="space-y-3">
           {t.manifesto.map((paragraph, i) => (
             <p
               key={i}
-              className="text-base leading-relaxed text-text-secondary md:text-lg md:leading-relaxed"
+              className="text-base leading-normal text-text-secondary md:text-lg"
             >
               {paragraph}
             </p>
