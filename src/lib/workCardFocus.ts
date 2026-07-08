@@ -73,3 +73,30 @@ export function flightTransformStyle(perspective: CardPerspective) {
 export function flightFilterStyle(perspective: CardPerspective) {
   return perspective.blur > 0.08 ? `blur(${perspective.blur}px)` : "none";
 }
+
+export function applyCardPerspective(card: HTMLElement, perspective: CardPerspective) {
+  const progress = Math.min(1, Math.abs(perspective.rotateY) / MAX_ROTATE_Y);
+
+  card.style.transform = `translateY(${perspective.articleTranslateY}px)`;
+  card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
+
+  const body = card.querySelector<HTMLElement>(".work-card-body");
+  if (!body) return;
+
+  body.style.transformOrigin = "center bottom";
+  body.style.transform = flightTransformStyle(perspective);
+  body.style.opacity = `${perspective.bodyOpacity}`;
+  body.style.filter = flightFilterStyle(perspective);
+}
+
+export function resetCardPerspective(card: HTMLElement) {
+  card.style.transform = "";
+  card.style.zIndex = "";
+
+  const body = card.querySelector<HTMLElement>(".work-card-body");
+  if (!body) return;
+
+  body.style.transform = "";
+  body.style.opacity = "";
+  body.style.filter = "";
+}

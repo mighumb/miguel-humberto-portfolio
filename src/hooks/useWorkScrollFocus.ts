@@ -2,10 +2,10 @@
 
 import { useLayoutEffect, useRef } from "react";
 import {
-  CARD_PERSPECTIVE,
   computeCardFocus,
   flightFilterStyle,
   flightTransformStyle,
+  resetCardPerspective,
 } from "@/lib/workCardFocus";
 
 export function useWorkScrollFocus(itemCount: number, paused = false) {
@@ -22,16 +22,7 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
 
     const resetCards = () => {
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
-      cards.forEach((card) => {
-        card.style.transform = "";
-        card.style.zIndex = "";
-        const body = card.querySelector<HTMLElement>(".work-card-body");
-        if (body) {
-          body.style.transform = "";
-          body.style.opacity = "";
-          body.style.filter = "";
-        }
-      });
+      cards.forEach((card) => resetCardPerspective(card));
     };
 
     if (paused) {
@@ -98,5 +89,3 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
 
   return { scrollRef, setCardRef };
 }
-
-export { CARD_PERSPECTIVE };

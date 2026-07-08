@@ -202,9 +202,7 @@ export default function ProjectSharedFlight({
   const [tagsVariant, setTagsVariant] = useState<"card" | "modal">(
     flight.direction === "open" ? "card" : "modal",
   );
-  const [perspectiveAmount, setPerspectiveAmount] = useState(
-    flight.direction === "open" ? 1 : 0,
-  );
+  const [perspectiveAmount, setPerspectiveAmount] = useState(1);
   const [opacity, setOpacity] = useState(1);
   const completedRef = useRef(false);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -242,7 +240,7 @@ export default function ProjectSharedFlight({
     setYearFontSize(flight.year.fromFontSize);
     setTagsFrame(flight.tags.from);
     setTagsVariant(flight.direction === "open" ? "card" : "modal");
-    setPerspectiveAmount(flight.direction === "open" ? 1 : 0);
+    setPerspectiveAmount(1);
 
     const start = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -253,7 +251,9 @@ export default function ProjectSharedFlight({
         setYearFontSize(flight.year.toFontSize);
         setTagsFrame(flight.tags.to);
         setTagsVariant(flight.direction === "open" ? "modal" : "card");
-        setPerspectiveAmount(flight.direction === "open" ? 0 : 1);
+        if (flight.direction === "open") {
+          setPerspectiveAmount(0);
+        }
       });
     });
 

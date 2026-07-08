@@ -14,7 +14,7 @@ import {
   type ModalTargets,
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
-import { FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
+import { FLAT_PERSPECTIVE, applyCardPerspective } from "@/lib/workCardFocus";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -45,7 +45,11 @@ export default function Projects() {
   const cardOriginRef = useRef(cardOrigin);
   const cardPerspectiveRef = useRef(cardOrigin?.perspective ?? FLAT_PERSPECTIVE);
   const activeProjectRef = useRef(activeProject);
-  const pauseWorkFocus = phase === "open" || (phase === "opening" && flight !== null);
+  const closedViaFlightRef = useRef(false);
+  const pauseWorkFocus =
+    phase === "open" ||
+    (phase === "opening" && flight !== null) ||
+    (phase === "closing" && flight !== null);
   const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, pauseWorkFocus);
 
   phaseRef.current = phase;
@@ -67,6 +71,12 @@ export default function Projects() {
   }, [phase]);
 
   useLayoutEffect(() => {
+    if (closedViaFlightRef.current) {
+      closedViaFlightRef.current = false;
+      hadActiveProjectRef.current = false;
+      return;
+    }
+
     if (hadActiveProjectRef.current && !activeProject) {
       const { x, y } = getSavedScrollPosition();
       snapScrollTo(x, y);
@@ -110,8 +120,15 @@ export default function Projects() {
       return;
     }
 
+    const container = scrollRef.current;
+    if (container) {
+      const { x, y } = getSavedScrollPosition();
+      snapScrollTo(x, y);
+      container.scrollLeft = savedWorkScrollLeftRef.current;
+    }
+
     setFlight(invertFlight(openFlight));
-  }, [phase, closeModal]);
+  }, [phase, closeModal, scrollRef]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
     const index = projects.findIndex((p) => p.id === project.id);
@@ -176,6 +193,22 @@ export default function Projects() {
 
   const handleFlightComplete = useCallback(() => {
     if (phaseRef.current === "closing") {
+      const project = activeProjectRef.current;
+      const container = scrollRef.current;
+      const perspective = cardPerspectiveRef.current;
+
+      if (container) {
+        const { x, y } = getSavedScrollPosition();
+        snapScrollTo(x, y);
+        container.scrollLeft = savedWorkScrollLeftRef.current;
+      }
+
+      if (project) {
+        const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
+        if (card) applyCardPerspective(card, perspective);
+      }
+
+      closedViaFlightRef.current = true;
       setSharedHiddenId(null);
       setFlight(null);
       closeModal();
@@ -187,7 +220,7 @@ export default function Projects() {
     if (phaseRef.current === "opening") {
       setSharedHiddenId(null);
     }
-  }, [closeModal]);
+  }, [closeModal, scrollRef]);
 
   const requestClose = useCallback(() => {
     if (!activeProject || prefersReducedMotion()) {
