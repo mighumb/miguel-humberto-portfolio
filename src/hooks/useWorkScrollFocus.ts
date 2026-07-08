@@ -10,6 +10,7 @@ import {
   restoreCardPerspectives,
   type CardPerspective,
 } from "@/lib/workCardFocus";
+import { isWorkCarouselScrollActive } from "@/lib/workScrollActivation";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
 
@@ -127,6 +128,7 @@ export function useWorkScrollFocus(
       const absY = Math.abs(event.deltaY);
 
       if (absX > absY) return;
+      if (!isWorkCarouselScrollActive(container)) return;
 
       const goingRight = event.deltaY > 0;
       const maxScroll = container.scrollWidth - container.clientWidth;
