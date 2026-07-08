@@ -115,19 +115,19 @@ body {
 
 .work-card-body {
   width: 100%;
-}
-
-.work-card-meta {
-  background: transparent;
-  box-sizing: border-box;
-  will-change: transform, opacity;
-}
-
-.work-card-visual {
   transform-origin: center bottom;
   transform-style: preserve-3d;
   backface-visibility: hidden;
   will-change: transform, opacity, filter;
+}
+
+.work-card-meta {
+  background: transparent;
+  transform-style: preserve-3d;
+}
+
+.work-card-visual {
+  transform-style: preserve-3d;
 }
 
 .work-scroll-stage {
@@ -147,16 +147,9 @@ body {
     transform: none !important;
   }
 
-  .work-card-meta {
-    transform: none !important;
-    width: auto !important;
-    opacity: 1 !important;
-  }
-
-  .work-card-visual {
+  .work-card-body {
     transform: none !important;
     opacity: 1 !important;
     filter: none !important;
-    box-shadow: none !important;
   }
 }
