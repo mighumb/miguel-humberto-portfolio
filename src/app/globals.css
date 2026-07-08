@@ -61,6 +61,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.project-modal {
+  min-height: 100dvh;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.modal-open main {
+  visibility: hidden;
+}
+
+html.modal-open .ambient-background {
+  visibility: hidden;
+}
+
+html.modal-open .project-modal {
+  visibility: visible;
+}
+
 .manifesto-section::before {
   content: "";
   position: absolute;

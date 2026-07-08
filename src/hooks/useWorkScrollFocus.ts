@@ -12,7 +12,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function useWorkScrollFocus(itemCount: number) {
+export function useWorkScrollFocus(itemCount: number, paused = false) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
@@ -23,6 +23,25 @@ export function useWorkScrollFocus(itemCount: number) {
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
+
+    const resetCards = () => {
+      const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
+      cards.forEach((card) => {
+        card.style.transform = "";
+        card.style.zIndex = "";
+        const body = card.querySelector<HTMLElement>(".work-card-body");
+        if (body) {
+          body.style.transform = "";
+          body.style.opacity = "";
+          body.style.filter = "";
+        }
+      });
+    };
+
+    if (paused) {
+      resetCards();
+      return;
+    }
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -89,7 +108,7 @@ export function useWorkScrollFocus(itemCount: number) {
       container.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [itemCount]);
+  }, [itemCount, paused]);
 
   return { scrollRef, setCardRef };
 }

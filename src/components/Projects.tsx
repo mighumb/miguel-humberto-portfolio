@@ -17,7 +17,7 @@ export default function Projects() {
   const t = translations[locale];
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length);
+  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, !!activeProject);
 
   const openProject = (project: Project) => {
     const index = projects.findIndex((p) => p.id === project.id);

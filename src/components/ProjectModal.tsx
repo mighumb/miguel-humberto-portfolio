@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
 
@@ -26,18 +27,30 @@ export default function ProjectModal({
   const { locale } = useLocale();
   const t = translations[locale];
   const mt = t.modal;
-  const [mounted, setMounted] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useScrollLock(true);
+
+  useLayoutEffect(() => {
+    modalRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [project.id]);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const modal = modalRef.current;
+    if (!modal) return;
 
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const blockBackgroundScroll = (event: WheelEvent | TouchEvent) => {
+      if (!modal.contains(event.target as Node)) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("wheel", blockBackgroundScroll, { passive: false });
+    window.addEventListener("touchmove", blockBackgroundScroll, { passive: false });
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("wheel", blockBackgroundScroll);
+      window.removeEventListener("touchmove", blockBackgroundScroll);
     };
   }, []);
 
@@ -55,11 +68,12 @@ export default function ProjectModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  if (!mounted) return null;
+  if (typeof document === "undefined") return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] overflow-y-auto"
+      ref={modalRef}
+      className="project-modal fixed inset-0 z-[200] overflow-y-auto overscroll-contain"
       style={{ background: "var(--modal-bg)" }}
       role="dialog"
       aria-modal="true"
