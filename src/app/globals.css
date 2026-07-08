@@ -219,6 +219,14 @@ html.modal-open .project-modal {
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .work-scroll {
+    scroll-padding-inline: 2.5rem;
+  }
 }
 
 .work-scroll::-webkit-scrollbar {

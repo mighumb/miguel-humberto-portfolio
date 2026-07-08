@@ -10,7 +10,7 @@ import {
   restoreCardPerspectives,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { isWorkCarouselScrollActive } from "@/lib/workScrollActivation";
+import { attachWorkWheelScroll } from "@/lib/workWheelScroll";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
 
@@ -128,38 +128,7 @@ export function useWorkScrollFocus(
       container.closest<HTMLElement>(".work-scroll-stage");
     if (!stage) return;
 
-    const onWheel = (event: WheelEvent) => {
-      const absX = Math.abs(event.deltaX);
-      const absY = Math.abs(event.deltaY);
-
-      if (absX > absY) return;
-
-      const stageRect = stage.getBoundingClientRect();
-      const pointerInsideStage =
-        event.clientX >= stageRect.left &&
-        event.clientX <= stageRect.right &&
-        event.clientY >= stageRect.top &&
-        event.clientY <= stageRect.bottom;
-
-      if (!pointerInsideStage) return;
-      if (!isWorkCarouselScrollActive(container, event.clientY)) return;
-
-      const goingRight = event.deltaY > 0;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      const atStart = container.scrollLeft <= 0;
-      const atEnd = container.scrollLeft >= maxScroll - 1;
-
-      if ((goingRight && atEnd) || (!goingRight && atStart)) return;
-
-      event.preventDefault();
-      container.scrollLeft += event.deltaY;
-    };
-
-    stage.addEventListener("wheel", onWheel, { passive: false });
-
-    return () => {
-      stage.removeEventListener("wheel", onWheel);
-    };
+    return attachWorkWheelScroll(container, stage);
   }, [itemCount, pauseMode]);
 
   return { scrollRef, setCardRef };
