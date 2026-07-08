@@ -9,6 +9,14 @@ import { useTheme } from "@/contexts/ThemeContext";
 const PARTICLE_COUNT = 3200;
 const DRIFT_COUNT = 800;
 
+// Light mode: darker grays on #F5F5F7 — must read clearly against the page
+const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
+const LIGHT_PARTICLE_ALT = new THREE.Color("#86868b");
+
+// Dark mode: lighter grays on #0A0A0B
+const DARK_PARTICLE = new THREE.Color("#6e6e73");
+const DARK_PARTICLE_ALT = new THREE.Color("#aeaeb2");
+
 function seededRandom(seed: number) {
   let state = seed;
   return () => {
@@ -20,7 +28,7 @@ function seededRandom(seed: number) {
 function generateLayer(count: number, seed: number, spread: number) {
   const random = seededRandom(seed);
   const positions = new Float32Array(count * 3);
-  const brightness = new Float32Array(count);
+  const mix = new Float32Array(count);
   const phases = new Float32Array(count);
 
   let i = 0;
@@ -40,28 +48,29 @@ function generateLayer(count: number, seed: number, spread: number) {
     positions[i * 3] = x;
     positions[i * 3 + 1] = y;
     positions[i * 3 + 2] = z;
-    brightness[i] = 0.3 + random() * 0.5;
+    mix[i] = random();
     phases[i] = random() * Math.PI * 2;
 
     i++;
   }
 
-  return { positions, brightness, phases, actualCount: count };
+  return { positions, mix, phases, actualCount: count };
 }
 
 const MAIN_LAYER = generateLayer(PARTICLE_COUNT, 42, 4.2);
 const DRIFT_LAYER = generateLayer(DRIFT_COUNT, 137, 3.6);
 
-function buildColors(brightness: Float32Array, count: number, isDark: boolean) {
+function buildColors(mix: Float32Array, count: number, isDark: boolean) {
   const colors = new Float32Array(count * 3);
-  const multiplier = isDark ? 1.05 : 0.72;
-  const offset = isDark ? 0.15 : 0.08;
+  const low = isDark ? DARK_PARTICLE : LIGHT_PARTICLE;
+  const high = isDark ? DARK_PARTICLE_ALT : LIGHT_PARTICLE_ALT;
+  const temp = new THREE.Color();
 
   for (let i = 0; i < count; i++) {
-    const value = Math.min(1, brightness[i] * multiplier + offset);
-    colors[i * 3] = value;
-    colors[i * 3 + 1] = value;
-    colors[i * 3 + 2] = value;
+    temp.copy(low).lerp(high, mix[i]);
+    colors[i * 3] = temp.r;
+    colors[i * 3 + 1] = temp.g;
+    colors[i * 3 + 2] = temp.b;
   }
 
   return colors;
@@ -88,8 +97,8 @@ function ParticleLayer({
   const basePositions = useMemo(() => data.positions.slice(), [data.positions]);
 
   const colors = useMemo(
-    () => buildColors(data.brightness, data.actualCount, isDark),
-    [data.brightness, data.actualCount, isDark],
+    () => buildColors(data.mix, data.actualCount, isDark),
+    [data.mix, data.actualCount, isDark],
   );
 
   useEffect(() => {
@@ -149,16 +158,16 @@ function SceneContent({ isDark }: { isDark: boolean }) {
       <ParticleLayer
         data={MAIN_LAYER}
         isDark={isDark}
-        size={0.016}
-        opacity={isDark ? 0.55 : 0.42}
+        size={isDark ? 0.016 : 0.022}
+        opacity={isDark ? 0.55 : 0.65}
         speed={0.025}
         drift={0.04}
       />
       <ParticleLayer
         data={DRIFT_LAYER}
         isDark={isDark}
-        size={0.028}
-        opacity={isDark ? 0.25 : 0.18}
+        size={isDark ? 0.028 : 0.034}
+        opacity={isDark ? 0.25 : 0.38}
         speed={0.015}
         drift={0.06}
       />
