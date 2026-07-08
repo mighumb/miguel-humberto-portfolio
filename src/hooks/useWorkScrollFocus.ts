@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-const CARD_PERSPECTIVE = 1000;
-const MAX_ROTATE_Y = 18;
-const MAX_TRANSLATE_Z = -200;
-const MAX_SHIFT_Y = 44;
-const SCALE_DROP = 0.07;
-const MAX_BLUR = 0.7;
+const CARD_PERSPECTIVE = 1100;
+const MAX_ROTATE_Y = 17;
+const MAX_TRANSLATE_Z = -250;
+const MAX_SHIFT_Y = 40;
+const SCALE_DROP = 0.095;
+const MAX_BLUR = 0.65;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -40,18 +40,21 @@ export function useWorkScrollFocus(itemCount: number) {
 
       cards.forEach((card) => {
         const visual = card.querySelector<HTMLElement>(".work-card-visual");
+        const meta = card.querySelector<HTMLElement>(".work-card-meta");
 
         if (reducedMotion) {
           card.style.transform = "";
-          card.style.transformOrigin = "";
-          card.style.opacity = "";
           card.style.zIndex = "";
           if (visual) {
+            visual.style.transform = "";
+            visual.style.transformOrigin = "";
+            visual.style.opacity = "";
             visual.style.filter = "";
             visual.style.boxShadow = "";
             visual.style.setProperty("--media-scale", "1");
             visual.style.setProperty("--media-shift", "0px");
           }
+          if (meta) meta.style.opacity = "";
           return;
         }
 
@@ -70,27 +73,29 @@ export function useWorkScrollFocus(itemCount: number) {
         const mediaScale = 1.06 - progress * 0.06;
         const mediaShift = progress * -12;
 
-        const originX =
-          direction > 0.02 ? "left" : direction < -0.02 ? "right" : "center";
-        card.style.transformOrigin = `${originX} bottom`;
-
-        card.style.transform = [
-          `perspective(${CARD_PERSPECTIVE}px)`,
-          `translate3d(0, ${translateY}px, ${translateZ}px)`,
-          `rotateY(${rotateY}deg)`,
-          `scale(${scale})`,
-        ].join(" ");
-        card.style.opacity = `${opacity}`;
+        card.style.transform = `translateY(${translateY}px)`;
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
 
         if (visual) {
+          visual.style.transformOrigin = "center bottom";
+          visual.style.transform = [
+            `perspective(${CARD_PERSPECTIVE}px)`,
+            `translate3d(0, 0, ${translateZ}px)`,
+            `rotateY(${rotateY}deg)`,
+            `scale(${scale})`,
+          ].join(" ");
+          visual.style.opacity = `${opacity}`;
           visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
           visual.style.boxShadow =
             progress > 0.02
-              ? `0 ${12 + progress * 20}px ${32 + progress * 28}px rgba(0, 0, 0, ${0.06 + progress * 0.1})`
+              ? `0 ${14 + progress * 22}px ${36 + progress * 30}px rgba(0, 0, 0, ${0.06 + progress * 0.11})`
               : "0 24px 48px rgba(0, 0, 0, 0.08)";
           visual.style.setProperty("--media-scale", `${mediaScale}`);
           visual.style.setProperty("--media-shift", `${mediaShift}px`);
+        }
+
+        if (meta) {
+          meta.style.opacity = `${opacity}`;
         }
       });
     };
