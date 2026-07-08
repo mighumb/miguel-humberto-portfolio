@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-const CARD_PERSPECTIVE = 900;
-const MAX_ROTATE_Y = 22;
-const MAX_TRANSLATE_Z = -360;
-const MAX_SHIFT_Y = 52;
-const SCALE_DROP = 0.14;
-const MAX_BLUR = 0.85;
+const CARD_PERSPECTIVE = 1000;
+const MAX_ROTATE_Y = 18;
+const MAX_TRANSLATE_Z = -200;
+const MAX_SHIFT_Y = 44;
+const SCALE_DROP = 0.07;
+const MAX_BLUR = 0.7;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -43,6 +43,7 @@ export function useWorkScrollFocus(itemCount: number) {
 
         if (reducedMotion) {
           card.style.transform = "";
+          card.style.transformOrigin = "";
           card.style.opacity = "";
           card.style.zIndex = "";
           if (visual) {
@@ -64,10 +65,14 @@ export function useWorkScrollFocus(itemCount: number) {
         const translateY = progress * MAX_SHIFT_Y;
         const translateZ = progress * MAX_TRANSLATE_Z;
         const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
-        const opacity = 1 - progress * 0.14;
+        const opacity = 1 - progress * 0.12;
         const blur = progress * MAX_BLUR;
-        const mediaScale = 1.1 - progress * 0.1;
-        const mediaShift = progress * -16;
+        const mediaScale = 1.06 - progress * 0.06;
+        const mediaShift = progress * -12;
+
+        const originX =
+          direction > 0.02 ? "left" : direction < -0.02 ? "right" : "center";
+        card.style.transformOrigin = `${originX} bottom`;
 
         card.style.transform = [
           `perspective(${CARD_PERSPECTIVE}px)`,
@@ -82,8 +87,8 @@ export function useWorkScrollFocus(itemCount: number) {
           visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
           visual.style.boxShadow =
             progress > 0.02
-              ? `0 ${16 + progress * 28}px ${40 + progress * 36}px rgba(0, 0, 0, ${0.08 + progress * 0.14})`
-              : "0 28px 56px rgba(0, 0, 0, 0.1)";
+              ? `0 ${12 + progress * 20}px ${32 + progress * 28}px rgba(0, 0, 0, ${0.06 + progress * 0.1})`
+              : "0 24px 48px rgba(0, 0, 0, 0.08)";
           visual.style.setProperty("--media-scale", `${mediaScale}`);
           visual.style.setProperty("--media-shift", `${mediaShift}px`);
         }
