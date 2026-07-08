@@ -34,6 +34,7 @@ export default function Projects() {
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
+  const lastOpenedCardRef = useRef<HTMLElement | null>(null);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
@@ -64,6 +65,7 @@ export default function Projects() {
   }, []);
 
   const closeModal = useCallback(() => {
+    lastOpenedCardRef.current?.focus({ preventScroll: true });
     setActiveProject(null);
     resetTransition();
   }, [resetTransition]);
@@ -80,6 +82,8 @@ export default function Projects() {
     }
 
     const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
+    const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
+    lastOpenedCardRef.current = card;
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
@@ -133,9 +137,7 @@ export default function Projects() {
     }
 
     if (phaseRef.current === "closing") {
-      requestAnimationFrame(() => {
-        closeModal();
-      });
+      closeModal();
     }
   }, [closeModal]);
 

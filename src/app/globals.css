@@ -53,6 +53,16 @@ html {
   scroll-behavior: smooth;
 }
 
+html.modal-open {
+  scroll-behavior: auto;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html.modal-open body {
+  overflow: hidden;
+}
+
 body {
   font-family: "Satoshi", system-ui, sans-serif;
   background-color: var(--bg-primary);
