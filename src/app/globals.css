@@ -123,6 +123,25 @@ body {
   opacity: 0;
 }
 
+html.is-closing-flip .project-modal {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+html.is-closing-flip .work-scroll-stage {
+  position: relative;
+  z-index: 210;
+}
+
+.work-card-visual.work-card-flip-active,
+.work-card-title.work-card-flip-active,
+.work-card-year.work-card-flip-active,
+.work-card-tags.work-card-flip-active {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+}
+
 .project-shared-flight {
   transition: opacity 0.1s ease;
 }
@@ -137,7 +156,8 @@ body {
   .project-shared-flight-thumb,
   .project-shared-flight-title,
   .project-shared-flight-year,
-  .project-shared-flight-tags {
+  .project-shared-flight-tags,
+  .work-card-flip-active {
     transition: none !important;
   }
 }
