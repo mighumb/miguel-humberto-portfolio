@@ -398,10 +398,9 @@ export default function Projects() {
       className="relative z-10 pb-8 md:pb-10"
       aria-label={t.projects}
     >
-      <div className="mb-6 flex items-center gap-4 px-6 md:mb-8 md:px-10">
-        <h2 className="text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
-          {t.projects}
-        </h2>
+      <h2 className="sr-only">{t.projects}</h2>
+
+      <div className="mb-6 px-6 md:mb-8 md:px-10">
         <WorkCarouselNav
           onPrev={() => scrollCarouselBy("prev")}
           onNext={() => scrollCarouselBy("next")}
