@@ -58,20 +58,22 @@ export default function Projects() {
           aria-hidden
         />
 
-        <div
-          ref={scrollRef}
-          className="work-scroll work-scroll-3d flex items-end gap-5 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-20 pt-0 md:gap-8"
-        >
-          <ScrollGutter />
-          {projects.map((project, index) => (
-            <ProjectCard
-              key={project.id}
-              ref={setCardRef(index)}
-              project={project}
-              onOpen={openProject}
-            />
-          ))}
-          <ScrollGutter />
+        <div className="work-scroll-stage relative">
+          <div
+            ref={scrollRef}
+            className="work-scroll flex items-end gap-5 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-20 pt-0 md:gap-8"
+          >
+            <ScrollGutter />
+            {projects.map((project, index) => (
+              <ProjectCard
+                key={project.id}
+                ref={setCardRef(index)}
+                project={project}
+                onOpen={openProject}
+              />
+            ))}
+            <ScrollGutter />
+          </div>
         </div>
       </div>
 

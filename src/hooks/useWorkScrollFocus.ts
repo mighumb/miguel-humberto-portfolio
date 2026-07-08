@@ -2,11 +2,12 @@
 
 import { useEffect, useRef } from "react";
 
-const MAX_ROTATE_Y = 16;
-const MAX_TRANSLATE_Z = -260;
-const MAX_SHIFT_Y = 48;
-const SCALE_DROP = 0.12;
-const MAX_BLUR = 0.75;
+const CARD_PERSPECTIVE = 900;
+const MAX_ROTATE_Y = 22;
+const MAX_TRANSLATE_Z = -360;
+const MAX_SHIFT_Y = 52;
+const SCALE_DROP = 0.14;
+const MAX_BLUR = 0.85;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -65,12 +66,12 @@ export function useWorkScrollFocus(itemCount: number) {
         const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
         const opacity = 1 - progress * 0.14;
         const blur = progress * MAX_BLUR;
-        const mediaScale = 1.08 - progress * 0.08;
-        const mediaShift = progress * -14;
+        const mediaScale = 1.1 - progress * 0.1;
+        const mediaShift = progress * -16;
 
         card.style.transform = [
-          `translateY(${translateY}px)`,
-          `translateZ(${translateZ}px)`,
+          `perspective(${CARD_PERSPECTIVE}px)`,
+          `translate3d(0, ${translateY}px, ${translateZ}px)`,
           `rotateY(${rotateY}deg)`,
           `scale(${scale})`,
         ].join(" ");
@@ -81,8 +82,8 @@ export function useWorkScrollFocus(itemCount: number) {
           visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
           visual.style.boxShadow =
             progress > 0.02
-              ? `0 ${12 + progress * 24}px ${36 + progress * 32}px rgba(0, 0, 0, ${0.06 + progress * 0.12})`
-              : "0 24px 48px rgba(0, 0, 0, 0.08)";
+              ? `0 ${16 + progress * 28}px ${40 + progress * 36}px rgba(0, 0, 0, ${0.08 + progress * 0.14})`
+              : "0 28px 56px rgba(0, 0, 0, 0.1)";
           visual.style.setProperty("--media-scale", `${mediaScale}`);
           visual.style.setProperty("--media-shift", `${mediaShift}px`);
         }
@@ -90,6 +91,8 @@ export function useWorkScrollFocus(itemCount: number) {
     };
 
     update();
+    requestAnimationFrame(update);
+
     container.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
 
