@@ -38,13 +38,18 @@ export function useWorkScrollFocus(itemCount: number) {
         Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 20;
 
       cards.forEach((card) => {
+        const visual = card.querySelector<HTMLElement>(".work-card-visual");
+
         if (reducedMotion) {
           card.style.transform = "";
           card.style.opacity = "";
-          card.style.filter = "";
-          card.style.boxShadow = "";
-          card.style.setProperty("--media-scale", "1");
-          card.style.setProperty("--media-shift", "0px");
+          if (visual) {
+            visual.style.transform = "";
+            visual.style.filter = "";
+            visual.style.boxShadow = "";
+            visual.style.setProperty("--media-scale", "1");
+            visual.style.setProperty("--media-shift", "0px");
+          }
           return;
         }
 
@@ -58,26 +63,29 @@ export function useWorkScrollFocus(itemCount: number) {
         const translateY = progress * MAX_SHIFT_Y;
         const translateZ = progress * MAX_TRANSLATE_Z;
         const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
-        const opacity = 1 - progress * 0.18;
+        const opacity = 1 - progress * 0.12;
         const blur = progress * MAX_BLUR;
         const mediaScale = 1.06 - progress * 0.06;
         const mediaShift = progress * -12;
 
-        card.style.transform = [
-          `translateY(${translateY}px)`,
-          `translateZ(${translateZ}px)`,
-          `rotateY(${rotateY}deg)`,
-          `scale(${scale})`,
-        ].join(" ");
+        card.style.transform = `translateY(${translateY}px)`;
         card.style.opacity = `${opacity}`;
-        card.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
-        card.style.boxShadow =
-          progress > 0.02
-            ? `0 ${12 + progress * 20}px ${32 + progress * 28}px rgba(0, 0, 0, ${0.05 + progress * 0.1})`
-            : "0 24px 48px rgba(0, 0, 0, 0.08)";
-        card.style.setProperty("--media-scale", `${mediaScale}`);
-        card.style.setProperty("--media-shift", `${mediaShift}px`);
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
+
+        if (visual) {
+          visual.style.transform = [
+            `translateZ(${translateZ}px)`,
+            `rotateY(${rotateY}deg)`,
+            `scale(${scale})`,
+          ].join(" ");
+          visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
+          visual.style.boxShadow =
+            progress > 0.02
+              ? `0 ${12 + progress * 20}px ${32 + progress * 28}px rgba(0, 0, 0, ${0.05 + progress * 0.1})`
+              : "0 20px 40px rgba(0, 0, 0, 0.07)";
+          visual.style.setProperty("--media-scale", `${mediaScale}`);
+          visual.style.setProperty("--media-shift", `${mediaShift}px`);
+        }
       });
     };
 
