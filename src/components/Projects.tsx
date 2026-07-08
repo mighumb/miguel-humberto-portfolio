@@ -90,6 +90,11 @@ export default function Projects() {
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
     const index = projects.findIndex((p) => p.id === project.id);
+
+    if (scrollRef.current) {
+      savedWorkScrollLeftRef.current = scrollRef.current.scrollLeft;
+    }
+
     setActiveIndex(index);
     setActiveProject(project);
 
@@ -100,10 +105,6 @@ export default function Projects() {
     }
 
     const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
-
-    if (scrollRef.current) {
-      savedWorkScrollLeftRef.current = scrollRef.current.scrollLeft;
-    }
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
