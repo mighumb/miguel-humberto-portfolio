@@ -10,7 +10,6 @@ import {
   restoreCardPerspectives,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { attachWorkWheelScroll } from "@/lib/workWheelScroll";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
 
@@ -123,12 +122,29 @@ export function useWorkScrollFocus(
     if (!container) return;
     if (pauseMode === "open" || pauseMode === "flight") return;
 
-    const stage =
-      container.closest<HTMLElement>("#projects") ??
-      container.closest<HTMLElement>(".work-scroll-stage");
-    if (!stage) return;
+    const onWheel = (event: WheelEvent) => {
+      const { deltaX, deltaY } = event;
 
-    return attachWorkWheelScroll(container, stage);
+      // Trackpad horizontal gestures must use native overflow scrolling.
+      if (Math.abs(deltaX) > Math.abs(deltaY)) return;
+      if (Math.abs(deltaX) > 2) return;
+
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      const goingRight = deltaY > 0;
+      const atStart = container.scrollLeft <= 0;
+      const atEnd = container.scrollLeft >= maxScroll - 1;
+
+      if ((goingRight && atEnd) || (!goingRight && atStart)) return;
+
+      event.preventDefault();
+      container.scrollLeft += deltaY;
+    };
+
+    container.addEventListener("wheel", onWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener("wheel", onWheel);
+    };
   }, [itemCount, pauseMode]);
 
   return { scrollRef, setCardRef };
