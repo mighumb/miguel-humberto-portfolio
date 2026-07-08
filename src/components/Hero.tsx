@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
+import HeroNav from "./HeroNav";
 
 const HeroScene = dynamic(() => import("./HeroScene"), {
   ssr: false,
@@ -25,7 +26,7 @@ export default function Hero() {
 
   return (
     <section
-      className="relative flex min-h-[88vh] w-full items-center justify-center overflow-hidden"
+      className="relative flex min-h-screen w-full flex-col overflow-hidden"
       style={{ background: "var(--bg-primary)" }}
       aria-label="Introduction"
     >
@@ -50,7 +51,9 @@ export default function Hero() {
         </div>
       )}
 
-      <div className="relative z-10 mx-auto max-w-4xl px-6 py-24 text-center md:px-10">
+      <HeroNav />
+
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-20 text-center md:px-10 md:pb-24">
         <p className="mb-3 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
           Portfolio
         </p>
