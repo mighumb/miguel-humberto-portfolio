@@ -142,13 +142,9 @@ html.is-closing-flip .work-scroll-stage {
 .work-card-title.work-card-flip-active,
 .work-card-year.work-card-flip-active,
 .work-card-tags.work-card-flip-active {
-  overflow: hidden;
-  will-change: top, left, width, height;
-}
-
-.work-card-flip-placeholder {
-  pointer-events: none;
-  visibility: hidden;
+  position: relative;
+  z-index: 1;
+  will-change: transform;
 }
 
 .project-shared-flight {
