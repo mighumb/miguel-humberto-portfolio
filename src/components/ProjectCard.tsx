@@ -40,9 +40,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     videoRef.current.currentTime = 0;
   };
 
-  const handleOpen = () => {
-    if (shouldIgnoreWorkCardClick(visualRef.current)) return;
-
+  const openFromCard = () => {
     const visual = visualRef.current;
     const title = titleRef.current;
     const card = visual?.closest<HTMLElement>("[data-project-id]");
@@ -79,10 +77,16 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     });
   };
 
+  const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+    if (shouldIgnoreWorkCardClick(event.currentTarget)) return;
+    openFromCard();
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleOpen();
+      if (shouldIgnoreWorkCardClick(event.currentTarget)) return;
+      openFromCard();
     }
   };
 
@@ -98,7 +102,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[88vw] max-w-[68rem] shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
+      className="work-card-focus group w-[88vw] max-w-[68rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">

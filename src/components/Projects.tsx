@@ -24,7 +24,7 @@ import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
 function ScrollGutter() {
-  return <div aria-hidden className="shrink-0 w-6 md:w-10" />;
+  return <div aria-hidden className="work-scroll-gutter shrink-0 w-6 md:w-10" />;
 }
 
 type TransitionPhase = "idle" | "opening" | "open" | "closing";
