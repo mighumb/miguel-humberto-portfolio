@@ -6,7 +6,7 @@ const MAX_ROTATE_Y = 14;
 const MAX_TRANSLATE_Z = -220;
 const MAX_SHIFT_Y = 44;
 const SCALE_DROP = 0.1;
-const MAX_BLUR = 2.5;
+const MAX_BLUR = 0.6;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));

@@ -37,7 +37,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   return (
     <article
       ref={ref}
-      className="work-card-focus group w-[78vw] max-w-[64rem] shrink-0 snap-start md:w-[75vw] lg:w-[72vw]"
+      className="work-card-focus group w-[78vw] max-w-[64rem] shrink-0 md:w-[75vw] lg:w-[72vw]"
     >
       <button
         type="button"
