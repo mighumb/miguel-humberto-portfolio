@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
@@ -25,6 +26,20 @@ export default function ProjectModal({
   const { locale } = useLocale();
   const t = translations[locale];
   const mt = t.modal;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -40,9 +55,11 @@ export default function ProjectModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto"
+      className="fixed inset-0 z-[200] overflow-y-auto"
       style={{ background: "var(--modal-bg)" }}
       role="dialog"
       aria-modal="true"
@@ -252,6 +269,7 @@ export default function ProjectModal({
           </div>
         </section>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -23,12 +23,10 @@ export default function Projects() {
     const index = projects.findIndex((p) => p.id === project.id);
     setActiveIndex(index);
     setActiveProject(project);
-    document.body.style.overflow = "hidden";
   };
 
   const closeModal = () => {
     setActiveProject(null);
-    document.body.style.overflow = "";
   };
 
   const navigate = (direction: "prev" | "next") => {
