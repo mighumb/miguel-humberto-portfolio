@@ -400,7 +400,15 @@ export default function Projects() {
     >
       <h2 className="sr-only">{t.projects}</h2>
 
-      <div className="mb-6 px-6 md:mb-8 md:px-10">
+      <div className="mb-6 flex items-center gap-4 px-6 md:mb-8 md:px-10">
+        <span
+          className="text-xs tracking-widest text-text-secondary uppercase tabular-nums"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
+          {String(projects.length).padStart(2, "0")}
+        </span>
         <WorkCarouselNav
           onPrev={() => scrollCarouselBy("prev")}
           onNext={() => scrollCarouselBy("next")}
