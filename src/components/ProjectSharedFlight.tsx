@@ -20,8 +20,6 @@ interface ProjectSharedFlightProps {
   onComplete: () => void;
 }
 
-const FLIGHT_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-
 function FlightThumbnail({
   project,
   showVideo,
