@@ -8,6 +8,7 @@ import { projects, type Project } from "@/lib/projects";
 import {
   prefersReducedMotion,
   measureCardOrigin,
+  invertFlight,
   type CardOrigin,
   type FlightPair,
   type ModalTargets,
@@ -35,12 +36,15 @@ export default function Projects() {
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
+  const openFlightRef = useRef<FlightPair | null>(null);
+  const prevPhaseRef = useRef<TransitionPhase>("idle");
   const hadActiveProjectRef = useRef(false);
   const savedWorkScrollLeftRef = useRef(0);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
-  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, !!activeProject);
+  const pauseWorkFocus = phase === "open" || (phase === "opening" && flight !== null);
+  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, pauseWorkFocus);
 
   phaseRef.current = phase;
   cardOriginRef.current = cardOrigin;
@@ -78,6 +82,7 @@ export default function Projects() {
     setSharedHiddenId(null);
     setSharedContentVisible(false);
     setFlightShowVideo(false);
+    openFlightRef.current = null;
   }, []);
 
   const closeModal = useCallback(() => {
@@ -87,6 +92,22 @@ export default function Projects() {
     setActiveProject(null);
     resetTransition();
   }, [resetTransition]);
+
+  useLayoutEffect(() => {
+    const enteredClosing = phase === "closing" && prevPhaseRef.current !== "closing";
+    prevPhaseRef.current = phase;
+    if (!enteredClosing) return;
+
+    const project = activeProjectRef.current;
+    const openFlight = openFlightRef.current;
+    if (!project || !openFlight) {
+      closeModal();
+      return;
+    }
+
+    setSharedHiddenId(project.id);
+    setFlight(invertFlight(openFlight));
+  }, [phase, closeModal]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
     const index = projects.findIndex((p) => p.id === project.id);
@@ -119,22 +140,26 @@ export default function Projects() {
     const origin = cardOriginRef.current;
     if (!project || !origin) return;
 
-    const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
+    const nextFlight: FlightPair = {
+      direction: "open",
+      thumbnail: { from: origin.thumbnail, to: targets.thumbnail },
+      title: {
+        from: origin.title,
+        to: targets.title,
+        fromFontSize: origin.titleFontSize,
+        toFontSize: targets.titleFontSize,
+      },
+      year: {
+        from: origin.year,
+        to: targets.year,
+        fromFontSize: origin.yearFontSize,
+        toFontSize: targets.yearFontSize,
+      },
+      tags: { from: origin.tags, to: targets.tags },
+    };
 
-    setFlight((current) => {
-      if (current) return current;
-
-      return {
-        direction: "open",
-        thumbnail: { from: freshOrigin.thumbnail, to: targets.thumbnail },
-        title: {
-          from: freshOrigin.title,
-          to: targets.title,
-          fromFontSize: freshOrigin.titleFontSize,
-          toFontSize: targets.titleFontSize,
-        },
-      };
-    });
+    openFlightRef.current = nextFlight;
+    setFlight(nextFlight);
     setSharedHiddenId(project.id);
   }, []);
 
@@ -168,36 +193,14 @@ export default function Projects() {
       return;
     }
 
-    const modalTargets = measureRef.current?.();
-    if (!modalTargets) {
+    if (!openFlightRef.current) {
       closeModal();
       return;
     }
 
-    setPhase("closing");
     setSharedContentVisible(false);
-    setSharedHiddenId(activeProject.id);
-
-    const cardOriginAtClose = measureCardOrigin(activeProject.id, flightShowVideo);
-    if (!cardOriginAtClose) {
-      closeModal();
-      return;
-    }
-
-    setFlight({
-      direction: "close",
-      thumbnail: {
-        from: modalTargets.thumbnail,
-        to: cardOriginAtClose.thumbnail,
-      },
-      title: {
-        from: modalTargets.title,
-        to: cardOriginAtClose.title,
-        fromFontSize: modalTargets.titleFontSize,
-        toFontSize: cardOriginAtClose.titleFontSize,
-      },
-    });
-  }, [activeProject, closeModal, flightShowVideo]);
+    setPhase("closing");
+  }, [activeProject, closeModal]);
 
   const navigate = (direction: "prev" | "next") => {
     const newIndex =

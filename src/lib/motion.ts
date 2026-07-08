@@ -9,6 +9,9 @@ export interface CardOrigin {
   thumbnail: ElementRect;
   title: ElementRect;
   titleFontSize: string;
+  year: ElementRect;
+  yearFontSize: string;
+  tags: ElementRect;
   showVideo: boolean;
 }
 
@@ -16,11 +19,28 @@ export interface ModalTargets {
   thumbnail: ElementRect;
   title: ElementRect;
   titleFontSize: string;
+  year: ElementRect;
+  yearFontSize: string;
+  tags: ElementRect;
+}
+
+export interface FlightTitlePair {
+  from: ElementRect;
+  to: ElementRect;
+  fromFontSize: string;
+  toFontSize: string;
+}
+
+export interface FlightRectPair {
+  from: ElementRect;
+  to: ElementRect;
 }
 
 export interface FlightPair {
-  thumbnail: { from: ElementRect; to: ElementRect };
-  title: { from: ElementRect; to: ElementRect; fromFontSize: string; toFontSize: string };
+  thumbnail: FlightRectPair;
+  title: FlightTitlePair;
+  year: FlightTitlePair;
+  tags: FlightRectPair;
   direction: "open" | "close";
 }
 
@@ -42,13 +62,38 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
   const card = document.querySelector(`[data-project-id="${projectId}"]`);
   const visual = card?.querySelector<HTMLElement>(".work-card-visual");
   const title = card?.querySelector<HTMLElement>(".work-card-title");
-  if (!visual || !title) return null;
+  const year = card?.querySelector<HTMLElement>(".work-card-year");
+  const tags = card?.querySelector<HTMLElement>(".work-card-tags");
+  if (!visual || !title || !year || !tags) return null;
 
   return {
     thumbnail: toRect(visual.getBoundingClientRect()),
     title: toRect(title.getBoundingClientRect()),
     titleFontSize: getComputedStyle(title).fontSize,
+    year: toRect(year.getBoundingClientRect()),
+    yearFontSize: getComputedStyle(year).fontSize,
+    tags: toRect(tags.getBoundingClientRect()),
     showVideo,
+  };
+}
+
+export function invertFlight(flight: FlightPair): FlightPair {
+  return {
+    direction: "close",
+    thumbnail: { from: flight.thumbnail.to, to: flight.thumbnail.from },
+    title: {
+      from: flight.title.to,
+      to: flight.title.from,
+      fromFontSize: flight.title.toFontSize,
+      toFontSize: flight.title.fromFontSize,
+    },
+    year: {
+      from: flight.year.to,
+      to: flight.year.from,
+      fromFontSize: flight.year.toFontSize,
+      toFontSize: flight.year.fromFontSize,
+    },
+    tags: { from: flight.tags.to, to: flight.tags.from },
   };
 }
 

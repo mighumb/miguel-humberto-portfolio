@@ -91,7 +91,9 @@ body {
 }
 
 .project-shared-flight-thumb,
-.project-shared-flight-title {
+.project-shared-flight-title,
+.project-shared-flight-year,
+.project-shared-flight-tags {
   position: fixed;
   z-index: 1;
   will-change: top, left, width, height;
@@ -102,7 +104,8 @@ body {
     height 0.56s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.project-shared-flight-title {
+.project-shared-flight-title,
+.project-shared-flight-year {
   display: flex;
   align-items: flex-start;
   overflow: hidden;
@@ -128,7 +131,9 @@ body {
   .project-modal-backdrop,
   .project-shared-flight,
   .project-shared-flight-thumb,
-  .project-shared-flight-title {
+  .project-shared-flight-title,
+  .project-shared-flight-year,
+  .project-shared-flight-tags {
     transition: none !important;
   }
 }

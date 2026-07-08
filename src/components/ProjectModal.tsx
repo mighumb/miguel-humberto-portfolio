@@ -60,18 +60,25 @@ export default function ProjectModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const yearRef = useRef<HTMLSpanElement>(null);
+  const tagsRef = useRef<HTMLDivElement>(null);
 
   useScrollLock(true);
 
   const measureTargets = useCallback((): ModalTargets | null => {
     const hero = heroRef.current;
     const title = titleRef.current;
-    if (!hero || !title) return null;
+    const year = yearRef.current;
+    const tags = tagsRef.current;
+    if (!hero || !title || !year || !tags) return null;
 
     return {
       thumbnail: toRect(hero.getBoundingClientRect()),
       title: toRect(title.getBoundingClientRect()),
       titleFontSize: getComputedStyle(title).fontSize,
+      year: toRect(year.getBoundingClientRect()),
+      yearFontSize: getComputedStyle(year).fontSize,
+      tags: toRect(tags.getBoundingClientRect()),
     };
   }, []);
 
@@ -213,17 +220,28 @@ export default function ProjectModal({
               </div>
 
               <div className="mt-8">
-                <h2
-                  ref={titleRef}
-                  className={`project-modal-title text-2xl font-medium tracking-tight text-text-primary md:text-4xl ${
-                    sharedHidden ? "is-shared-hidden" : ""
-                  }`}
-                >
-                  {project.title[locale]}
-                </h2>
+                <div className="flex items-baseline justify-between gap-4">
+                  <h2
+                    ref={titleRef}
+                    className={`project-modal-title text-2xl font-medium tracking-tight text-text-primary md:text-4xl ${
+                      sharedHidden ? "is-shared-hidden" : ""
+                    }`}
+                  >
+                    {project.title[locale]}
+                  </h2>
+                  <span
+                    ref={yearRef}
+                    className={`work-modal-year shrink-0 text-xs text-text-secondary md:text-sm ${
+                      sharedHidden ? "is-shared-hidden" : ""
+                    }`}
+                  >
+                    {project.year}
+                  </span>
+                </div>
                 <div
-                  className={`mt-4 flex flex-wrap items-center gap-2 transition-opacity duration-300 ${
-                    sharedContentVisible ? "opacity-100" : "opacity-0"
+                  ref={tagsRef}
+                  className={`work-modal-tags mt-4 flex flex-wrap gap-2 ${
+                    sharedHidden ? "is-shared-hidden" : ""
                   }`}
                 >
                   {project.tags.map((tag) => (
@@ -234,7 +252,6 @@ export default function ProjectModal({
                       {tag}
                     </span>
                   ))}
-                  <span className="text-sm text-text-secondary">{project.year}</span>
                 </div>
               </div>
             </div>

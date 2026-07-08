@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 const CARD_PERSPECTIVE = 1100;
 const MAX_ROTATE_Y = 17;
@@ -20,7 +20,7 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
     cardRefs.current[index] = element;
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 

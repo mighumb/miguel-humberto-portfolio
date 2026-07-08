@@ -41,8 +41,17 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const handleOpen = () => {
     const visual = visualRef.current;
     const title = titleRef.current;
+    const card = visual?.closest<HTMLElement>("[data-project-id]");
 
-    if (!visual || !title) {
+    if (!visual || !title || !card) {
+      onOpen(project, null);
+      return;
+    }
+
+    const year = card.querySelector<HTMLElement>(".work-card-year");
+    const tags = card.querySelector<HTMLElement>(".work-card-tags");
+
+    if (!year || !tags) {
       onOpen(project, null);
       return;
     }
@@ -51,6 +60,9 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       thumbnail: toRect(visual.getBoundingClientRect()),
       title: toRect(title.getBoundingClientRect()),
       titleFontSize: getComputedStyle(title).fontSize,
+      year: toRect(year.getBoundingClientRect()),
+      yearFontSize: getComputedStyle(year).fontSize,
+      tags: toRect(tags.getBoundingClientRect()),
       showVideo: isHovering && !!project.hasVideo,
     });
   };
@@ -125,10 +137,12 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
             >
               {project.title[locale]}
             </h3>
-            <span className="shrink-0 text-xs text-text-secondary">{project.year}</span>
+            <span className={`work-card-year shrink-0 text-xs text-text-secondary ${hiddenClass}`}>
+              {project.year}
+            </span>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className={`work-card-tags flex flex-wrap gap-1.5 ${hiddenClass}`}>
             {project.tags.map((tag) => (
               <span
                 key={tag}

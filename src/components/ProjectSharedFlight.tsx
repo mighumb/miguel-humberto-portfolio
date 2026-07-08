@@ -1,9 +1,10 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   prefersReducedMotion,
+  SHARED_TRANSITION_MS,
   type ElementRect,
   type FlightPair,
 } from "@/lib/motion";
@@ -18,6 +19,8 @@ interface ProjectSharedFlightProps {
   onLanding: () => void;
   onComplete: () => void;
 }
+
+const FLIGHT_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 function FlightThumbnail({
   project,
@@ -91,6 +94,68 @@ function FlightTitle({
   );
 }
 
+function FlightYear({
+  year,
+  frame,
+  fontSize,
+}: {
+  year: string;
+  frame: ElementRect;
+  fontSize: string;
+}) {
+  return (
+    <div
+      className="project-shared-flight-year shrink-0 text-text-secondary"
+      style={{
+        top: frame.top,
+        left: frame.left,
+        width: frame.width,
+        height: frame.height,
+        fontSize,
+      }}
+    >
+      {year}
+    </div>
+  );
+}
+
+function FlightTags({
+  tags,
+  frame,
+  variant,
+}: {
+  tags: string[];
+  frame: ElementRect;
+  variant: "card" | "modal";
+}) {
+  const isCard = variant === "card";
+
+  return (
+    <div
+      className={`project-shared-flight-tags flex flex-wrap items-center ${
+        isCard ? "gap-1.5" : "gap-2"
+      }`}
+      style={{
+        top: frame.top,
+        left: frame.left,
+        width: frame.width,
+        height: frame.height,
+      }}
+    >
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className={`rounded-full bg-bg-secondary text-text-secondary ${
+            isCard ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-xs"
+          }`}
+        >
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function ProjectSharedFlight({
   project,
   locale,
@@ -102,13 +167,31 @@ export default function ProjectSharedFlight({
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
   const [titleFrame, setTitleFrame] = useState(flight.title.from);
   const [titleFontSize, setTitleFontSize] = useState(flight.title.fromFontSize);
+  const [yearFrame, setYearFrame] = useState(flight.year.from);
+  const [yearFontSize, setYearFontSize] = useState(flight.year.fromFontSize);
+  const [tagsFrame, setTagsFrame] = useState(flight.tags.from);
+  const [tagsVariant, setTagsVariant] = useState<"card" | "modal">(
+    flight.direction === "open" ? "card" : "modal",
+  );
   const [opacity, setOpacity] = useState(1);
   const completedRef = useRef(false);
   const thumbRef = useRef<HTMLDivElement>(null);
+  const onLandingRef = useRef(onLanding);
+  const onCompleteRef = useRef(onComplete);
+  onLandingRef.current = onLanding;
+  onCompleteRef.current = onComplete;
+
+  const finish = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    onLandingRef.current();
+    setOpacity(0);
+    window.setTimeout(() => onCompleteRef.current(), 100);
+  }, []);
 
   useLayoutEffect(() => {
     if (prefersReducedMotion()) {
-      onComplete();
+      onCompleteRef.current();
       return;
     }
 
@@ -117,25 +200,30 @@ export default function ProjectSharedFlight({
     setThumbFrame(flight.thumbnail.from);
     setTitleFrame(flight.title.from);
     setTitleFontSize(flight.title.fromFontSize);
+    setYearFrame(flight.year.from);
+    setYearFontSize(flight.year.fromFontSize);
+    setTagsFrame(flight.tags.from);
+    setTagsVariant(flight.direction === "open" ? "card" : "modal");
 
     const start = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setThumbFrame(flight.thumbnail.to);
         setTitleFrame(flight.title.to);
         setTitleFontSize(flight.title.toFontSize);
+        setYearFrame(flight.year.to);
+        setYearFontSize(flight.year.toFontSize);
+        setTagsFrame(flight.tags.to);
+        setTagsVariant(flight.direction === "open" ? "modal" : "card");
       });
     });
 
-    return () => cancelAnimationFrame(start);
-  }, [flight, onComplete]);
+    const timeout = window.setTimeout(finish, SHARED_TRANSITION_MS + 80);
 
-  const finish = () => {
-    if (completedRef.current) return;
-    completedRef.current = true;
-    onLanding();
-    setOpacity(0);
-    window.setTimeout(onComplete, 100);
-  };
+    return () => {
+      cancelAnimationFrame(start);
+      window.clearTimeout(timeout);
+    };
+  }, [flight, finish]);
 
   if (typeof document === "undefined") return null;
 
@@ -158,6 +246,8 @@ export default function ProjectSharedFlight({
           frame={titleFrame}
           fontSize={titleFontSize}
         />
+        <FlightYear year={project.year} frame={yearFrame} fontSize={yearFontSize} />
+        <FlightTags tags={project.tags} frame={tagsFrame} variant={tagsVariant} />
       </div>
     </div>,
     document.body,
