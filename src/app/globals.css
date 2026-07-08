@@ -83,6 +83,13 @@ body {
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  scroll-padding-inline: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .work-scroll {
+    scroll-padding-inline: 2.5rem;
+  }
 }
 
 .work-scroll::-webkit-scrollbar {

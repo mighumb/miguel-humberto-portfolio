@@ -7,6 +7,10 @@ import { projects, type Project } from "@/lib/projects";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 
+function ScrollGutter() {
+  return <div aria-hidden className="shrink-0 w-6 md:w-10" />;
+}
+
 export default function Projects() {
   const { locale } = useLocale();
   const t = translations[locale];
@@ -44,15 +48,16 @@ export default function Projects() {
 
       <div className="relative mt-12 md:mt-16">
         <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-bg-primary to-transparent md:w-20"
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-bg-primary to-transparent md:w-12"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-bg-primary to-transparent md:w-20"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
           aria-hidden
         />
 
-        <div className="work-scroll flex items-start gap-5 overflow-x-auto px-6 pb-4 snap-x snap-mandatory md:gap-8 md:px-10">
+        <div className="work-scroll flex items-start gap-5 overflow-x-auto overscroll-x-contain pb-4 snap-x snap-proximity scroll-smooth md:gap-8">
+          <ScrollGutter />
           {projects.map((project, index) => (
             <ProjectCard
               key={project.id}
@@ -61,6 +66,7 @@ export default function Projects() {
               onOpen={openProject}
             />
           ))}
+          <ScrollGutter />
         </div>
       </div>
 

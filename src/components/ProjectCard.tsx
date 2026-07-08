@@ -5,14 +5,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
 
-const LAYOUTS = [
-  { width: "w-[82vw] sm:w-[28rem] md:w-[44rem]", aspect: "aspect-[16/10]", offset: "" },
-  { width: "w-[72vw] sm:w-[24rem] md:w-[32rem]", aspect: "aspect-[4/3]", offset: "md:mt-20" },
-  { width: "w-[76vw] sm:w-[26rem] md:w-[36rem]", aspect: "aspect-[4/3]", offset: "md:mt-8" },
-  { width: "w-[82vw] sm:w-[28rem] md:w-[42rem]", aspect: "aspect-[16/10]", offset: "md:mt-24" },
-  { width: "w-[68vw] sm:w-[22rem] md:w-[30rem]", aspect: "aspect-[4/3]", offset: "" },
-  { width: "w-[74vw] sm:w-[25rem] md:w-[34rem]", aspect: "aspect-[4/3]", offset: "md:mt-16" },
-] as const;
+const VERTICAL_OFFSETS = ["", "md:mt-16", "md:mt-8", "md:mt-20", "", "md:mt-12"] as const;
 
 interface ProjectCardProps {
   project: Project;
@@ -25,7 +18,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
   const t = translations[locale];
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHovering, setIsHovering] = useState(false);
-  const layout = LAYOUTS[index % LAYOUTS.length];
+  const offset = VERTICAL_OFFSETS[index % VERTICAL_OFFSETS.length];
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -44,7 +37,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
 
   return (
     <article
-      className={`group shrink-0 snap-start ${layout.width} ${layout.offset}`}
+      className={`group w-[76vw] shrink-0 snap-start sm:w-[26rem] md:w-[32rem] ${offset}`}
     >
       <button
         type="button"
@@ -55,7 +48,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
         aria-label={`${t.viewProject}: ${project.title[locale]}`}
       >
         <div
-          className={`relative ${layout.aspect} w-full overflow-hidden rounded-xl`}
+          className="relative aspect-[4/3] w-full overflow-hidden rounded-xl"
           style={{ background: "var(--placeholder)" }}
         >
           <div
