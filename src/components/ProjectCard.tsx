@@ -48,7 +48,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
         aria-label={`${t.viewProject}: ${project.title[locale]}`}
       >
         <div
-          className="relative aspect-[4/3] w-full overflow-hidden rounded-xl"
+          className="relative aspect-video w-full overflow-hidden rounded-xl"
           style={{ background: "var(--placeholder)" }}
         >
           <div
