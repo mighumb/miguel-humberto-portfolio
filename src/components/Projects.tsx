@@ -8,7 +8,6 @@ import { projects, type Project } from "@/lib/projects";
 import {
   prefersReducedMotion,
   measureCardOrigin,
-  buildCloseFlight,
   type CardOrigin,
   type CardPerspective,
   type FlightPair,
@@ -16,10 +15,10 @@ import {
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
 import {
-  FLAT_PERSPECTIVE,
   captureCardPerspectives,
   restoreCardPerspectives,
 } from "@/lib/workCardFocus";
+import { runFlipClose } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -70,6 +69,7 @@ export default function Projects() {
   const [flightVideoTime, setFlightVideoTime] = useState(0);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
+  const flipCleanupRef = useRef<(() => void) | null>(null);
   const openFlightRef = useRef<FlightPair | null>(null);
   const prevPhaseRef = useRef<TransitionPhase>("idle");
   const hadActiveProjectRef = useRef(false);
@@ -127,6 +127,8 @@ export default function Projects() {
   }, [activeProject, scrollRef]);
 
   const resetTransition = useCallback(() => {
+    flipCleanupRef.current?.();
+    flipCleanupRef.current = null;
     document.documentElement.classList.remove("is-closing-flip");
     setPhase("idle");
     setCardOrigin(null);
@@ -162,16 +164,28 @@ export default function Projects() {
 
     restoreFrozenCarousel(scrollRef, savedWorkScrollLeftRef.current, snapshot);
 
-    const measuredOrigin = measureCardOrigin(project.id, flightShowVideo);
-    if (!measuredOrigin) {
-      closeModal();
-      return;
-    }
+    flipCleanupRef.current?.();
+    flipCleanupRef.current = runFlipClose({
+      projectId: project.id,
+      modalTargets,
+      onComplete: () => {
+        restoreFrozenCarousel(
+          scrollRef,
+          savedWorkScrollLeftRef.current,
+          carouselSnapshotRef.current,
+        );
 
-    const closeFlight = buildCloseFlight(modalTargets, measuredOrigin);
-    openFlightRef.current = closeFlight;
-    setFlight(closeFlight);
-  }, [phase, closeModal, scrollRef, flightShowVideo]);
+        closedViaTransitionRef.current = true;
+        flipCleanupRef.current = null;
+        closeModal();
+      },
+    });
+
+    return () => {
+      flipCleanupRef.current?.();
+      flipCleanupRef.current = null;
+    };
+  }, [phase, closeModal, scrollRef]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
     const index = projects.findIndex((p) => p.id === project.id);
@@ -241,20 +255,6 @@ export default function Projects() {
     setFlight(null);
   }, []);
 
-  const handleFlightComplete = useCallback(() => {
-    if (phaseRef.current !== "closing") return;
-
-    restoreFrozenCarousel(
-      scrollRef,
-      savedWorkScrollLeftRef.current,
-      carouselSnapshotRef.current,
-    );
-
-    closedViaTransitionRef.current = true;
-    setFlight(null);
-    closeModal();
-  }, [closeModal, scrollRef]);
-
   const requestClose = useCallback(() => {
     if (!activeProject || prefersReducedMotion()) {
       closeModal();
@@ -269,7 +269,7 @@ export default function Projects() {
 
     closeTargetsRef.current = modalTargets;
     setSharedContentVisible(false);
-    setSharedHiddenId(activeProject.id);
+    setSharedHiddenId(null);
     setPhase("closing");
   }, [activeProject, closeModal]);
 
@@ -349,7 +349,7 @@ export default function Projects() {
         />
       )}
 
-      {activeProject && flight && (
+      {activeProject && flight?.direction === "open" && (
         <ProjectSharedFlight
           project={activeProject}
           locale={locale}
@@ -357,7 +357,6 @@ export default function Projects() {
           showVideo={flightShowVideo}
           videoTime={flightVideoTime}
           onLanding={handleFlightLanding}
-          onComplete={handleFlightComplete}
         />
       )}
     </section>

@@ -43,6 +43,7 @@ export function useWorkScrollFocus(
     }
 
     const snapshot = snapshotRef?.current;
+    const hadSnapshot = Boolean(snapshot);
     if (snapshot) {
       restoreCardPerspectives(container, snapshot);
       snapshotRef.current = null;
@@ -98,8 +99,14 @@ export function useWorkScrollFocus(
       });
     };
 
-    update();
-    requestAnimationFrame(update);
+    if (hadSnapshot) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(update);
+      });
+    } else {
+      update();
+      requestAnimationFrame(update);
+    }
 
     container.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
