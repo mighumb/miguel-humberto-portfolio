@@ -13,7 +13,7 @@ export default function Contact() {
         <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.contactTitle}
         </h2>
-        <p className="mx-auto mt-6 max-w-md text-base text-text-secondary md:text-lg">
+        <p className="mx-auto mt-6 max-w-xl text-pretty text-base text-text-secondary md:text-lg md:whitespace-nowrap">
           {t.contactSubtitle}
         </p>
 
