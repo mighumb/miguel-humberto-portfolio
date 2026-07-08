@@ -7,13 +7,11 @@ import Contact from "@/components/Contact";
 export default function Home() {
   return (
     <main>
-      <div className="relative">
-        <AmbientBackground />
-        <div className="relative z-[1]">
-          <Hero />
-          <Projects />
-          <Manifesto />
-        </div>
+      <AmbientBackground />
+      <div className="relative z-[1]">
+        <Hero />
+        <Projects />
+        <Manifesto />
       </div>
       <Contact />
     </main>

@@ -20,7 +20,7 @@ export default function AmbientBackground() {
   }, []);
 
   return (
-    <div className="ambient-background pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden>
+    <div className="ambient-background pointer-events-none fixed inset-0 z-0" aria-hidden>
       {!reducedMotion && <HeroScene />}
 
       {reducedMotion && (
