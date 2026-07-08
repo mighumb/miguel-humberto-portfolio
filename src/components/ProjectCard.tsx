@@ -5,22 +5,18 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
 
-import { type ThumbnailRect, toThumbnailRect } from "@/lib/thumbnailTransition";
-
 interface ProjectCardProps {
   project: Project;
-  onOpen: (project: Project, origin: ThumbnailRect | null) => void;
-  isThumbnailHidden?: boolean;
+  onOpen: (project: Project) => void;
 }
 
 const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
-  { project, onOpen, isThumbnailHidden = false },
+  { project, onOpen },
   ref,
 ) {
   const { locale } = useLocale();
   const t = translations[locale];
   const videoRef = useRef<HTMLVideoElement>(null);
-  const visualRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const handleMouseEnter = () => {
@@ -38,25 +34,19 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     }
   };
 
-  const handleOpen = () => {
-    const rect = visualRef.current?.getBoundingClientRect();
-    onOpen(project, rect ? toThumbnailRect(rect) : null);
-  };
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      handleOpen();
+      onOpen(project);
     }
   };
 
   return (
     <article
       ref={ref}
-      data-project-id={project.id}
       role="button"
       tabIndex={0}
-      onClick={handleOpen}
+      onClick={() => onOpen(project)}
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -64,12 +54,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">
-        <div
-          ref={visualRef}
-          className={`work-card-visual relative aspect-video w-full overflow-hidden rounded-xl bg-bg-primary transition-opacity duration-200 ${
-            isThumbnailHidden ? "opacity-0" : "opacity-100"
-          }`}
-        >
+        <div className="work-card-visual relative aspect-video w-full overflow-hidden rounded-xl bg-bg-primary">
           <div className="work-card-media relative h-full w-full">
             <div className="absolute inset-0">
               <div

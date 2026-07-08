@@ -5,7 +5,6 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useWorkScrollFocus } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
-import { type ThumbnailRect } from "@/lib/thumbnailTransition";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 
@@ -18,27 +17,16 @@ export default function Projects() {
   const t = translations[locale];
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [thumbnailOrigin, setThumbnailOrigin] = useState<ThumbnailRect | null>(null);
-  const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, !!activeProject);
 
-  const openProject = (project: Project, origin: ThumbnailRect | null) => {
+  const openProject = (project: Project) => {
     const index = projects.findIndex((p) => p.id === project.id);
     setActiveIndex(index);
-    setThumbnailOrigin(origin);
-    setOpeningProjectId(origin ? project.id : null);
     setActiveProject(project);
   };
 
   const closeModal = () => {
     setActiveProject(null);
-    setThumbnailOrigin(null);
-    setOpeningProjectId(null);
-  };
-
-  const handleThumbnailTransitionComplete = () => {
-    setThumbnailOrigin(null);
-    setOpeningProjectId(null);
   };
 
   const navigate = (direction: "prev" | "next") => {
@@ -80,7 +68,6 @@ export default function Projects() {
                 ref={setCardRef(index)}
                 project={project}
                 onOpen={openProject}
-                isThumbnailHidden={openingProjectId === project.id}
               />
             ))}
             <ScrollGutter />
@@ -96,8 +83,6 @@ export default function Projects() {
           onNext={() => navigate("next")}
           currentIndex={activeIndex}
           total={projects.length}
-          thumbnailOrigin={thumbnailOrigin}
-          onThumbnailTransitionComplete={handleThumbnailTransitionComplete}
         />
       )}
     </section>
