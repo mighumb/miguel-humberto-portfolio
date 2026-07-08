@@ -90,14 +90,15 @@ body {
 }
 
 .work-card-focus {
-  background: transparent;
-}
-
-.work-card-body {
   transform-origin: bottom center;
   transform-style: preserve-3d;
   backface-visibility: hidden;
   will-change: transform, opacity;
+  background: transparent;
+}
+
+.work-card-body {
+  transform-style: preserve-3d;
 }
 
 .work-card-meta {
@@ -109,8 +110,9 @@ body {
 }
 
 .work-scroll-3d {
-  perspective: 1400px;
-  perspective-origin: 22% 72%;
+  perspective: 1200px;
+  perspective-origin: 20% 78%;
+  transform-style: preserve-3d;
 }
 
 .work-card-media {
@@ -128,7 +130,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .work-card-body {
+  .work-card-focus {
     transform: none !important;
     opacity: 1 !important;
   }
