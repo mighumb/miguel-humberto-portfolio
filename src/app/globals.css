@@ -69,60 +69,48 @@ body {
 .project-modal-backdrop {
   background: var(--modal-bg);
   opacity: 0;
-  transition: opacity 0.38s ease;
+  transition: opacity 0.4s ease;
 }
 
-.project-modal-backdrop.visible {
+.project-modal-backdrop.is-visible {
   opacity: 1;
 }
 
-.project-modal-backdrop.leaving {
-  opacity: 0;
-  transition-duration: 0.28s;
-}
-
-.project-modal-panel {
-  opacity: 0;
-  transform: translateY(12px);
+.project-shared-flight-thumb,
+.project-shared-flight-title {
+  position: fixed;
+  z-index: 1;
+  will-change: top, left, width, height;
   transition:
-    opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    top 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.56s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.project-modal-panel.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.project-modal-panel.leaving {
-  opacity: 0;
-  transform: translateY(8px);
-  transition-duration: 0.28s;
-}
-
-.project-modal-hero {
+.project-shared-flight-title {
+  display: flex;
+  align-items: flex-start;
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 1.2;
   transition:
-    opacity 0.32s ease,
-    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    top 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    font-size 0.56s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.project-modal-hero.is-visible {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.project-modal-hero.is-switching {
-  opacity: 0;
-  transform: scale(0.985);
+.is-shared-hidden {
+  visibility: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .project-modal-backdrop,
-  .project-modal-panel,
-  .project-modal-hero {
+  .project-shared-flight-thumb,
+  .project-shared-flight-title {
     transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
   }
 }
 

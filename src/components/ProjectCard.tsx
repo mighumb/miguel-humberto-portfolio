@@ -3,20 +3,24 @@
 import { forwardRef, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
+import { toRect, type CardOrigin } from "@/lib/motion";
 import { type Project } from "@/lib/projects";
 
 interface ProjectCardProps {
   project: Project;
-  onOpen: (project: Project) => void;
+  onOpen: (project: Project, origin: CardOrigin | null) => void;
+  isSharedHidden?: boolean;
 }
 
 const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
-  { project, onOpen },
+  { project, onOpen, isSharedHidden = false },
   ref,
 ) {
   const { locale } = useLocale();
   const t = translations[locale];
   const videoRef = useRef<HTMLVideoElement>(null);
+  const visualRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const handleMouseEnter = () => {
@@ -34,19 +38,39 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     }
   };
 
+  const handleOpen = () => {
+    const visual = visualRef.current;
+    const title = titleRef.current;
+
+    if (!visual || !title) {
+      onOpen(project, null);
+      return;
+    }
+
+    onOpen(project, {
+      thumbnail: toRect(visual.getBoundingClientRect()),
+      title: toRect(title.getBoundingClientRect()),
+      titleFontSize: getComputedStyle(title).fontSize,
+      showVideo: isHovering && !!project.hasVideo,
+    });
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      onOpen(project);
+      handleOpen();
     }
   };
+
+  const hiddenClass = isSharedHidden ? "is-shared-hidden" : "";
 
   return (
     <article
       ref={ref}
+      data-project-id={project.id}
       role="button"
       tabIndex={0}
-      onClick={() => onOpen(project)}
+      onClick={handleOpen}
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -54,7 +78,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">
-        <div className="work-card-visual relative aspect-video w-full overflow-hidden rounded-xl bg-bg-primary">
+        <div
+          ref={visualRef}
+          className={`work-card-visual relative aspect-video w-full overflow-hidden rounded-xl bg-bg-primary ${hiddenClass}`}
+        >
           <div className="work-card-media relative h-full w-full">
             <div className="absolute inset-0">
               <div
@@ -92,7 +119,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
         <div className="work-card-meta mt-5 space-y-2">
           <div className="flex items-baseline justify-between gap-4">
-            <h3 className="text-lg font-medium tracking-tight text-text-primary md:text-xl">
+            <h3
+              ref={titleRef}
+              className={`work-card-title text-lg font-medium tracking-tight text-text-primary md:text-xl ${hiddenClass}`}
+            >
               {project.title[locale]}
             </h3>
             <span className="shrink-0 text-xs text-text-secondary">{project.year}</span>
