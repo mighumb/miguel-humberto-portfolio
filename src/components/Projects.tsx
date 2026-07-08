@@ -56,7 +56,7 @@ export default function Projects() {
 
         <div
           ref={scrollRef}
-          className="work-scroll flex items-end gap-5 overflow-x-auto overscroll-x-contain pb-14 pt-2 snap-x snap-proximity scroll-smooth md:gap-8"
+          className="work-scroll work-scroll-3d flex items-end gap-5 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-20 pt-4 snap-x snap-proximity scroll-smooth md:gap-8"
         >
           <ScrollGutter />
           {projects.map((project, index) => (

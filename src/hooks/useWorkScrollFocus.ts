@@ -2,8 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
-const SCALE_DROP = 0.14;
-const MAX_SHIFT_Y = 52;
+const MAX_ROTATE_Y = 14;
+const MAX_TRANSLATE_Z = -220;
+const MAX_SHIFT_Y = 44;
+const SCALE_DROP = 0.1;
+const MAX_BLUR = 2.5;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
 
 export function useWorkScrollFocus(itemCount: number) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -34,6 +41,10 @@ export function useWorkScrollFocus(itemCount: number) {
         if (reducedMotion) {
           card.style.transform = "";
           card.style.opacity = "";
+          card.style.filter = "";
+          card.style.boxShadow = "";
+          card.style.setProperty("--media-scale", "1");
+          card.style.setProperty("--media-shift", "0px");
           return;
         }
 
@@ -41,12 +52,32 @@ export function useWorkScrollFocus(itemCount: number) {
         const delta = scrollLeft - idealScroll;
         const step = card.offsetWidth + gap;
         const progress = Math.min(1, Math.abs(delta) / step);
+        const direction = step === 0 ? 0 : delta / step;
+
         const scale = 1 - progress * SCALE_DROP;
         const translateY = progress * MAX_SHIFT_Y;
-        const opacity = 1 - progress * 0.12;
+        const translateZ = progress * MAX_TRANSLATE_Z;
+        const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
+        const opacity = 1 - progress * 0.18;
+        const blur = progress * MAX_BLUR;
+        const mediaScale = 1.06 - progress * 0.06;
+        const mediaShift = progress * -12;
 
-        card.style.transform = `translateY(${translateY}px) scale(${scale})`;
+        card.style.transform = [
+          `translateY(${translateY}px)`,
+          `translateZ(${translateZ}px)`,
+          `rotateY(${rotateY}deg)`,
+          `scale(${scale})`,
+        ].join(" ");
         card.style.opacity = `${opacity}`;
+        card.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
+        card.style.boxShadow =
+          progress > 0.02
+            ? `0 ${12 + progress * 20}px ${32 + progress * 28}px rgba(0, 0, 0, ${0.05 + progress * 0.1})`
+            : "0 24px 48px rgba(0, 0, 0, 0.08)";
+        card.style.setProperty("--media-scale", `${mediaScale}`);
+        card.style.setProperty("--media-shift", `${mediaShift}px`);
+        card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
       });
     };
 

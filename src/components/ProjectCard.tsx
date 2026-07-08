@@ -48,9 +48,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         aria-label={`${t.viewProject}: ${project.title[locale]}`}
       >
         <div
-          className="relative aspect-video w-full overflow-hidden rounded-xl"
+          className="relative aspect-video w-full overflow-hidden rounded-xl work-card-media"
           style={{ background: "var(--placeholder)" }}
         >
+          <div className="work-card-media-inner absolute inset-0">
           <div
             className={`absolute inset-0 transition-opacity duration-400 ${
               isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
@@ -80,6 +81,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
               }`}
             />
           )}
+          </div>
         </div>
 
         <div className="mt-5 space-y-2 pr-2">
