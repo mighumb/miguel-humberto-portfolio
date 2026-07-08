@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useWorkScrollFocus } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
 import ProjectCard from "./ProjectCard";
@@ -16,6 +17,7 @@ export default function Projects() {
   const t = translations[locale];
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length);
 
   const openProject = (project: Project) => {
     const index = projects.findIndex((p) => p.id === project.id);
@@ -52,11 +54,15 @@ export default function Projects() {
           aria-hidden
         />
 
-        <div className="work-scroll flex items-start gap-5 overflow-x-auto overscroll-x-contain pb-4 pt-2 snap-x snap-proximity scroll-smooth md:gap-8">
+        <div
+          ref={scrollRef}
+          className="work-scroll flex items-end gap-5 overflow-x-auto overscroll-x-contain pb-14 pt-2 snap-x snap-proximity scroll-smooth md:gap-8"
+        >
           <ScrollGutter />
-          {projects.map((project) => (
+          {projects.map((project, index) => (
             <ProjectCard
               key={project.id}
+              ref={setCardRef(index)}
               project={project}
               onOpen={openProject}
             />

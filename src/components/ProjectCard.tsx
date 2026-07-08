@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { forwardRef, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
@@ -10,7 +10,10 @@ interface ProjectCardProps {
   onOpen: (project: Project) => void;
 }
 
-export default function ProjectCard({ project, onOpen }: ProjectCardProps) {
+const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
+  { project, onOpen },
+  ref,
+) {
   const { locale } = useLocale();
   const t = translations[locale];
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -33,14 +36,15 @@ export default function ProjectCard({ project, onOpen }: ProjectCardProps) {
 
   return (
     <article
-      className="group w-[78vw] max-w-[64rem] shrink-0 snap-start md:w-[75vw] lg:w-[72vw]"
+      ref={ref}
+      className="work-card-focus group w-[78vw] max-w-[64rem] shrink-0 snap-start md:w-[75vw] lg:w-[72vw]"
     >
       <button
         type="button"
         onClick={() => onOpen(project)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="work-card-3d w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={`${t.viewProject}: ${project.title[locale]}`}
       >
         <div
@@ -117,4 +121,6 @@ export default function ProjectCard({ project, onOpen }: ProjectCardProps) {
       </button>
     </article>
   );
-}
+});
+
+export default ProjectCard;

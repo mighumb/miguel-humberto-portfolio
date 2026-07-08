@@ -96,13 +96,14 @@ body {
   display: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .work-card-3d {
-    transform-style: preserve-3d;
-    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  }
+.work-card-focus {
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+}
 
-  .group:hover .work-card-3d {
-    transform: perspective(1200px) rotateY(-2deg) rotateX(1.5deg) translateY(-6px);
+@media (prefers-reduced-motion: reduce) {
+  .work-card-focus {
+    transform: none !important;
+    opacity: 1 !important;
   }
 }
