@@ -1,3 +1,10 @@
+import {
+  type CardPerspective,
+  computeCardFocus,
+} from "@/lib/workCardFocus";
+
+export type { CardPerspective };
+
 export interface ElementRect {
   top: number;
   left: number;
@@ -12,6 +19,7 @@ export interface CardOrigin {
   year: ElementRect;
   yearFontSize: string;
   tags: ElementRect;
+  perspective: CardPerspective;
   showVideo: boolean;
 }
 
@@ -59,12 +67,13 @@ export function toRect(domRect: DOMRect): ElementRect {
 }
 
 export function measureCardOrigin(projectId: string, showVideo = false): CardOrigin | null {
-  const card = document.querySelector(`[data-project-id="${projectId}"]`);
+  const card = document.querySelector<HTMLElement>(`[data-project-id="${projectId}"]`);
   const visual = card?.querySelector<HTMLElement>(".work-card-visual");
   const title = card?.querySelector<HTMLElement>(".work-card-title");
   const year = card?.querySelector<HTMLElement>(".work-card-year");
   const tags = card?.querySelector<HTMLElement>(".work-card-tags");
-  if (!visual || !title || !year || !tags) return null;
+  const container = card?.closest<HTMLElement>(".work-scroll");
+  if (!card || !visual || !title || !year || !tags || !container) return null;
 
   return {
     thumbnail: toRect(visual.getBoundingClientRect()),
@@ -73,6 +82,7 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
     year: toRect(year.getBoundingClientRect()),
     yearFontSize: getComputedStyle(year).fontSize,
     tags: toRect(tags.getBoundingClientRect()),
+    perspective: computeCardFocus(card, container),
     showVideo,
   };
 }

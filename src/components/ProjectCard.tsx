@@ -4,6 +4,7 @@ import { forwardRef, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
+import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { type Project } from "@/lib/projects";
 
 interface ProjectCardProps {
@@ -63,6 +64,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       year: toRect(year.getBoundingClientRect()),
       yearFontSize: getComputedStyle(year).fontSize,
       tags: toRect(tags.getBoundingClientRect()),
+      perspective: (() => {
+        const container = card.closest<HTMLElement>(".work-scroll");
+        return container ? computeCardFocus(card, container) : FLAT_PERSPECTIVE;
+      })(),
       showVideo: isHovering && !!project.hasVideo,
     });
   };

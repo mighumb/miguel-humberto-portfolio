@@ -14,6 +14,7 @@ import {
   type ModalTargets,
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
+import { FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -42,12 +43,16 @@ export default function Projects() {
   const savedWorkScrollLeftRef = useRef(0);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
+  const cardPerspectiveRef = useRef(cardOrigin?.perspective ?? FLAT_PERSPECTIVE);
   const activeProjectRef = useRef(activeProject);
   const pauseWorkFocus = phase === "open" || (phase === "opening" && flight !== null);
   const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, pauseWorkFocus);
 
   phaseRef.current = phase;
   cardOriginRef.current = cardOrigin;
+  if (cardOrigin) {
+    cardPerspectiveRef.current = cardOrigin.perspective;
+  }
   activeProjectRef.current = activeProject;
 
   useLayoutEffect(() => {
@@ -105,7 +110,6 @@ export default function Projects() {
       return;
     }
 
-    setSharedHiddenId(project.id);
     setFlight(invertFlight(openFlight));
   }, [phase, closeModal]);
 
@@ -168,22 +172,20 @@ export default function Projects() {
       setSharedContentVisible(true);
       setPhase("open");
     }
-    if (phaseRef.current === "closing") {
-      setSharedHiddenId(null);
-    }
   }, []);
 
   const handleFlightComplete = useCallback(() => {
+    if (phaseRef.current === "closing") {
+      setSharedHiddenId(null);
+      setFlight(null);
+      closeModal();
+      return;
+    }
+
     setFlight(null);
 
     if (phaseRef.current === "opening") {
       setSharedHiddenId(null);
-      setCardOrigin(null);
-      return;
-    }
-
-    if (phaseRef.current === "closing") {
-      closeModal();
     }
   }, [closeModal]);
 
@@ -199,6 +201,7 @@ export default function Projects() {
     }
 
     setSharedContentVisible(false);
+    setSharedHiddenId(activeProject.id);
     setPhase("closing");
   }, [activeProject, closeModal]);
 
@@ -274,6 +277,7 @@ export default function Projects() {
           project={activeProject}
           locale={locale}
           flight={flight}
+          cardPerspective={cardPerspectiveRef.current}
           showVideo={flightShowVideo}
           onLanding={handleFlightLanding}
           onComplete={handleFlightComplete}

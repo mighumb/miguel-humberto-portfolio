@@ -1,16 +1,12 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-
-const CARD_PERSPECTIVE = 1100;
-const MAX_ROTATE_Y = 17;
-const MAX_TRANSLATE_Z = -280;
-const MAX_SHIFT_Y = 40;
-const MAX_BLUR = 1.15;
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
+import {
+  CARD_PERSPECTIVE,
+  computeCardFocus,
+  flightFilterStyle,
+  flightTransformStyle,
+} from "@/lib/workCardFocus";
 
 export function useWorkScrollFocus(itemCount: number, paused = false) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -70,30 +66,20 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
           return;
         }
 
+        const focus = computeCardFocus(card, container);
         const idealScroll = card.offsetLeft - focusInset;
         const delta = scrollLeft - idealScroll;
         const step = card.offsetWidth + gap;
         const progress = Math.min(1, Math.abs(delta) / step);
-        const direction = step === 0 ? 0 : delta / step;
 
-        const translateY = progress * MAX_SHIFT_Y;
-        const translateZ = progress * MAX_TRANSLATE_Z;
-        const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
-        const opacity = 1 - progress * 0.14;
-        const blur = progress * MAX_BLUR;
-
-        card.style.transform = `translateY(${translateY}px)`;
+        card.style.transform = `translateY(${focus.articleTranslateY}px)`;
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
 
         if (body) {
           body.style.transformOrigin = "center bottom";
-          body.style.transform = [
-            `perspective(${CARD_PERSPECTIVE}px)`,
-            `translate3d(0, 0, ${translateZ}px)`,
-            `rotateY(${rotateY}deg)`,
-          ].join(" ");
-          body.style.opacity = `${opacity}`;
-          body.style.filter = blur > 0.08 ? `blur(${blur}px)` : "";
+          body.style.transform = flightTransformStyle(focus);
+          body.style.opacity = `${focus.bodyOpacity}`;
+          body.style.filter = flightFilterStyle(focus);
         }
       });
     };
@@ -112,3 +98,5 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
 
   return { scrollRef, setCardRef };
 }
+
+export { CARD_PERSPECTIVE };
