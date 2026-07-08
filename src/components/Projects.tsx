@@ -6,6 +6,11 @@ import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrol
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
 import {
+  getFocusedWorkCardIndex,
+  scrollWorkCarouselToIndex,
+} from "@/lib/workCarouselNav";
+import { stopWorkCarouselMotion } from "@/lib/workDragScroll";
+import {
   prefersReducedMotion,
   measureCardOrigin,
   type CardOrigin,
@@ -25,6 +30,66 @@ import ProjectSharedFlight from "./ProjectSharedFlight";
 
 function ScrollGutter() {
   return <div aria-hidden className="work-scroll-gutter shrink-0 w-6 md:w-10" />;
+}
+
+function WorkCarouselNav({
+  onPrev,
+  onNext,
+  canGoPrev,
+  canGoNext,
+  prevLabel,
+  nextLabel,
+  disabled,
+}: {
+  onPrev: () => void;
+  onNext: () => void;
+  canGoPrev: boolean;
+  canGoNext: boolean;
+  prevLabel: string;
+  nextLabel: string;
+  disabled?: boolean;
+}) {
+  const buttonClass =
+    "flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:pointer-events-none disabled:opacity-35";
+
+  return (
+    <div className="flex items-center gap-2" aria-label="Carousel navigation">
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={disabled || !canGoPrev}
+        className={buttonClass}
+        aria-label={prevLabel}
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+          <path
+            d="M11 3L5 9l6 6"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={disabled || !canGoNext}
+        className={buttonClass}
+        aria-label={nextLabel}
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+          <path
+            d="M7 3l6 6-6 6"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+  );
 }
 
 type TransitionPhase = "idle" | "opening" | "open" | "closing";
@@ -79,6 +144,7 @@ export default function Projects() {
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
   const closedViaTransitionRef = useRef(false);
+  const [focusedCardIndex, setFocusedCardIndex] = useState(0);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -91,6 +157,43 @@ export default function Projects() {
     projects.length,
     pauseCarousel,
     carouselSnapshotRef,
+  );
+
+  const carouselNavDisabled = activeProject !== null;
+
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const updateFocusedIndex = () => {
+      setFocusedCardIndex(getFocusedWorkCardIndex(container));
+    };
+
+    updateFocusedIndex();
+    container.addEventListener("scroll", updateFocusedIndex, { passive: true });
+    window.addEventListener("resize", updateFocusedIndex);
+
+    return () => {
+      container.removeEventListener("scroll", updateFocusedIndex);
+      window.removeEventListener("resize", updateFocusedIndex);
+    };
+  }, [scrollRef, projects.length, pauseCarousel]);
+
+  const scrollCarouselBy = useCallback(
+    (direction: "prev" | "next") => {
+      const container = scrollRef.current;
+      if (!container || carouselNavDisabled) return;
+
+      stopWorkCarouselMotion(container);
+
+      const currentIndex = getFocusedWorkCardIndex(container);
+      const nextIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
+      if (nextIndex < 0 || nextIndex >= projects.length) return;
+
+      scrollWorkCarouselToIndex(container, nextIndex);
+      setFocusedCardIndex(nextIndex);
+    },
+    [scrollRef, carouselNavDisabled],
   );
 
   phaseRef.current = phase;
@@ -295,7 +398,20 @@ export default function Projects() {
       className="relative z-10 pb-8 md:pb-10"
       aria-label={t.projects}
     >
-      <h2 className="sr-only">{t.projects}</h2>
+      <div className="mb-6 flex items-center gap-4 px-6 md:mb-8 md:px-10">
+        <h2 className="text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
+          {t.projects}
+        </h2>
+        <WorkCarouselNav
+          onPrev={() => scrollCarouselBy("prev")}
+          onNext={() => scrollCarouselBy("next")}
+          canGoPrev={focusedCardIndex > 0}
+          canGoNext={focusedCardIndex < projects.length - 1}
+          prevLabel={t.prevProject}
+          nextLabel={t.nextProject}
+          disabled={carouselNavDisabled}
+        />
+      </div>
 
       <div className="relative">
         <div

@@ -6,6 +6,8 @@ export const translations = {
     tagline: "I design Gen AI creative workflows from concept to delivery.",
     scrollHint: "Scroll to explore",
     projects: "Work",
+    prevProject: "Previous project",
+    nextProject: "Next project",
     viewProject: "View project",
     manifestoTitle: "Who I am",
     manifesto: [
@@ -47,6 +49,8 @@ export const translations = {
     tagline: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
     scrollHint: "Défiler pour explorer",
     projects: "Projets",
+    prevProject: "Projet précédent",
+    nextProject: "Projet suivant",
     viewProject: "Voir le projet",
     manifestoTitle: "Qui je suis",
     manifesto: [

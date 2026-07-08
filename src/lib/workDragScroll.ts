@@ -7,6 +7,12 @@ const MOMENTUM_MIN_VELOCITY = 0.015;
 
 type VelocitySample = { x: number; t: number };
 
+const motionControllers = new WeakMap<HTMLElement, () => void>();
+
+export function stopWorkCarouselMotion(container: HTMLElement) {
+  motionControllers.get(container)?.();
+}
+
 export function attachWorkDragScroll(container: HTMLElement) {
   let activePointerId: number | null = null;
   let startX = 0;
@@ -166,10 +172,13 @@ export function attachWorkDragScroll(container: HTMLElement) {
     clearDraggedFlag();
   };
 
+  motionControllers.set(container, stopMomentum);
+
   container.addEventListener("pointerdown", onPointerDown);
   container.addEventListener("click", onClickCapture, true);
 
   return () => {
+    motionControllers.delete(container);
     window.clearTimeout(suppressClickTimer);
     stopMomentum();
     window.removeEventListener("pointermove", onPointerMove);
