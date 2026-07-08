@@ -12,6 +12,21 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+function syncMetaToVisual(visual: HTMLElement, meta: HTMLElement) {
+  meta.style.transform = "";
+  meta.style.width = "";
+
+  const visualRect = visual.getBoundingClientRect();
+  const metaRect = meta.getBoundingClientRect();
+  const offsetX = visualRect.left - metaRect.left;
+
+  if (Math.abs(offsetX) >= 0.5) {
+    meta.style.transform = `translateX(${offsetX}px)`;
+  }
+
+  meta.style.width = `${visualRect.width}px`;
+}
+
 export function useWorkScrollFocus(itemCount: number) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
@@ -38,21 +53,24 @@ export function useWorkScrollFocus(itemCount: number) {
         Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 20;
 
       cards.forEach((card) => {
-        const body = card.querySelector<HTMLElement>(".work-card-body");
         const visual = card.querySelector<HTMLElement>(".work-card-visual");
+        const meta = card.querySelector<HTMLElement>(".work-card-meta");
 
         if (reducedMotion) {
           card.style.transform = "";
           card.style.zIndex = "";
-          if (body) {
-            body.style.transform = "";
-            body.style.opacity = "";
-          }
           if (visual) {
+            visual.style.transform = "";
+            visual.style.opacity = "";
             visual.style.filter = "";
             visual.style.boxShadow = "";
             visual.style.setProperty("--media-scale", "1");
             visual.style.setProperty("--media-shift", "0px");
+          }
+          if (meta) {
+            meta.style.transform = "";
+            meta.style.width = "";
+            meta.style.opacity = "";
           }
           return;
         }
@@ -68,23 +86,20 @@ export function useWorkScrollFocus(itemCount: number) {
         const rotateY = clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y);
         const opacity = 1 - progress * 0.12;
         const blur = progress * MAX_BLUR;
-        const mediaScale = 1.06 - progress * 0.06;
+        const mediaScale = 1 - progress * 0.06;
         const mediaShift = progress * -12;
 
         card.style.transform = `translateY(${translateY}px)`;
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
 
-        if (body) {
-          body.style.transformOrigin = "center bottom";
-          body.style.transform = [
+        if (visual) {
+          visual.style.transformOrigin = "center bottom";
+          visual.style.transform = [
             `perspective(${CARD_PERSPECTIVE}px)`,
             `translate3d(0, 0, ${translateZ}px)`,
             `rotateY(${rotateY}deg)`,
           ].join(" ");
-          body.style.opacity = `${opacity}`;
-        }
-
-        if (visual) {
+          visual.style.opacity = `${opacity}`;
           visual.style.filter = blur > 0.05 ? `blur(${blur}px)` : "";
           visual.style.boxShadow =
             progress > 0.02
@@ -92,6 +107,14 @@ export function useWorkScrollFocus(itemCount: number) {
               : "0 24px 48px rgba(0, 0, 0, 0.08)";
           visual.style.setProperty("--media-scale", `${mediaScale}`);
           visual.style.setProperty("--media-shift", `${mediaShift}px`);
+        }
+
+        if (meta) {
+          meta.style.opacity = `${opacity}`;
+        }
+
+        if (visual && meta) {
+          syncMetaToVisual(visual, meta);
         }
       });
     };

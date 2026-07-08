@@ -93,7 +93,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
           </div>
         </div>
 
-        <div className="work-card-meta mt-5 space-y-2 pr-2">
+        <div className="work-card-meta mt-5 space-y-2">
           <div className="flex items-baseline justify-between gap-4">
             <h3 className="text-lg font-medium tracking-tight text-text-primary md:text-xl">
               {project.title[locale]}
