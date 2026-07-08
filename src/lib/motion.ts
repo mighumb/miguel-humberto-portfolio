@@ -107,4 +107,27 @@ export function invertFlight(flight: FlightPair): FlightPair {
   };
 }
 
+export function buildCloseFlight(
+  modalTargets: ModalTargets,
+  cardOrigin: CardOrigin,
+): FlightPair {
+  return {
+    direction: "close",
+    thumbnail: { from: modalTargets.thumbnail, to: cardOrigin.thumbnail },
+    title: {
+      from: modalTargets.title,
+      to: cardOrigin.title,
+      fromFontSize: modalTargets.titleFontSize,
+      toFontSize: cardOrigin.titleFontSize,
+    },
+    year: {
+      from: modalTargets.year,
+      to: cardOrigin.year,
+      fromFontSize: modalTargets.yearFontSize,
+      toFontSize: cardOrigin.yearFontSize,
+    },
+    tags: { from: modalTargets.tags, to: cardOrigin.tags },
+  };
+}
+
 export const SHARED_TRANSITION_MS = 560;

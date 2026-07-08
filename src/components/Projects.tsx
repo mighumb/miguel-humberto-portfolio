@@ -1,20 +1,24 @@
 "use client";
 
-import { useState, useCallback, useRef, useLayoutEffect } from "react";
+import { useState, useCallback, useRef, useLayoutEffect, type RefObject } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
-import { useWorkScrollFocus } from "@/hooks/useWorkScrollFocus";
+import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
 import {
   prefersReducedMotion,
   measureCardOrigin,
-  invertFlight,
+  buildCloseFlight,
   type CardOrigin,
   type FlightPair,
   type ModalTargets,
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
-import { FLAT_PERSPECTIVE, applyCardPerspective } from "@/lib/workCardFocus";
+import {
+  FLAT_PERSPECTIVE,
+  applyCardPerspective,
+  resetCardPerspective,
+} from "@/lib/workCardFocus";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -24,6 +28,19 @@ function ScrollGutter() {
 }
 
 type TransitionPhase = "idle" | "opening" | "open" | "closing";
+
+function restoreWorkScroll(
+  scrollRef: RefObject<HTMLDivElement | null>,
+  savedWorkScrollLeft: number,
+) {
+  const { x, y } = getSavedScrollPosition();
+  snapScrollTo(x, y);
+
+  const container = scrollRef.current;
+  if (container) {
+    container.scrollLeft = savedWorkScrollLeft;
+  }
+}
 
 export default function Projects() {
   const { locale } = useLocale();
@@ -46,11 +63,17 @@ export default function Projects() {
   const cardPerspectiveRef = useRef(cardOrigin?.perspective ?? FLAT_PERSPECTIVE);
   const activeProjectRef = useRef(activeProject);
   const closedViaFlightRef = useRef(false);
-  const pauseWorkFocus =
-    phase === "open" ||
-    (phase === "opening" && flight !== null) ||
-    (phase === "closing" && flight !== null);
-  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, pauseWorkFocus);
+
+  const pauseCarousel: CarouselPauseMode =
+    phase === "open"
+      ? "open"
+      : phase === "closing"
+        ? "closing"
+        : phase === "opening" && flight !== null
+          ? "flight"
+          : false;
+
+  const { scrollRef, setCardRef } = useWorkScrollFocus(projects.length, pauseCarousel);
 
   phaseRef.current = phase;
   cardOriginRef.current = cardOrigin;
@@ -78,13 +101,7 @@ export default function Projects() {
     }
 
     if (hadActiveProjectRef.current && !activeProject) {
-      const { x, y } = getSavedScrollPosition();
-      snapScrollTo(x, y);
-
-      const container = scrollRef.current;
-      if (container) {
-        container.scrollLeft = savedWorkScrollLeftRef.current;
-      }
+      restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
     }
 
     hadActiveProjectRef.current = activeProject !== null;
@@ -114,21 +131,37 @@ export default function Projects() {
     if (!enteredClosing) return;
 
     const project = activeProjectRef.current;
-    const openFlight = openFlightRef.current;
-    if (!project || !openFlight) {
+    const modalTargets = measureRef.current?.();
+    if (!project || !modalTargets) {
       closeModal();
       return;
     }
 
-    const container = scrollRef.current;
-    if (container) {
-      const { x, y } = getSavedScrollPosition();
-      snapScrollTo(x, y);
-      container.scrollLeft = savedWorkScrollLeftRef.current;
+    restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
+
+    const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
+    const perspective = cardPerspectiveRef.current;
+
+    if (card) {
+      applyCardPerspective(card, perspective);
     }
 
-    setFlight(invertFlight(openFlight));
-  }, [phase, closeModal, scrollRef]);
+    const measuredOrigin = measureCardOrigin(project.id, flightShowVideo);
+
+    if (card) {
+      resetCardPerspective(card);
+    }
+
+    if (!measuredOrigin) {
+      closeModal();
+      return;
+    }
+
+    const closeFlight = buildCloseFlight(modalTargets, measuredOrigin);
+    cardPerspectiveRef.current = measuredOrigin.perspective;
+    openFlightRef.current = closeFlight;
+    setFlight(closeFlight);
+  }, [phase, closeModal, scrollRef, flightShowVideo]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
     const index = projects.findIndex((p) => p.id === project.id);
@@ -194,14 +227,9 @@ export default function Projects() {
   const handleFlightComplete = useCallback(() => {
     if (phaseRef.current === "closing") {
       const project = activeProjectRef.current;
-      const container = scrollRef.current;
       const perspective = cardPerspectiveRef.current;
 
-      if (container) {
-        const { x, y } = getSavedScrollPosition();
-        snapScrollTo(x, y);
-        container.scrollLeft = savedWorkScrollLeftRef.current;
-      }
+      restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
 
       if (project) {
         const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
@@ -310,7 +338,6 @@ export default function Projects() {
           project={activeProject}
           locale={locale}
           flight={flight}
-          cardPerspective={cardPerspectiveRef.current}
           showVideo={flightShowVideo}
           onLanding={handleFlightLanding}
           onComplete={handleFlightComplete}

@@ -8,7 +8,9 @@ import {
   resetCardPerspective,
 } from "@/lib/workCardFocus";
 
-export function useWorkScrollFocus(itemCount: number, paused = false) {
+export type CarouselPauseMode = false | "open" | "closing" | "flight";
+
+export function useWorkScrollFocus(itemCount: number, pauseMode: CarouselPauseMode = false) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
@@ -25,8 +27,12 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
       cards.forEach((card) => resetCardPerspective(card));
     };
 
-    if (paused) {
+    if (pauseMode === "open" || pauseMode === "closing") {
       resetCards();
+      return;
+    }
+
+    if (pauseMode === "flight") {
       return;
     }
 
@@ -85,7 +91,7 @@ export function useWorkScrollFocus(itemCount: number, paused = false) {
       container.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
     };
-  }, [itemCount, paused]);
+  }, [itemCount, pauseMode]);
 
   return { scrollRef, setCardRef };
 }

@@ -5,16 +5,9 @@ import { createPortal } from "react-dom";
 import {
   prefersReducedMotion,
   SHARED_TRANSITION_MS,
-  type CardPerspective,
   type ElementRect,
   type FlightPair,
 } from "@/lib/motion";
-import {
-  FLAT_PERSPECTIVE,
-  flightFilterStyle,
-  flightTransformStyle,
-  lerpPerspective,
-} from "@/lib/workCardFocus";
 import { type Project } from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
 
@@ -22,50 +15,33 @@ interface ProjectSharedFlightProps {
   project: Project;
   locale: Locale;
   flight: FlightPair;
-  cardPerspective: CardPerspective;
   showVideo: boolean;
   onLanding: () => void;
   onComplete: () => void;
 }
 
-function flightElementStyle(
-  frame: ElementRect,
-  perspective: CardPerspective,
-  amount: number,
-) {
-  const mixed = lerpPerspective(FLAT_PERSPECTIVE, perspective, amount);
-
+function frameStyle(frame: ElementRect) {
   return {
     top: frame.top,
     left: frame.left,
     width: frame.width,
     height: frame.height,
-    transform: flightTransformStyle(mixed),
-    transformOrigin: "center bottom",
-    opacity: mixed.bodyOpacity,
-    filter: flightFilterStyle(mixed),
-  } as const;
+  };
 }
 
 function FlightThumbnail({
   project,
   showVideo,
   frame,
-  perspective,
-  perspectiveAmount,
 }: {
   project: Project;
   showVideo: boolean;
   frame: ElementRect;
-  perspective: CardPerspective;
-  perspectiveAmount: number;
 }) {
-  const layout = flightElementStyle(frame, perspective, perspectiveAmount);
-
   return (
     <div
       className="project-shared-flight-thumb relative overflow-hidden rounded-xl bg-bg-primary"
-      style={layout}
+      style={frameStyle(frame)}
     >
       {showVideo && project.hasVideo && project.videoUrl ? (
         <video
@@ -99,22 +75,15 @@ function FlightTitle({
   title,
   frame,
   fontSize,
-  perspective,
-  perspectiveAmount,
 }: {
   title: string;
   frame: ElementRect;
   fontSize: string;
-  perspective: CardPerspective;
-  perspectiveAmount: number;
 }) {
   return (
     <div
       className="project-shared-flight-title font-medium tracking-tight text-text-primary"
-      style={{
-        ...flightElementStyle(frame, perspective, perspectiveAmount),
-        fontSize,
-      }}
+      style={{ ...frameStyle(frame), fontSize }}
     >
       {title}
     </div>
@@ -125,22 +94,15 @@ function FlightYear({
   year,
   frame,
   fontSize,
-  perspective,
-  perspectiveAmount,
 }: {
   year: string;
   frame: ElementRect;
   fontSize: string;
-  perspective: CardPerspective;
-  perspectiveAmount: number;
 }) {
   return (
     <div
       className="project-shared-flight-year shrink-0 text-text-secondary"
-      style={{
-        ...flightElementStyle(frame, perspective, perspectiveAmount),
-        fontSize,
-      }}
+      style={{ ...frameStyle(frame), fontSize }}
     >
       {year}
     </div>
@@ -151,24 +113,19 @@ function FlightTags({
   tags,
   frame,
   variant,
-  perspective,
-  perspectiveAmount,
 }: {
   tags: string[];
   frame: ElementRect;
   variant: "card" | "modal";
-  perspective: CardPerspective;
-  perspectiveAmount: number;
 }) {
   const isCard = variant === "card";
-  const layout = flightElementStyle(frame, perspective, perspectiveAmount);
 
   return (
     <div
       className={`project-shared-flight-tags flex flex-wrap items-center ${
         isCard ? "gap-1.5" : "gap-2"
       }`}
-      style={layout}
+      style={frameStyle(frame)}
     >
       {tags.map((tag) => (
         <span
@@ -188,7 +145,6 @@ export default function ProjectSharedFlight({
   project,
   locale,
   flight,
-  cardPerspective,
   showVideo,
   onLanding,
   onComplete,
@@ -202,7 +158,6 @@ export default function ProjectSharedFlight({
   const [tagsVariant, setTagsVariant] = useState<"card" | "modal">(
     flight.direction === "open" ? "card" : "modal",
   );
-  const [perspectiveAmount, setPerspectiveAmount] = useState(1);
   const [opacity, setOpacity] = useState(1);
   const completedRef = useRef(false);
   const thumbRef = useRef<HTMLDivElement>(null);
@@ -240,7 +195,6 @@ export default function ProjectSharedFlight({
     setYearFontSize(flight.year.fromFontSize);
     setTagsFrame(flight.tags.from);
     setTagsVariant(flight.direction === "open" ? "card" : "modal");
-    setPerspectiveAmount(1);
 
     const start = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -251,9 +205,6 @@ export default function ProjectSharedFlight({
         setYearFontSize(flight.year.toFontSize);
         setTagsFrame(flight.tags.to);
         setTagsVariant(flight.direction === "open" ? "modal" : "card");
-        if (flight.direction === "open") {
-          setPerspectiveAmount(0);
-        }
       });
     });
 
@@ -282,34 +233,14 @@ export default function ProjectSharedFlight({
           finish();
         }}
       >
-        <FlightThumbnail
-          project={project}
-          showVideo={showVideo}
-          frame={thumbFrame}
-          perspective={cardPerspective}
-          perspectiveAmount={perspectiveAmount}
-        />
+        <FlightThumbnail project={project} showVideo={showVideo} frame={thumbFrame} />
         <FlightTitle
           title={project.title[locale]}
           frame={titleFrame}
           fontSize={titleFontSize}
-          perspective={cardPerspective}
-          perspectiveAmount={perspectiveAmount}
         />
-        <FlightYear
-          year={project.year}
-          frame={yearFrame}
-          fontSize={yearFontSize}
-          perspective={cardPerspective}
-          perspectiveAmount={perspectiveAmount}
-        />
-        <FlightTags
-          tags={project.tags}
-          frame={tagsFrame}
-          variant={tagsVariant}
-          perspective={cardPerspective}
-          perspectiveAmount={perspectiveAmount}
-        />
+        <FlightYear year={project.year} frame={yearFrame} fontSize={yearFontSize} />
+        <FlightTags tags={project.tags} frame={tagsFrame} variant={tagsVariant} />
       </div>
     </div>,
     document.body,
