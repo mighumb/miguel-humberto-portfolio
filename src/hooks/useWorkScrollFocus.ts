@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import {
+  applyCardPerspective,
   computeCardFocus,
   flightFilterStyle,
   flightTransformStyle,
@@ -9,6 +10,13 @@ import {
 } from "@/lib/workCardFocus";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
+
+export function applyAllCardPerspectives(container: HTMLElement) {
+  const cards = container.querySelectorAll<HTMLElement>("[data-project-id]");
+  cards.forEach((card) => {
+    applyCardPerspective(card, computeCardFocus(card, container));
+  });
+}
 
 export function useWorkScrollFocus(itemCount: number, pauseMode: CarouselPauseMode = false) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -27,12 +35,14 @@ export function useWorkScrollFocus(itemCount: number, pauseMode: CarouselPauseMo
       cards.forEach((card) => resetCardPerspective(card));
     };
 
-    if (pauseMode === "open" || pauseMode === "closing") {
-      resetCards();
+    // Freeze carousel transforms while modal is open or in shared-element flight.
+    // Do not reset to flat — that causes sibling cards to pop on close.
+    if (pauseMode === "open" || pauseMode === "flight") {
       return;
     }
 
-    if (pauseMode === "flight") {
+    if (pauseMode === "closing") {
+      resetCards();
       return;
     }
 

@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useLayoutEffect, type RefObject } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
-import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
+import { useWorkScrollFocus, type CarouselPauseMode, applyAllCardPerspectives } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projects, type Project } from "@/lib/projects";
 import {
@@ -69,7 +69,7 @@ export default function Projects() {
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
       ? "open"
-      : phase === "closing" || (phase === "opening" && flight !== null)
+      : phase === "closing" || phase === "opening"
         ? "flight"
         : false;
 
@@ -144,6 +144,11 @@ export default function Projects() {
 
     restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
 
+    const container = scrollRef.current;
+    if (container) {
+      applyAllCardPerspectives(container);
+    }
+
     const card = document.querySelector<HTMLElement>(`[data-project-id="${project.id}"]`);
     const perspective = cardPerspectiveRef.current;
 
@@ -158,7 +163,9 @@ export default function Projects() {
       onComplete: () => {
         restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
 
-        if (card) {
+        if (container) {
+          applyAllCardPerspectives(container);
+        } else if (card) {
           applyCardPerspective(card, perspective);
         }
 
