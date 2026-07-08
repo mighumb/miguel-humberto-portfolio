@@ -1,49 +1,81 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { useTheme } from "@/contexts/ThemeContext";
 
+const PARTICLE_COUNT = 2400;
+
+function seededRandom(seed: number) {
+  let state = seed;
+  return () => {
+    state = (state * 16807) % 2147483647;
+    return (state - 1) / 2147483646;
+  };
+}
+
+function generateParticles() {
+  const random = seededRandom(42);
+  const positions = new Float32Array(PARTICLE_COUNT * 3);
+  const brightness = new Float32Array(PARTICLE_COUNT);
+
+  let i = 0;
+  while (i < PARTICLE_COUNT) {
+    const theta = random() * Math.PI * 2;
+    const phi = Math.acos(2 * random() - 1);
+    const r = 2.2 + random() * 2.8;
+
+    const x = r * Math.sin(phi) * Math.cos(theta);
+    const y = r * Math.sin(phi) * Math.sin(theta) * 0.55;
+    const z = r * Math.cos(phi) * 0.7;
+
+    if (Math.abs(x) < 1.4 && Math.abs(y) < 1.0) continue;
+
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+    brightness[i] = 0.35 + random() * 0.45;
+
+    i++;
+  }
+
+  return { positions, brightness };
+}
+
+const PARTICLE_DATA = generateParticles();
+
+function buildColors(brightness: Float32Array, isDark: boolean) {
+  const colors = new Float32Array(PARTICLE_COUNT * 3);
+  const multiplier = isDark ? 1.1 : 0.85;
+  const offset = isDark ? 0.12 : 0.0;
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    const value = Math.min(1, brightness[i] * multiplier + offset);
+    colors[i * 3] = value;
+    colors[i * 3 + 1] = value;
+    colors[i * 3 + 2] = value;
+  }
+
+  return colors;
+}
+
 function ParticleField({ isDark }: { isDark: boolean }) {
   const ref = useRef<THREE.Points>(null);
-  const count = 2400;
 
-  const [positions, colors] = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    const col = new Float32Array(count * 3);
+  const colors = useMemo(
+    () => buildColors(PARTICLE_DATA.brightness, isDark),
+    [isDark],
+  );
 
-    const base = isDark ? 0.55 : 0.35;
-    const range = isDark ? 0.35 : 0.25;
-
-    let i = 0;
-    while (i < count) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const r = 2.2 + Math.random() * 2.8;
-
-      const x = r * Math.sin(phi) * Math.cos(theta);
-      const y = r * Math.sin(phi) * Math.sin(theta) * 0.55;
-      const z = r * Math.cos(phi) * 0.7;
-
-      // Keep the center clear for typography readability
-      if (Math.abs(x) < 1.4 && Math.abs(y) < 1.0) continue;
-
-      pos[i * 3] = x;
-      pos[i * 3 + 1] = y;
-      pos[i * 3 + 2] = z;
-
-      const brightness = base + Math.random() * range;
-      col[i * 3] = brightness;
-      col[i * 3 + 1] = brightness;
-      col[i * 3 + 2] = brightness;
-
-      i++;
+  useEffect(() => {
+    if (!ref.current) return;
+    const colorAttr = ref.current.geometry.attributes.color;
+    if (colorAttr) {
+      (colorAttr as THREE.BufferAttribute).needsUpdate = true;
     }
-
-    return [pos, col];
-  }, [isDark]);
+  }, [colors]);
 
   useFrame((state) => {
     if (!ref.current) return;
@@ -53,14 +85,20 @@ function ParticleField({ isDark }: { isDark: boolean }) {
   });
 
   return (
-    <Points ref={ref} positions={positions} colors={colors} stride={3} frustumCulled={false}>
+    <Points
+      ref={ref}
+      positions={PARTICLE_DATA.positions}
+      colors={colors}
+      stride={3}
+      frustumCulled={false}
+    >
       <PointMaterial
         transparent
         vertexColors
         size={0.018}
         sizeAttenuation
         depthWrite={false}
-        opacity={isDark ? 0.55 : 0.45}
+        opacity={0.5}
         blending={THREE.NormalBlending}
       />
     </Points>
@@ -69,6 +107,12 @@ function ParticleField({ isDark }: { isDark: boolean }) {
 
 function FluidMesh({ isDark }: { isDark: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  useEffect(() => {
+    if (!materialRef.current) return;
+    materialRef.current.color.set(isDark ? "#6e6e73" : "#aeaeb2");
+  }, [isDark]);
 
   useFrame((state) => {
     if (!meshRef.current) return;
@@ -83,10 +127,11 @@ function FluidMesh({ isDark }: { isDark: boolean }) {
     <mesh ref={meshRef} position={[2.2, 0.3, -0.5]}>
       <icosahedronGeometry args={[1.3, 4]} />
       <meshStandardMaterial
+        ref={materialRef}
         color={isDark ? "#6e6e73" : "#aeaeb2"}
         wireframe
         transparent
-        opacity={isDark ? 0.14 : 0.12}
+        opacity={0.15}
       />
     </mesh>
   );
@@ -95,8 +140,8 @@ function FluidMesh({ isDark }: { isDark: boolean }) {
 function SceneContent({ isDark }: { isDark: boolean }) {
   return (
     <>
-      <ambientLight intensity={isDark ? 0.5 : 0.85} />
-      <pointLight position={[8, 6, 8]} intensity={isDark ? 0.4 : 0.25} />
+      <ambientLight intensity={0.7} />
+      <pointLight position={[8, 6, 8]} intensity={0.35} />
       <FluidMesh isDark={isDark} />
       <ParticleField isDark={isDark} />
     </>
