@@ -6,7 +6,8 @@ import { Points, PointMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import { useTheme } from "@/contexts/ThemeContext";
 
-const PARTICLE_COUNT = 2400;
+const PARTICLE_COUNT = 3200;
+const DRIFT_COUNT = 800;
 
 function seededRandom(seed: number) {
   let state = seed;
@@ -16,42 +17,47 @@ function seededRandom(seed: number) {
   };
 }
 
-function generateParticles() {
-  const random = seededRandom(42);
-  const positions = new Float32Array(PARTICLE_COUNT * 3);
-  const brightness = new Float32Array(PARTICLE_COUNT);
+function generateLayer(count: number, seed: number, spread: number) {
+  const random = seededRandom(seed);
+  const positions = new Float32Array(count * 3);
+  const brightness = new Float32Array(count);
+  const phases = new Float32Array(count);
 
   let i = 0;
-  while (i < PARTICLE_COUNT) {
+  let attempts = 0;
+  while (i < count && attempts < count * 20) {
+    attempts++;
     const theta = random() * Math.PI * 2;
     const phi = Math.acos(2 * random() - 1);
-    const r = 2.2 + random() * 2.8;
+    const r = spread * 0.6 + random() * spread;
 
     const x = r * Math.sin(phi) * Math.cos(theta);
-    const y = r * Math.sin(phi) * Math.sin(theta) * 0.55;
-    const z = r * Math.cos(phi) * 0.7;
+    const y = r * Math.sin(phi) * Math.sin(theta) * 0.5;
+    const z = r * Math.cos(phi) * 0.65;
 
-    if (Math.abs(x) < 1.4 && Math.abs(y) < 1.0) continue;
+    if (Math.abs(x) < 1.2 && Math.abs(y) < 0.85) continue;
 
     positions[i * 3] = x;
     positions[i * 3 + 1] = y;
     positions[i * 3 + 2] = z;
-    brightness[i] = 0.35 + random() * 0.45;
+    brightness[i] = 0.3 + random() * 0.5;
+    phases[i] = random() * Math.PI * 2;
 
     i++;
   }
 
-  return { positions, brightness };
+  return { positions, brightness, phases, actualCount: count };
 }
 
-const PARTICLE_DATA = generateParticles();
+const MAIN_LAYER = generateLayer(PARTICLE_COUNT, 42, 4.2);
+const DRIFT_LAYER = generateLayer(DRIFT_COUNT, 137, 3.6);
 
-function buildColors(brightness: Float32Array, isDark: boolean) {
-  const colors = new Float32Array(PARTICLE_COUNT * 3);
-  const multiplier = isDark ? 1.1 : 0.85;
-  const offset = isDark ? 0.12 : 0.0;
+function buildColors(brightness: Float32Array, count: number, isDark: boolean) {
+  const colors = new Float32Array(count * 3);
+  const multiplier = isDark ? 1.05 : 0.72;
+  const offset = isDark ? 0.15 : 0.08;
 
-  for (let i = 0; i < PARTICLE_COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const value = Math.min(1, brightness[i] * multiplier + offset);
     colors[i * 3] = value;
     colors[i * 3 + 1] = value;
@@ -61,12 +67,29 @@ function buildColors(brightness: Float32Array, isDark: boolean) {
   return colors;
 }
 
-function ParticleField({ isDark }: { isDark: boolean }) {
+interface ParticleLayerProps {
+  data: ReturnType<typeof generateLayer>;
+  isDark: boolean;
+  size: number;
+  opacity: number;
+  speed: number;
+  drift: number;
+}
+
+function ParticleLayer({
+  data,
+  isDark,
+  size,
+  opacity,
+  speed,
+  drift,
+}: ParticleLayerProps) {
   const ref = useRef<THREE.Points>(null);
+  const basePositions = useMemo(() => data.positions.slice(), [data.positions]);
 
   const colors = useMemo(
-    () => buildColors(PARTICLE_DATA.brightness, isDark),
-    [isDark],
+    () => buildColors(data.brightness, data.actualCount, isDark),
+    [data.brightness, data.actualCount, isDark],
   );
 
   useEffect(() => {
@@ -80,14 +103,28 @@ function ParticleField({ isDark }: { isDark: boolean }) {
   useFrame((state) => {
     if (!ref.current) return;
     const t = state.clock.elapsedTime;
-    ref.current.rotation.y = t * 0.03;
-    ref.current.rotation.x = Math.sin(t * 0.12) * 0.05;
+    ref.current.rotation.y = t * speed;
+    ref.current.rotation.x = Math.sin(t * 0.1) * 0.04;
+
+    const posAttr = ref.current.geometry.attributes.position;
+    const arr = posAttr.array as Float32Array;
+
+    for (let i = 0; i < data.actualCount; i++) {
+      const ix = i * 3;
+      const iy = i * 3 + 1;
+      const iz = i * 3 + 2;
+      arr[ix] = basePositions[ix] + Math.sin(t * 0.4 + data.phases[i]) * drift;
+      arr[iy] =
+        basePositions[iy] + Math.cos(t * 0.35 + data.phases[i] * 1.3) * drift * 0.6;
+      arr[iz] = basePositions[iz] + Math.sin(t * 0.25 + data.phases[i] * 0.7) * drift * 0.4;
+    }
+    posAttr.needsUpdate = true;
   });
 
   return (
     <Points
       ref={ref}
-      positions={PARTICLE_DATA.positions}
+      positions={data.positions}
       colors={colors}
       stride={3}
       frustumCulled={false}
@@ -95,55 +132,36 @@ function ParticleField({ isDark }: { isDark: boolean }) {
       <PointMaterial
         transparent
         vertexColors
-        size={0.018}
+        size={size}
         sizeAttenuation
         depthWrite={false}
-        opacity={0.5}
+        opacity={opacity}
         blending={THREE.NormalBlending}
       />
     </Points>
   );
 }
 
-function FluidMesh({ isDark }: { isDark: boolean }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
-
-  useEffect(() => {
-    if (!materialRef.current) return;
-    materialRef.current.color.set(isDark ? "#6e6e73" : "#aeaeb2");
-  }, [isDark]);
-
-  useFrame((state) => {
-    if (!meshRef.current) return;
-    const t = state.clock.elapsedTime;
-    meshRef.current.rotation.x = t * 0.06;
-    meshRef.current.rotation.y = t * 0.09;
-    const scale = 1 + Math.sin(t * 0.5) * 0.05;
-    meshRef.current.scale.setScalar(scale);
-  });
-
-  return (
-    <mesh ref={meshRef} position={[2.2, 0.3, -0.5]}>
-      <icosahedronGeometry args={[1.3, 4]} />
-      <meshStandardMaterial
-        ref={materialRef}
-        color={isDark ? "#6e6e73" : "#aeaeb2"}
-        wireframe
-        transparent
-        opacity={0.15}
-      />
-    </mesh>
-  );
-}
-
 function SceneContent({ isDark }: { isDark: boolean }) {
   return (
     <>
-      <ambientLight intensity={0.7} />
-      <pointLight position={[8, 6, 8]} intensity={0.35} />
-      <FluidMesh isDark={isDark} />
-      <ParticleField isDark={isDark} />
+      <ambientLight intensity={0.8} />
+      <ParticleLayer
+        data={MAIN_LAYER}
+        isDark={isDark}
+        size={0.016}
+        opacity={isDark ? 0.55 : 0.42}
+        speed={0.025}
+        drift={0.04}
+      />
+      <ParticleLayer
+        data={DRIFT_LAYER}
+        isDark={isDark}
+        size={0.028}
+        opacity={isDark ? 0.25 : 0.18}
+        speed={0.015}
+        drift={0.06}
+      />
     </>
   );
 }
