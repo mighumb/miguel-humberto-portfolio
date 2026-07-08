@@ -61,6 +61,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.project-thumbnail-flight {
+  transition:
+    top 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: top, left, width, height;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-thumbnail-flight {
+    transition: none !important;
+  }
+}
+
 .project-modal {
   min-height: 100dvh;
   -webkit-overflow-scrolling: touch;

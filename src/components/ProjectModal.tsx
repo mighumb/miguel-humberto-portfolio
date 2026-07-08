@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
+import {
+  prefersReducedMotion,
+  toThumbnailRect,
+  type ThumbnailRect,
+} from "@/lib/thumbnailTransition";
+import ProjectThumbnailFlight from "./ProjectThumbnailFlight";
 
 interface ProjectModalProps {
   project: Project;
@@ -14,6 +20,8 @@ interface ProjectModalProps {
   onNext: () => void;
   currentIndex: number;
   total: number;
+  thumbnailOrigin?: ThumbnailRect | null;
+  onThumbnailTransitionComplete?: () => void;
 }
 
 function ResourceLink({ href, children }: { href: string; children: ReactNode }) {
@@ -43,17 +51,40 @@ export default function ProjectModal({
   onNext,
   currentIndex,
   total,
+  thumbnailOrigin = null,
+  onThumbnailTransitionComplete,
 }: ProjectModalProps) {
   const { locale } = useLocale();
   const t = translations[locale];
   const mt = t.modal;
   const modalRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(!thumbnailOrigin || prefersReducedMotion());
+  const [showFlight, setShowFlight] = useState(false);
+  const [flightTarget, setFlightTarget] = useState<ThumbnailRect | null>(null);
 
   useScrollLock(true);
 
   useLayoutEffect(() => {
     modalRef.current?.scrollTo({ top: 0, left: 0 });
-  }, [project.id]);
+
+    if (!thumbnailOrigin || prefersReducedMotion()) {
+      setRevealed(true);
+      setShowFlight(false);
+      setFlightTarget(null);
+      return;
+    }
+
+    const hero = heroRef.current;
+    if (!hero) {
+      setRevealed(true);
+      return;
+    }
+
+    setRevealed(false);
+    setFlightTarget(toThumbnailRect(hero.getBoundingClientRect()));
+    setShowFlight(true);
+  }, [project.id, thumbnailOrigin]);
 
   useEffect(() => {
     const modal = modalRef.current;
@@ -90,21 +121,41 @@ export default function ProjectModal({
 
   if (typeof document === "undefined") return null;
 
+  const handleFlightComplete = () => {
+    setShowFlight(false);
+    setRevealed(true);
+    onThumbnailTransitionComplete?.();
+  };
+
   return createPortal(
-    <div
-      ref={modalRef}
-      className="project-modal fixed inset-0 z-[200] overflow-y-auto overscroll-contain"
-      style={{ background: "var(--modal-bg)" }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={project.title[locale]}
-    >
+    <>
+      {showFlight && thumbnailOrigin && flightTarget && (
+        <ProjectThumbnailFlight
+          project={project}
+          from={thumbnailOrigin}
+          to={flightTarget}
+          onComplete={handleFlightComplete}
+        />
+      )}
       <div
-        className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
+        ref={modalRef}
+        className="project-modal fixed inset-0 z-[200] overflow-y-auto overscroll-contain"
         style={{
-          background: "var(--modal-bg)",
+          background: revealed ? "var(--modal-bg)" : "transparent",
+          transition: "background 0.45s ease",
         }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={project.title[locale]}
       >
+        <div
+          className={`sticky top-0 z-10 flex items-center justify-between px-6 py-4 transition-opacity duration-500 md:px-10 ${
+            revealed ? "opacity-100" : "opacity-0"
+          }`}
+          style={{
+            background: "var(--modal-bg)",
+          }}
+        >
         <span className="text-xs tracking-widest text-text-secondary uppercase">
           {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </span>
@@ -147,7 +198,10 @@ export default function ProjectModal({
         {/* Zone 1 — Hero deliverable */}
         <div className="pt-8 md:pt-12">
           <div
-            className="aspect-video w-full overflow-hidden rounded-xl"
+            ref={heroRef}
+            className={`aspect-video w-full overflow-hidden rounded-xl transition-opacity duration-300 ${
+              revealed || !showFlight ? "opacity-100" : "opacity-0"
+            }`}
             style={{ background: "var(--placeholder)" }}
           >
             {project.hasVideo && project.videoUrl ? (
@@ -166,7 +220,11 @@ export default function ProjectModal({
             )}
           </div>
 
-          <div className="mt-8">
+          <div
+            className={`mt-8 transition-all duration-500 ${
+              revealed ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+            }`}
+          >
             <h2 className="text-2xl font-medium tracking-tight text-text-primary md:text-4xl">
               {project.title[locale]}
             </h2>
@@ -185,7 +243,11 @@ export default function ProjectModal({
         </div>
 
         {/* Zone 2 — Context */}
-        <section className="mt-16 pt-16">
+        <section
+          className={`mt-16 pt-16 transition-all duration-500 delay-75 ${
+            revealed ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0"
+          }`}
+        >
           <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.context}
           </h3>
@@ -283,7 +345,8 @@ export default function ProjectModal({
           </div>
         </section>
       </div>
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 }
