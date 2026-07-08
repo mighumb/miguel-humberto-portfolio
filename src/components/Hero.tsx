@@ -26,7 +26,7 @@ export default function Hero() {
 
   return (
     <section
-      className="relative flex min-h-screen w-full flex-col overflow-hidden"
+      className="relative flex min-h-[85vh] w-full flex-col overflow-hidden"
       style={{ background: "var(--bg-primary)" }}
       aria-label="Introduction"
     >
@@ -53,7 +53,7 @@ export default function Hero() {
 
       <HeroNav />
 
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-20 text-center md:px-10 md:pb-24">
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-12 text-center md:px-10 md:pb-16">
         <p className="mb-3 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
           Portfolio
         </p>
@@ -66,27 +66,6 @@ export default function Hero() {
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary md:text-lg">
           {t.tagline}
         </p>
-        <div className="mt-10 flex flex-col items-center gap-2">
-          <span className="text-xs tracking-widest text-text-secondary uppercase">
-            {t.scrollHint}
-          </span>
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            className="animate-bounce text-accent"
-            aria-hidden
-          >
-            <path
-              d="M10 4v12M4 10l6 6 6-6"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
       </div>
     </section>
   );

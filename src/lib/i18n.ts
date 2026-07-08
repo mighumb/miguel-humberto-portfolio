@@ -5,7 +5,7 @@ export const translations = {
     role: "AI Creative Producer",
     tagline: "Transforming generative models into visual stories that resonate.",
     scrollHint: "Scroll to explore",
-    projects: "Selected Work",
+    projects: "Work",
     viewProject: "View project",
     manifestoTitle: "Manifesto",
     manifesto: [
@@ -46,7 +46,7 @@ export const translations = {
     role: "Créateur de contenus IA",
     tagline: "Transformer les modèles génératifs en histoires visuelles qui résonnent.",
     scrollHint: "Défiler pour explorer",
-    projects: "Projets sélectionnés",
+    projects: "Projets",
     viewProject: "Voir le projet",
     manifestoTitle: "Manifeste",
     manifesto: [

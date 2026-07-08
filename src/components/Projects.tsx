@@ -35,8 +35,8 @@ export default function Projects() {
   };
 
   return (
-    <section id="projects" className="mx-auto max-w-7xl px-6 py-24 md:px-10 md:py-32">
-      <div className="mb-16 md:mb-24">
+    <section id="projects" className="mx-auto max-w-7xl px-6 pb-24 md:px-10 md:pb-32">
+      <div className="mb-12 md:mb-20">
         <p className="mb-3 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
           01
         </p>
