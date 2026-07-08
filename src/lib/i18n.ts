@@ -10,7 +10,7 @@ export const translations = {
     manifestoTitle: "Who I am",
     manifesto: [
       "My foundation is in design, motion, 3D, and UI. Craft built over years before generative tools entered the picture.",
-      "I see Gen AI as a lever, not a replacement. It scales what I already know how to make.",
+      "I direct Gen AI production across image, video, and motion.",
       "Today I lead creative workflows for brands, labels, and platforms, from ideation to delivery.",
     ],
     contactTitle: "Let's work together",
@@ -51,7 +51,7 @@ export const translations = {
     manifestoTitle: "Qui je suis",
     manifesto: [
       "Ma base, c'est le design, le motion, la 3D et l'UI. Un savoir-faire construit sur des années, avant les outils génératifs.",
-      "Je vois la Gen AI comme un levier, pas comme un substitut. Elle amplifie ce que je sais déjà produire.",
+      "Je dirige la production Gen AI en image, vidéo et motion.",
       "Aujourd'hui, je pilote des workflows créatifs pour des marques, des labels et des plateformes, de l'idéation à la livraison.",
     ],
     contactTitle: "Travaillons ensemble",
