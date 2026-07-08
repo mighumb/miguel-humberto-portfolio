@@ -44,43 +44,45 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         onClick={() => onOpen(project)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="w-full border-0 bg-transparent p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={`${t.viewProject}: ${project.title[locale]}`}
       >
-        <div
-          className="relative aspect-video w-full overflow-hidden rounded-xl work-card-media"
-          style={{ background: "var(--placeholder)" }}
-        >
-          <div className="work-card-media-inner absolute inset-0">
+        <div className="work-card-visual relative aspect-video w-full overflow-hidden rounded-xl">
           <div
-            className={`absolute inset-0 transition-opacity duration-400 ${
-              isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
-            }`}
-            style={{
-              background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
-            }}
-            aria-hidden
+            className="work-card-media relative h-full w-full"
+            style={{ background: "var(--placeholder)" }}
           >
-            <div className="flex h-full items-center justify-center">
-              <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
-                {project.id}
-              </span>
-            </div>
-          </div>
+            <div className="work-card-media-inner absolute inset-0">
+              <div
+                className={`absolute inset-0 transition-opacity duration-400 ${
+                  isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
+                }`}
+                style={{
+                  background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
+                }}
+                aria-hidden
+              >
+                <div className="flex h-full items-center justify-center">
+                  <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
+                    {project.id}
+                  </span>
+                </div>
+              </div>
 
-          {project.hasVideo && project.videoUrl && (
-            <video
-              ref={videoRef}
-              src={project.videoUrl}
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
-                isHovering ? "opacity-100" : "opacity-0"
-              }`}
-            />
-          )}
+              {project.hasVideo && project.videoUrl && (
+                <video
+                  ref={videoRef}
+                  src={project.videoUrl}
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
+                    isHovering ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              )}
+            </div>
           </div>
         </div>
 

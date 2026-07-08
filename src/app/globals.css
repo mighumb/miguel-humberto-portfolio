@@ -91,9 +91,14 @@ body {
 
 .work-card-focus {
   transform-origin: bottom center;
+  will-change: transform, opacity;
+}
+
+.work-card-visual {
+  transform-origin: bottom center;
   transform-style: preserve-3d;
   backface-visibility: hidden;
-  will-change: transform, opacity, filter;
+  will-change: transform, filter;
 }
 
 .work-scroll-3d {
@@ -119,6 +124,10 @@ body {
   .work-card-focus {
     transform: none !important;
     opacity: 1 !important;
+  }
+
+  .work-card-visual {
+    transform: none !important;
     filter: none !important;
     box-shadow: none !important;
   }
