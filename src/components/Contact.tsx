@@ -8,7 +8,7 @@ export default function Contact() {
   const t = translations[locale];
 
   return (
-    <section id="contact" className="relative z-[2] border-t border-border bg-bg-primary">
+    <section id="contact" className="relative z-[2] bg-bg-primary">
       <div className="mx-auto max-w-3xl px-6 py-24 text-center md:px-10 md:py-32">
         <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.contactTitle}
@@ -36,7 +36,7 @@ export default function Contact() {
           </div>
         </div>
 
-        <footer className="mt-24 border-t border-border pt-8">
+        <footer className="mt-24 pt-8">
           <p className="text-xs text-text-secondary">
             © {new Date().getFullYear()} Miguel Humberto
           </p>

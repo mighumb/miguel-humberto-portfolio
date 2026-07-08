@@ -23,7 +23,7 @@ export default function HeroNav() {
 
       <div className="flex items-center gap-4 md:gap-6">
         <div
-          className="flex items-center rounded-full border border-border p-0.5 text-xs font-medium"
+          className="flex items-center rounded-full bg-bg-secondary/80 p-0.5 text-xs font-medium backdrop-blur-sm"
           role="group"
           aria-label="Language"
         >
@@ -56,7 +56,7 @@ export default function HeroNav() {
         <button
           type="button"
           onClick={toggleTheme}
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:text-text-primary"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
           aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
         >
           {theme === "light" ? (

@@ -48,7 +48,8 @@ export default function ProjectModal({
       aria-modal="true"
       aria-label={project.title[locale]}
     >
-      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border px-6 py-4 md:px-10"
+      <div
+        className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
         style={{
           background: "var(--modal-bg)",
         }}
@@ -61,7 +62,7 @@ export default function ProjectModal({
           <button
             type="button"
             onClick={onPrev}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:text-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:text-text-primary"
             aria-label="Previous project"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -71,7 +72,7 @@ export default function ProjectModal({
           <button
             type="button"
             onClick={onNext}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:text-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:text-text-primary"
             aria-label="Next project"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -81,7 +82,7 @@ export default function ProjectModal({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:text-text-primary"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:text-text-primary"
             aria-label="Close"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -122,7 +123,7 @@ export default function ProjectModal({
               {project.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-border px-3 py-1 text-xs text-text-secondary"
+                  className="rounded-full bg-bg-secondary px-3 py-1 text-xs text-text-secondary"
                 >
                   {tag}
                 </span>
@@ -133,7 +134,7 @@ export default function ProjectModal({
         </div>
 
         {/* Zone 2 — Context */}
-        <section className="mt-16 border-t border-border pt-16">
+        <section className="mt-16 pt-16">
           <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.context}
           </h3>
@@ -143,7 +144,7 @@ export default function ProjectModal({
         </section>
 
         {/* Zone 3 — All deliverables */}
-        <section className="mt-16 border-t border-border pt-16">
+        <section className="mt-16 pt-16">
           <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.deliverables}
           </h3>
@@ -167,7 +168,7 @@ export default function ProjectModal({
         </section>
 
         {/* Zone 4 — Process */}
-        <section className="mt-16 border-t border-border pt-16">
+        <section className="mt-16 pt-16">
           <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.process}
           </h3>
@@ -194,7 +195,7 @@ export default function ProjectModal({
         </section>
 
         {/* Zone 5 — Tools */}
-        <section className="mt-16 border-t border-border pt-16">
+        <section className="mt-16 pt-16">
           <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.tools}
           </h3>
@@ -202,7 +203,7 @@ export default function ProjectModal({
             {project.tools.map((tool) => (
               <span
                 key={tool}
-                className="rounded-full border border-border px-4 py-2 text-sm text-text-secondary"
+                className="rounded-full bg-bg-secondary px-4 py-2 text-sm text-text-secondary"
               >
                 {tool}
               </span>
@@ -211,7 +212,7 @@ export default function ProjectModal({
         </section>
 
         {/* Zone 6 — Links */}
-        <section className="mt-16 border-t border-border pt-16">
+        <section className="mt-16 pt-16">
           <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.links}
           </h3>
@@ -219,7 +220,7 @@ export default function ProjectModal({
             {project.links.notion && (
               <a
                 href={project.links.notion}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
               >
                 {mt.notion}
               </a>
@@ -227,7 +228,7 @@ export default function ProjectModal({
             {project.links.youtube && (
               <a
                 href={project.links.youtube}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
               >
                 {mt.youtube}
               </a>
@@ -235,7 +236,7 @@ export default function ProjectModal({
             {project.links.instagram && (
               <a
                 href={project.links.instagram}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
               >
                 {mt.instagram}
               </a>
@@ -243,7 +244,7 @@ export default function ProjectModal({
             {project.links.tiktok && (
               <a
                 href={project.links.tiktok}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
+                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
               >
                 {mt.tiktok}
               </a>

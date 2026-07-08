@@ -61,6 +61,24 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.manifesto-section::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -18rem;
+  height: 18rem;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--bg-primary) 18%, transparent) 22%,
+    color-mix(in srgb, var(--bg-primary) 48%, transparent) 45%,
+    color-mix(in srgb, var(--bg-primary) 78%, transparent) 68%,
+    var(--bg-primary) 100%
+  );
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
