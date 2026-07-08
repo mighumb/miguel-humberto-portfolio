@@ -35,22 +35,33 @@ export default function Projects() {
   };
 
   return (
-    <section id="projects" className="mx-auto max-w-7xl px-6 pb-24 md:px-10 md:pb-32">
-      <div className="mb-12 md:mb-20">
+    <section id="projects" className="pb-24 md:pb-32">
+      <div className="mx-auto max-w-7xl px-6 md:px-10">
         <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.projects}
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 gap-x-10 gap-y-16 md:grid-cols-2 md:gap-y-20">
-        {projects.map((project, index) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            index={index}
-            onOpen={openProject}
-          />
-        ))}
+      <div className="relative mt-12 md:mt-16">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-bg-primary to-transparent md:w-20"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-bg-primary to-transparent md:w-20"
+          aria-hidden
+        />
+
+        <div className="work-scroll flex items-start gap-5 overflow-x-auto px-6 pb-4 snap-x snap-mandatory md:gap-8 md:px-10">
+          {projects.map((project, index) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              index={index}
+              onOpen={openProject}
+            />
+          ))}
+        </div>
       </div>
 
       {activeProject && (

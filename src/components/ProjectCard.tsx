@@ -5,6 +5,15 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { type Project } from "@/lib/projects";
 
+const LAYOUTS = [
+  { width: "w-[82vw] sm:w-[28rem] md:w-[44rem]", aspect: "aspect-[16/10]", offset: "" },
+  { width: "w-[72vw] sm:w-[24rem] md:w-[32rem]", aspect: "aspect-[4/3]", offset: "md:mt-20" },
+  { width: "w-[76vw] sm:w-[26rem] md:w-[36rem]", aspect: "aspect-[4/3]", offset: "md:mt-8" },
+  { width: "w-[82vw] sm:w-[28rem] md:w-[42rem]", aspect: "aspect-[16/10]", offset: "md:mt-24" },
+  { width: "w-[68vw] sm:w-[22rem] md:w-[30rem]", aspect: "aspect-[4/3]", offset: "" },
+  { width: "w-[74vw] sm:w-[25rem] md:w-[34rem]", aspect: "aspect-[4/3]", offset: "md:mt-16" },
+] as const;
+
 interface ProjectCardProps {
   project: Project;
   index: number;
@@ -16,9 +25,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
   const t = translations[locale];
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isHovering, setIsHovering] = useState(false);
-
-  const isLeftColumn = index % 2 === 0;
-  const staggerClass = isLeftColumn ? "md:mt-0" : "md:mt-24";
+  const layout = LAYOUTS[index % LAYOUTS.length];
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -36,17 +43,19 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
   };
 
   return (
-    <article className={`group ${staggerClass}`}>
+    <article
+      className={`group shrink-0 snap-start ${layout.width} ${layout.offset}`}
+    >
       <button
         type="button"
         onClick={() => onOpen(project)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="w-full text-left transition-transform duration-400 ease-out hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        className="work-card-3d w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         aria-label={`${t.viewProject}: ${project.title[locale]}`}
       >
         <div
-          className="relative aspect-[4/3] w-full overflow-hidden rounded-lg"
+          className={`relative ${layout.aspect} w-full overflow-hidden rounded-xl`}
           style={{ background: "var(--placeholder)" }}
         >
           <div
@@ -59,7 +68,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
             aria-hidden
           >
             <div className="flex h-full items-center justify-center">
-              <span className="text-4xl font-light text-text-secondary opacity-30">
+              <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
                 {project.id}
               </span>
             </div>
@@ -80,7 +89,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
           )}
         </div>
 
-        <div className="mt-5 space-y-2">
+        <div className="mt-5 space-y-2 pr-2">
           <div className="flex items-baseline justify-between gap-4">
             <h3 className="text-lg font-medium tracking-tight text-text-primary md:text-xl">
               {project.title[locale]}
@@ -99,7 +108,7 @@ export default function ProjectCard({ project, index, onOpen }: ProjectCardProps
             ))}
           </div>
 
-          <p className="text-sm leading-relaxed text-text-secondary md:text-base">
+          <p className="line-clamp-2 text-sm leading-relaxed text-text-secondary md:text-base">
             {project.description[locale]}
           </p>
 
