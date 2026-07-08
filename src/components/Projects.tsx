@@ -99,7 +99,7 @@ export default function Projects() {
 
   useLayoutEffect(() => {
     const root = document.documentElement;
-    if (phase === "opening" || phase === "open" || phase === "closing") {
+    if (phase === "open") {
       root.classList.add("modal-main-hidden");
     } else {
       root.classList.remove("modal-main-hidden");
@@ -268,6 +268,7 @@ export default function Projects() {
     }
 
     closeTargetsRef.current = modalTargets;
+    document.documentElement.classList.add("is-closing-flip");
     setSharedContentVisible(false);
     setSharedHiddenId(null);
     setPhase("closing");

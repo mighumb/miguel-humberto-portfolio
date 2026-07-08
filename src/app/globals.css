@@ -128,6 +128,11 @@ html.is-closing-flip .project-modal {
   pointer-events: none;
 }
 
+html.is-closing-flip .project-modal-backdrop {
+  opacity: 0 !important;
+  transition: none !important;
+}
+
 html.is-closing-flip .work-scroll-stage {
   position: relative;
   z-index: 210;
