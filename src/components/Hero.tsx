@@ -26,7 +26,7 @@ export default function Hero() {
 
   return (
     <section
-      className="relative flex min-h-[calc(100svh-0.625rem)] w-full flex-col overflow-hidden md:min-h-[calc(100svh-0.75rem)]"
+      className="relative flex h-[calc(100svh-5rem)] w-full flex-col overflow-hidden sm:h-[calc(100svh-6rem)] md:h-[calc(100svh-7rem)]"
       style={{ background: "var(--bg-primary)" }}
       aria-label="Introduction"
     >
