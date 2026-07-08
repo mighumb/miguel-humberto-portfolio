@@ -52,6 +52,7 @@ export default function Projects() {
   const [sharedHiddenId, setSharedHiddenId] = useState<string | null>(null);
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
+  const [flightVideoTime, setFlightVideoTime] = useState(0);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -116,6 +117,7 @@ export default function Projects() {
     setSharedHiddenId(null);
     setSharedContentVisible(false);
     setFlightShowVideo(false);
+    setFlightVideoTime(0);
     closeTargetsRef.current = null;
     openFlightRef.current = null;
   }, []);
@@ -192,6 +194,7 @@ export default function Projects() {
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
+    setFlightVideoTime(freshOrigin.videoTime);
     setSharedHiddenId(project.id);
     setSharedContentVisible(false);
     setPhase("opening");
@@ -226,9 +229,12 @@ export default function Projects() {
     setFlight(nextFlight);
   }, []);
 
-  const handleFlightLanding = useCallback(() => {
+  const handleFlightLanding = useCallback((handoffVideoTime?: number) => {
     if (phaseRef.current !== "opening") return;
 
+    if (handoffVideoTime !== undefined) {
+      setFlightVideoTime(handoffVideoTime);
+    }
     setSharedContentVisible(true);
     setPhase("open");
     setSharedHiddenId(null);
@@ -258,6 +264,8 @@ export default function Projects() {
       direction === "next"
         ? (activeIndex + 1) % projects.length
         : (activeIndex - 1 + projects.length) % projects.length;
+    setFlightShowVideo(false);
+    setFlightVideoTime(0);
     setActiveIndex(newIndex);
     setActiveProject(projects[newIndex]);
   };
@@ -297,6 +305,11 @@ export default function Projects() {
                 project={project}
                 onOpen={openProject}
                 isSharedHidden={sharedHiddenId === project.id}
+                keepVideoAlive={
+                  sharedHiddenId === project.id ||
+                  (activeProject?.id === project.id &&
+                    (phase === "opening" || phase === "closing"))
+                }
               />
             ))}
             <ScrollGutter />
@@ -315,6 +328,8 @@ export default function Projects() {
           sharedContentVisible={sharedContentVisible}
           awaitingFlightTargets={phase === "opening"}
           backdropVisible={phase === "opening" || phase === "open"}
+          videoPlaying={flightShowVideo}
+          videoTime={flightVideoTime}
           onFlightTargetsReady={handleFlightTargetsReady}
           onRegisterMeasure={registerMeasure}
         />
@@ -326,6 +341,7 @@ export default function Projects() {
           locale={locale}
           flight={flight}
           showVideo={flightShowVideo}
+          videoTime={flightVideoTime}
           onLanding={handleFlightLanding}
         />
       )}

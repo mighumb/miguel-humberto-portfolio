@@ -10,13 +10,15 @@ import {
 } from "@/lib/motion";
 import { type Project } from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
+import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectSharedFlightProps {
   project: Project;
   locale: Locale;
   flight: FlightPair;
   showVideo: boolean;
-  onLanding: () => void;
+  videoTime: number;
+  onLanding: (handoffVideoTime?: number) => void;
 }
 
 function frameStyle(frame: ElementRect) {
@@ -32,11 +34,21 @@ function FlightThumbnail({
   project,
   showVideo,
   frame,
+  videoTime,
 }: {
   project: Project;
   showVideo: boolean;
   frame: ElementRect;
+  videoTime: number;
 }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useLayoutEffect(() => {
+    const video = videoRef.current;
+    if (!video || !showVideo) return;
+    syncVideoPlayback(video, videoTime);
+  }, [showVideo, videoTime, project.videoUrl]);
+
   return (
     <div
       className="project-shared-flight-thumb project-placeholder-gradient relative overflow-hidden rounded-xl"
@@ -44,10 +56,12 @@ function FlightThumbnail({
     >
       {showVideo && project.hasVideo && project.videoUrl ? (
         <video
+          ref={videoRef}
           src={project.videoUrl}
           muted
-          autoPlay
+          loop
           playsInline
+          preload="auto"
           className="h-full w-full object-cover"
         />
       ) : (
@@ -136,6 +150,7 @@ export default function ProjectSharedFlight({
   locale,
   flight,
   showVideo,
+  videoTime,
   onLanding,
 }: ProjectSharedFlightProps) {
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
@@ -158,8 +173,11 @@ export default function ProjectSharedFlight({
 
     if (flight.direction === "close") return;
 
-    onLandingRef.current();
-  }, [flight.direction]);
+    const flightVideo = thumbRef.current?.querySelector<HTMLVideoElement>("video");
+    const handoffVideoTime =
+      showVideo && flightVideo ? flightVideo.currentTime : undefined;
+    onLandingRef.current(handoffVideoTime);
+  }, [flight.direction, showVideo]);
 
   useLayoutEffect(() => {
     if (prefersReducedMotion()) {
@@ -212,7 +230,12 @@ export default function ProjectSharedFlight({
           finish();
         }}
       >
-        <FlightThumbnail project={project} showVideo={showVideo} frame={thumbFrame} />
+        <FlightThumbnail
+          project={project}
+          showVideo={showVideo}
+          frame={thumbFrame}
+          videoTime={videoTime}
+        />
         <FlightTitle
           title={project.title[locale]}
           frame={titleFrame}

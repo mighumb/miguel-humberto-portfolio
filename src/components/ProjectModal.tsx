@@ -7,6 +7,7 @@ import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
 import { type Project } from "@/lib/projects";
+import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectModalProps {
   project: Project;
@@ -18,6 +19,8 @@ interface ProjectModalProps {
   sharedContentVisible: boolean;
   awaitingFlightTargets: boolean;
   backdropVisible: boolean;
+  videoPlaying: boolean;
+  videoTime: number;
   onFlightTargetsReady: (targets: ModalTargets) => void;
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
@@ -52,6 +55,8 @@ export default function ProjectModal({
   sharedContentVisible,
   awaitingFlightTargets,
   backdropVisible,
+  videoPlaying,
+  videoTime,
   onFlightTargetsReady,
   onRegisterMeasure,
 }: ProjectModalProps) {
@@ -62,8 +67,15 @@ export default function ProjectModal({
   const titleRef = useRef<HTMLHeadingElement>(null);
   const yearRef = useRef<HTMLSpanElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useScrollLock(true);
+
+  useLayoutEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video || !project.hasVideo || !videoPlaying) return;
+    syncVideoPlayback(video, videoTime);
+  }, [project.id, project.hasVideo, videoPlaying, videoTime]);
 
   const measureTargets = useCallback((): ModalTargets | null => {
     const hero = heroRef.current;
@@ -204,9 +216,12 @@ export default function ProjectModal({
               >
                 {project.hasVideo && project.videoUrl ? (
                   <video
+                    ref={heroVideoRef}
                     src={project.videoUrl}
-                    controls
+                    controls={sharedContentVisible}
+                    muted
                     playsInline
+                    preload={videoPlaying ? "auto" : "metadata"}
                     className="h-full w-full object-cover"
                   />
                 ) : (

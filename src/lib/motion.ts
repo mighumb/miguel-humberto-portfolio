@@ -21,6 +21,7 @@ export interface CardOrigin {
   tags: ElementRect;
   perspective: CardPerspective;
   showVideo: boolean;
+  videoTime: number;
 }
 
 export interface ModalTargets {
@@ -75,6 +76,8 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
   const container = card?.closest<HTMLElement>(".work-scroll");
   if (!card || !visual || !title || !year || !tags || !container) return null;
 
+  const video = card.querySelector<HTMLVideoElement>(".work-card-media video");
+
   return {
     thumbnail: toRect(visual.getBoundingClientRect()),
     title: toRect(title.getBoundingClientRect()),
@@ -84,6 +87,7 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
     tags: toRect(tags.getBoundingClientRect()),
     perspective: computeCardFocus(card, container),
     showVideo,
+    videoTime: showVideo && video ? video.currentTime : 0,
   };
 }
 

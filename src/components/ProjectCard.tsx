@@ -11,10 +11,11 @@ interface ProjectCardProps {
   project: Project;
   onOpen: (project: Project, origin: CardOrigin | null) => void;
   isSharedHidden?: boolean;
+  keepVideoAlive?: boolean;
 }
 
 const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
-  { project, onOpen, isSharedHidden = false },
+  { project, onOpen, isSharedHidden = false, keepVideoAlive = false },
   ref,
 ) {
   const { locale } = useLocale();
@@ -33,10 +34,9 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   const handleMouseLeave = () => {
     setIsHovering(false);
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-    }
+    if (keepVideoAlive || !videoRef.current) return;
+    videoRef.current.pause();
+    videoRef.current.currentTime = 0;
   };
 
   const handleOpen = () => {
@@ -69,6 +69,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         return container ? computeCardFocus(card, container) : FLAT_PERSPECTIVE;
       })(),
       showVideo: isHovering && !!project.hasVideo,
+      videoTime:
+        isHovering && project.hasVideo && videoRef.current
+          ? videoRef.current.currentTime
+          : 0,
     });
   };
 
