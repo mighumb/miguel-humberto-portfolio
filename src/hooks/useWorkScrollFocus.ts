@@ -123,12 +123,26 @@ export function useWorkScrollFocus(
     if (!container) return;
     if (pauseMode === "open" || pauseMode === "flight") return;
 
+    const stage =
+      container.closest<HTMLElement>("#projects") ??
+      container.closest<HTMLElement>(".work-scroll-stage");
+    if (!stage) return;
+
     const onWheel = (event: WheelEvent) => {
       const absX = Math.abs(event.deltaX);
       const absY = Math.abs(event.deltaY);
 
       if (absX > absY) return;
-      if (!isWorkCarouselScrollActive(container)) return;
+
+      const stageRect = stage.getBoundingClientRect();
+      const pointerInsideStage =
+        event.clientX >= stageRect.left &&
+        event.clientX <= stageRect.right &&
+        event.clientY >= stageRect.top &&
+        event.clientY <= stageRect.bottom;
+
+      if (!pointerInsideStage) return;
+      if (!isWorkCarouselScrollActive(container, event.clientY)) return;
 
       const goingRight = event.deltaY > 0;
       const maxScroll = container.scrollWidth - container.clientWidth;
@@ -141,10 +155,10 @@ export function useWorkScrollFocus(
       container.scrollLeft += event.deltaY;
     };
 
-    container.addEventListener("wheel", onWheel, { passive: false });
+    stage.addEventListener("wheel", onWheel, { passive: false });
 
     return () => {
-      container.removeEventListener("wheel", onWheel);
+      stage.removeEventListener("wheel", onWheel);
     };
   }, [itemCount, pauseMode]);
 
