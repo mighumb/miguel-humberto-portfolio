@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -14,6 +14,26 @@ interface ProjectModalProps {
   onNext: () => void;
   currentIndex: number;
   total: number;
+}
+
+function ResourceLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="inline-flex items-center gap-2 text-sm font-medium text-text-primary transition-colors hover:text-accent"
+    >
+      {children}
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+        <path
+          d="M3.5 10.5 10.5 3.5M5.5 3.5h5v5"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </a>
+  );
 }
 
 export default function ProjectModal({
@@ -230,11 +250,11 @@ export default function ProjectModal({
           <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.tools}
           </h3>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {project.tools.map((tool) => (
               <span
                 key={tool}
-                className="rounded-full bg-bg-secondary px-4 py-2 text-sm text-text-secondary"
+                className="rounded-full bg-bg-secondary px-3 py-1 text-xs text-text-secondary"
               >
                 {tool}
               </span>
@@ -247,38 +267,18 @@ export default function ProjectModal({
           <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
             {mt.links}
           </h3>
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
             {project.links.notion && (
-              <a
-                href={project.links.notion}
-                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
-              >
-                {mt.notion}
-              </a>
+              <ResourceLink href={project.links.notion}>{mt.notion}</ResourceLink>
             )}
             {project.links.youtube && (
-              <a
-                href={project.links.youtube}
-                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
-              >
-                {mt.youtube}
-              </a>
+              <ResourceLink href={project.links.youtube}>{mt.youtube}</ResourceLink>
             )}
             {project.links.instagram && (
-              <a
-                href={project.links.instagram}
-                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
-              >
-                {mt.instagram}
-              </a>
+              <ResourceLink href={project.links.instagram}>{mt.instagram}</ResourceLink>
             )}
             {project.links.tiktok && (
-              <a
-                href={project.links.tiktok}
-                className="inline-flex items-center gap-2 rounded-full bg-bg-secondary px-5 py-2.5 text-sm text-text-secondary transition-colors hover:text-text-primary"
-              >
-                {mt.tiktok}
-              </a>
+              <ResourceLink href={project.links.tiktok}>{mt.tiktok}</ResourceLink>
             )}
           </div>
         </section>
