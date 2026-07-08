@@ -97,17 +97,14 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       <div className="work-card-body">
         <div
           ref={visualRef}
-          className={`work-card-visual relative aspect-video w-full overflow-hidden rounded-xl bg-bg-primary ${hiddenClass}`}
+          className={`work-card-visual relative aspect-video w-full overflow-hidden rounded-xl ${hiddenClass}`}
         >
           <div className="work-card-media relative h-full w-full">
             <div className="absolute inset-0">
               <div
-                className={`absolute inset-0 transition-opacity duration-400 ${
+                className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
                   isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
                 }`}
-                style={{
-                  background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
-                }}
                 aria-hidden
               >
                 <div className="flex h-full items-center justify-center">

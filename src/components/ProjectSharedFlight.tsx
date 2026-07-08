@@ -17,7 +17,6 @@ interface ProjectSharedFlightProps {
   flight: FlightPair;
   showVideo: boolean;
   onLanding: () => void;
-  onComplete: () => void;
 }
 
 function frameStyle(frame: ElementRect) {
@@ -40,7 +39,7 @@ function FlightThumbnail({
 }) {
   return (
     <div
-      className="project-shared-flight-thumb relative overflow-hidden rounded-xl bg-bg-primary"
+      className="project-shared-flight-thumb project-placeholder-gradient relative overflow-hidden rounded-xl"
       style={frameStyle(frame)}
     >
       {showVideo && project.hasVideo && project.videoUrl ? (
@@ -52,20 +51,11 @@ function FlightThumbnail({
           className="h-full w-full object-cover"
         />
       ) : (
-        <>
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)",
-            }}
-          />
-          <div className="flex h-full items-center justify-center">
-            <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
-              {project.id}
-            </span>
-          </div>
-        </>
+        <div className="flex h-full items-center justify-center">
+          <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
+            {project.id}
+          </span>
+        </div>
       )}
     </div>
   );
@@ -147,7 +137,6 @@ export default function ProjectSharedFlight({
   flight,
   showVideo,
   onLanding,
-  onComplete,
 }: ProjectSharedFlightProps) {
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
   const [titleFrame, setTitleFrame] = useState(flight.title.from);
@@ -158,36 +147,27 @@ export default function ProjectSharedFlight({
   const [tagsVariant, setTagsVariant] = useState<"card" | "modal">(
     flight.direction === "open" ? "card" : "modal",
   );
-  const [opacity, setOpacity] = useState(1);
   const completedRef = useRef(false);
   const thumbRef = useRef<HTMLDivElement>(null);
   const onLandingRef = useRef(onLanding);
-  const onCompleteRef = useRef(onComplete);
   onLandingRef.current = onLanding;
-  onCompleteRef.current = onComplete;
 
   const finish = useCallback(() => {
     if (completedRef.current) return;
     completedRef.current = true;
 
-    if (flight.direction === "close") {
-      onCompleteRef.current();
-      return;
-    }
+    if (flight.direction === "close") return;
 
     onLandingRef.current();
-    setOpacity(0);
-    window.setTimeout(() => onCompleteRef.current(), 100);
   }, [flight.direction]);
 
   useLayoutEffect(() => {
     if (prefersReducedMotion()) {
-      onCompleteRef.current();
+      onLandingRef.current();
       return;
     }
 
     completedRef.current = false;
-    setOpacity(1);
     setThumbFrame(flight.thumbnail.from);
     setTitleFrame(flight.title.from);
     setTitleFontSize(flight.title.fromFontSize);
@@ -223,7 +203,6 @@ export default function ProjectSharedFlight({
       className={`project-shared-flight pointer-events-none fixed inset-0 z-[220] ${
         flight.direction === "close" ? "is-closing" : ""
       }`}
-      style={{ opacity }}
       aria-hidden
     >
       <div

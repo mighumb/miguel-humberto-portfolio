@@ -192,6 +192,7 @@ export default function Projects() {
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
+    setSharedHiddenId(project.id);
     setSharedContentVisible(false);
     setPhase("opening");
   }, [scrollRef]);
@@ -223,22 +224,15 @@ export default function Projects() {
 
     openFlightRef.current = nextFlight;
     setFlight(nextFlight);
-    setSharedHiddenId(project.id);
   }, []);
 
   const handleFlightLanding = useCallback(() => {
-    if (phaseRef.current === "opening") {
-      setSharedContentVisible(true);
-      setPhase("open");
-    }
-  }, []);
+    if (phaseRef.current !== "opening") return;
 
-  const handleFlightComplete = useCallback(() => {
+    setSharedContentVisible(true);
+    setPhase("open");
+    setSharedHiddenId(null);
     setFlight(null);
-
-    if (phaseRef.current === "opening") {
-      setSharedHiddenId(null);
-    }
   }, []);
 
   const requestClose = useCallback(() => {
@@ -333,7 +327,6 @@ export default function Projects() {
           flight={flight}
           showVideo={flightShowVideo}
           onLanding={handleFlightLanding}
-          onComplete={handleFlightComplete}
         />
       )}
     </section>

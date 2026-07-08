@@ -120,7 +120,7 @@ body {
 }
 
 .is-shared-hidden {
-  opacity: 0;
+  visibility: hidden;
 }
 
 html.is-closing-flip .project-modal {
@@ -241,6 +241,14 @@ html.modal-open .project-modal {
 
 .work-card-visual {
   transform-style: preserve-3d;
+}
+
+.project-placeholder-gradient {
+  background: linear-gradient(
+    135deg,
+    var(--placeholder) 0%,
+    var(--placeholder-dark) 100%
+  );
 }
 
 .work-scroll-stage {

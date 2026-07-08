@@ -198,10 +198,9 @@ export default function ProjectModal({
             <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
-                className={`project-modal-hero aspect-video w-full overflow-hidden rounded-xl ${
+                className={`project-modal-hero project-placeholder-gradient aspect-video w-full overflow-hidden rounded-xl ${
                   sharedHidden ? "is-shared-hidden" : ""
                 }`}
-                style={{ background: "var(--placeholder)" }}
               >
                 {project.hasVideo && project.videoUrl ? (
                   <video
@@ -212,7 +211,7 @@ export default function ProjectModal({
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
-                    <span className="text-6xl font-light text-text-secondary opacity-30">
+                    <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
                       {project.id}
                     </span>
                   </div>
