@@ -16,9 +16,6 @@ export default function Hero() {
       <HeroNav />
 
       <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-12 text-center md:px-10 md:pb-16">
-        <p className="mb-3 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
-          Portfolio
-        </p>
         <h1 className="text-4xl font-light tracking-tight text-text-primary md:text-6xl lg:text-7xl">
           Miguel Humberto
         </h1>
