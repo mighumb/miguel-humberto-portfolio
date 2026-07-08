@@ -10,19 +10,17 @@ export default function Manifesto() {
   return (
     <section className="manifesto-section relative z-[2] bg-bg-primary">
       <div className="mx-auto max-w-3xl px-6 pb-20 pt-8 text-center md:px-10 md:pb-28 md:pt-12">
-        <h2 className="mb-8 text-3xl font-light tracking-tight text-text-primary md:mb-12 md:text-5xl">
+        <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.manifestoTitle}
         </h2>
-        <div className="space-y-3">
+        <p className="mx-auto mt-6 max-w-2xl text-base text-text-secondary md:text-lg">
           {t.manifesto.map((paragraph, i) => (
-            <p
-              key={i}
-              className="text-base leading-normal text-text-secondary md:text-lg"
-            >
+            <span key={i}>
+              {i > 0 && <br />}
               {paragraph}
-            </p>
+            </span>
           ))}
-        </div>
+        </p>
       </div>
     </section>
   );
