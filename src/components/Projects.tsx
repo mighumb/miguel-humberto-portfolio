@@ -41,7 +41,11 @@ export default function Projects() {
   };
 
   return (
-    <section id="projects" className="pb-24 md:pb-32" aria-label={t.projects}>
+    <section
+      id="projects"
+      className="relative z-10 -mt-[min(18svh,9rem)] pb-24 md:pb-32"
+      aria-label={t.projects}
+    >
       <h2 className="sr-only">{t.projects}</h2>
 
       <div className="relative">

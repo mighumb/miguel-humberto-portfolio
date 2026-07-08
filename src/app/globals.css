@@ -92,15 +92,14 @@ body {
 .work-card-focus {
   transform-origin: bottom center;
   will-change: transform, opacity;
-}
-
-.work-card-trigger {
   background: transparent;
-  -webkit-tap-highlight-color: transparent;
 }
 
 .work-card-meta {
   background: transparent;
+  box-shadow: none;
+  filter: none;
+  transform: none;
 }
 
 .work-card-visual {
@@ -132,10 +131,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .work-card-focus {
     transform: none !important;
-    opacity: 1 !important;
   }
 
   .work-card-visual {
+    opacity: 1 !important;
     transform: none !important;
     filter: none !important;
     box-shadow: none !important;

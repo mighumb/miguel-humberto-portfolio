@@ -42,8 +42,8 @@ export function useWorkScrollFocus(itemCount: number) {
 
         if (reducedMotion) {
           card.style.transform = "";
-          card.style.opacity = "";
           if (visual) {
+            visual.style.opacity = "";
             visual.style.transform = "";
             visual.style.filter = "";
             visual.style.boxShadow = "";
@@ -69,10 +69,10 @@ export function useWorkScrollFocus(itemCount: number) {
         const mediaShift = progress * -12;
 
         card.style.transform = `translateY(${translateY}px)`;
-        card.style.opacity = `${opacity}`;
         card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
 
         if (visual) {
+          visual.style.opacity = `${opacity}`;
           visual.style.transform = [
             `translateZ(${translateZ}px)`,
             `rotateY(${rotateY}deg)`,
