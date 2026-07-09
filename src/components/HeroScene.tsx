@@ -9,8 +9,38 @@ import { useTheme } from "@/contexts/ThemeContext";
 const PARTICLE_COUNT = 3200;
 const DRIFT_COUNT = 800;
 
-// Screen-space radius (~cursor footprint in px)
-const CURSOR_RADIUS_PX = 18;
+// Base screen-space radius (~cursor footprint in px), extended per particle size
+const CURSOR_RADIUS_PX = 14;
+
+function particleRadiusPx(
+  worldPos: THREE.Vector3,
+  camera: THREE.Camera,
+  viewportHeight: number,
+  pointSize: number,
+  canvasHeight: number,
+) {
+  const persp = camera as THREE.PerspectiveCamera;
+  const dist = worldPos.distanceTo(camera.position);
+  if (dist <= 0.001) return pointSize;
+
+  const vFov = (persp.fov * Math.PI) / 180;
+  const bufferRadius = (pointSize * viewportHeight) / (2 * dist * Math.tan(vFov / 2));
+  return bufferRadius * (canvasHeight / viewportHeight);
+}
+
+function screenFromWorld(
+  worldPos: THREE.Vector3,
+  camera: THREE.Camera,
+  rect: DOMRect,
+  out: THREE.Vector3,
+) {
+  out.copy(worldPos).project(camera);
+  return {
+    x: rect.left + ((out.x * 0.5 + 0.5) * rect.width),
+    y: rect.top + ((-out.y * 0.5 + 0.5) * rect.height),
+    depth: out.z,
+  };
+}
 
 // Light mode: darker grays on #F5F5F7 — must read clearly against the page
 const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
@@ -129,12 +159,18 @@ function ParticleLayer({
   drift,
   turbulenceStrength,
 }: ParticleLayerProps) {
-  const { camera, size: viewport } = useThree();
+  const { camera, size: viewport, gl } = useThree();
   const ref = useRef<THREE.Points>(null);
   const basePositions = useMemo(() => data.positions.slice(), [data.positions]);
   const offsets = useRef(new Float32Array(data.actualCount * 3));
   const velocities = useRef(new Float32Array(data.actualCount * 3));
+  const worldPos = useMemo(() => new THREE.Vector3(), []);
+  const pushWorld = useMemo(() => new THREE.Vector3(), []);
+  const pushLocal = useMemo(() => new THREE.Vector3(), []);
+  const cameraRight = useMemo(() => new THREE.Vector3(), []);
+  const cameraUp = useMemo(() => new THREE.Vector3(), []);
   const projected = useMemo(() => new THREE.Vector3(), []);
+  const layerRotation = useMemo(() => new THREE.Quaternion(), []);
 
   const colors = useMemo(
     () => buildColors(data.mix, data.actualCount, isDark),
@@ -151,18 +187,24 @@ function ParticleLayer({
 
   useFrame((state) => {
     if (!ref.current) return;
+    const points = ref.current;
     const t = state.clock.elapsedTime;
-    ref.current.rotation.y = t * speed;
-    ref.current.rotation.x = Math.sin(t * 0.1) * 0.04;
+    points.rotation.y = t * speed;
+    points.rotation.x = Math.sin(t * 0.1) * 0.04;
+    points.updateMatrixWorld();
 
-    const posAttr = ref.current.geometry.attributes.position;
+    const posAttr = points.geometry.attributes.position;
     const arr = posAttr.array as Float32Array;
     const offsetArr = offsets.current;
     const velocityArr = velocities.current;
     const cursorActive = mouseInfluence.active;
     const cursorX = mouseInfluence.screenX;
     const cursorY = mouseInfluence.screenY;
-    const radiusSq = CURSOR_RADIUS_PX * CURSOR_RADIUS_PX;
+    const canvasRect = gl.domElement.getBoundingClientRect();
+    points.getWorldQuaternion(layerRotation).invert();
+
+    cameraRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+    cameraUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
 
     for (let i = 0; i < data.actualCount; i++) {
       const ix = i * 3;
@@ -180,38 +222,48 @@ function ParticleLayer({
       const pz = bz + offsetArr[iz];
 
       if (cursorActive) {
-        projected.set(px, py, pz);
-        projected.project(camera);
+        worldPos.set(px, py, pz);
+        points.localToWorld(worldPos);
 
-        if (projected.z <= 1) {
-          const screenX = (projected.x * 0.5 + 0.5) * viewport.width;
-          const screenY = (-projected.y * 0.5 + 0.5) * viewport.height;
-          const dx = screenX - cursorX;
-          const dy = screenY - cursorY;
-          const distSq = dx * dx + dy * dy;
+        const screen = screenFromWorld(worldPos, camera, canvasRect, projected);
+        if (screen.depth <= 1) {
+          const dx = screen.x - cursorX;
+          const dy = screen.y - cursorY;
+          const dist = Math.hypot(dx, dy);
+          const particlePx = particleRadiusPx(
+            worldPos,
+            camera,
+            viewport.height,
+            size,
+            canvasRect.height,
+          );
+          const hitRadius = CURSOR_RADIUS_PX + particlePx;
 
-          if (distSq < radiusSq) {
-            const dist = Math.sqrt(distSq) || 0.001;
-            const falloff = (1 - dist / CURSOR_RADIUS_PX) * turbulenceStrength;
-            const nx = dx / dist;
-            const ny = dy / dist;
+          if (dist < hitRadius) {
+            const falloff = (1 - dist / hitRadius) * turbulenceStrength;
+            const nx = dx / (dist || 0.001);
+            const ny = dy / (dist || 0.001);
 
-            velocityArr[ix] += nx * falloff * 0.022;
-            velocityArr[iy] += -ny * falloff * 0.022;
-            velocityArr[ix] += -ny * falloff * 0.018;
-            velocityArr[iy] += nx * falloff * 0.018;
-            velocityArr[iz] += (data.phases[i] - 0.5) * falloff * 0.008;
+            pushWorld
+              .copy(cameraRight)
+              .multiplyScalar(nx * falloff * 0.035)
+              .addScaledVector(cameraUp, -ny * falloff * 0.035);
+            pushLocal.copy(pushWorld).applyQuaternion(layerRotation);
+
+            velocityArr[ix] += pushLocal.x;
+            velocityArr[iy] += pushLocal.y;
+            velocityArr[iz] += pushLocal.z + (data.phases[i] - 0.5) * falloff * 0.012;
           }
         }
       }
 
-      velocityArr[ix] *= 0.88;
-      velocityArr[iy] *= 0.88;
-      velocityArr[iz] *= 0.88;
+      velocityArr[ix] *= 0.86;
+      velocityArr[iy] *= 0.86;
+      velocityArr[iz] *= 0.86;
 
-      offsetArr[ix] = offsetArr[ix] * 0.9 + velocityArr[ix];
-      offsetArr[iy] = offsetArr[iy] * 0.9 + velocityArr[iy];
-      offsetArr[iz] = offsetArr[iz] * 0.9 + velocityArr[iz];
+      offsetArr[ix] = offsetArr[ix] * 0.88 + velocityArr[ix];
+      offsetArr[iy] = offsetArr[iy] * 0.88 + velocityArr[iy];
+      offsetArr[iz] = offsetArr[iz] * 0.88 + velocityArr[iz];
 
       arr[ix] = bx + offsetArr[ix];
       arr[iy] = by + offsetArr[iy];
