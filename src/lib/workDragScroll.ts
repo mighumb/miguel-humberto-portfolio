@@ -102,6 +102,11 @@ export function attachWorkDragScroll(container: HTMLElement) {
     momentumRaf = requestAnimationFrame(runMomentum);
   };
 
+  const clearDragCursor = () => {
+    container.classList.remove("is-pressing", "is-dragging");
+    document.body.style.removeProperty("cursor");
+  };
+
   const onPointerMove = (event: PointerEvent) => {
     if (activePointerId !== event.pointerId) return;
 
@@ -115,7 +120,9 @@ export function attachWorkDragScroll(container: HTMLElement) {
       if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
 
       dragged = true;
+      container.classList.remove("is-pressing");
       container.classList.add("is-dragging");
+      document.body.style.cursor = "grabbing";
       container.setPointerCapture(event.pointerId);
     }
 
@@ -134,7 +141,7 @@ export function attachWorkDragScroll(container: HTMLElement) {
       container.releasePointerCapture(event.pointerId);
     }
 
-    container.classList.remove("is-dragging");
+    clearDragCursor();
 
     if (dragged) {
       startMomentum(computeReleaseVelocity());
@@ -160,6 +167,9 @@ export function attachWorkDragScroll(container: HTMLElement) {
     samples = [];
     recordSample(event.clientX);
 
+    container.classList.add("is-pressing");
+    document.body.style.cursor = "grab";
+
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", endDrag);
     window.addEventListener("pointercancel", endDrag);
@@ -181,10 +191,10 @@ export function attachWorkDragScroll(container: HTMLElement) {
     motionControllers.delete(container);
     window.clearTimeout(suppressClickTimer);
     stopMomentum();
+    clearDragCursor();
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("pointerup", endDrag);
     window.removeEventListener("pointercancel", endDrag);
-    container.classList.remove("is-dragging");
     clearDraggedFlag();
     container.removeEventListener("pointerdown", onPointerDown);
     container.removeEventListener("click", onClickCapture, true);

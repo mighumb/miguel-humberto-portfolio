@@ -232,6 +232,16 @@ html.modal-open .project-modal {
   touch-action: pan-y;
 }
 
+.work-scroll.is-pressing {
+  cursor: grab;
+  user-select: none;
+}
+
+.work-scroll.is-pressing * {
+  cursor: grab !important;
+  user-select: none;
+}
+
 .work-scroll.is-dragging {
   cursor: grabbing;
   user-select: none;
@@ -244,6 +254,11 @@ html.modal-open .project-modal {
 
 .work-scroll-gutter {
   cursor: grab;
+}
+
+.work-scroll.is-pressing .work-scroll-gutter,
+.work-scroll.is-dragging .work-scroll-gutter {
+  cursor: grabbing !important;
 }
 
 .work-scroll .work-card-focus {
