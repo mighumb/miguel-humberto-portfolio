@@ -9,8 +9,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 const PARTICLE_COUNT = 3200;
 const DRIFT_COUNT = 800;
 
-const TURBULENCE_RADIUS = 1.45;
-const TURBULENCE_RADIUS_SQ = TURBULENCE_RADIUS * TURBULENCE_RADIUS;
+// Screen-space radius (~cursor footprint in px)
+const CURSOR_RADIUS_PX = 18;
 
 // Light mode: darker grays on #F5F5F7 — must read clearly against the page
 const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
@@ -21,9 +21,9 @@ const DARK_PARTICLE = new THREE.Color("#6e6e73");
 const DARK_PARTICLE_ALT = new THREE.Color("#aeaeb2");
 
 const mouseInfluence = {
-  worldX: 0,
-  worldY: 0,
-  energy: 0,
+  screenX: 0,
+  screenY: 0,
+  active: false,
 };
 
 function seededRandom(seed: number) {
@@ -86,46 +86,26 @@ function buildColors(mix: Float32Array, count: number, isDark: boolean) {
 }
 
 function MouseTurbulenceTracker() {
-  const { camera } = useThree();
-  const ndc = useMemo(() => new THREE.Vector3(), []);
-  const direction = useMemo(() => new THREE.Vector3(), []);
-  const lastPointer = useRef({ x: 0, y: 0, t: 0 });
-
   useEffect(() => {
-    const updateWorldPosition = (clientX: number, clientY: number) => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-
-      ndc.set((clientX / w) * 2 - 1, -(clientY / h) * 2 + 1, 0.5);
-      ndc.unproject(camera);
-      direction.copy(ndc).sub(camera.position).normalize();
-
-      const distance = -camera.position.z / direction.z;
-      mouseInfluence.worldX = camera.position.x + direction.x * distance;
-      mouseInfluence.worldY = camera.position.y + direction.y * distance;
+    const onPointerMove = (event: PointerEvent) => {
+      mouseInfluence.screenX = event.clientX;
+      mouseInfluence.screenY = event.clientY;
+      mouseInfluence.active = true;
     };
 
-    const onPointerMove = (event: PointerEvent) => {
-      updateWorldPosition(event.clientX, event.clientY);
-
-      const now = performance.now();
-      const dt = Math.max(12, now - lastPointer.current.t);
-      const pointerSpeed = Math.hypot(
-        event.clientX - lastPointer.current.x,
-        event.clientY - lastPointer.current.y,
-      ) / dt;
-
-      lastPointer.current = { x: event.clientX, y: event.clientY, t: now };
-      mouseInfluence.energy = Math.min(1, 0.42 + pointerSpeed * 0.14);
+    const onPointerLeave = () => {
+      mouseInfluence.active = false;
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onPointerMove);
-  }, [camera, direction, ndc]);
+    document.documentElement.addEventListener("pointerleave", onPointerLeave);
 
-  useFrame(() => {
-    mouseInfluence.energy *= 0.94;
-  });
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      document.documentElement.removeEventListener("pointerleave", onPointerLeave);
+      mouseInfluence.active = false;
+    };
+  }, []);
 
   return null;
 }
@@ -149,10 +129,12 @@ function ParticleLayer({
   drift,
   turbulenceStrength,
 }: ParticleLayerProps) {
+  const { camera, size: viewport } = useThree();
   const ref = useRef<THREE.Points>(null);
   const basePositions = useMemo(() => data.positions.slice(), [data.positions]);
   const offsets = useRef(new Float32Array(data.actualCount * 3));
   const velocities = useRef(new Float32Array(data.actualCount * 3));
+  const projected = useMemo(() => new THREE.Vector3(), []);
 
   const colors = useMemo(
     () => buildColors(data.mix, data.actualCount, isDark),
@@ -177,9 +159,10 @@ function ParticleLayer({
     const arr = posAttr.array as Float32Array;
     const offsetArr = offsets.current;
     const velocityArr = velocities.current;
-    const mx = mouseInfluence.worldX;
-    const my = mouseInfluence.worldY;
-    const energy = mouseInfluence.energy;
+    const cursorActive = mouseInfluence.active;
+    const cursorX = mouseInfluence.screenX;
+    const cursorY = mouseInfluence.screenY;
+    const radiusSq = CURSOR_RADIUS_PX * CURSOR_RADIUS_PX;
 
     for (let i = 0; i < data.actualCount; i++) {
       const ix = i * 3;
@@ -194,33 +177,41 @@ function ParticleLayer({
 
       const px = bx + offsetArr[ix];
       const py = by + offsetArr[iy];
+      const pz = bz + offsetArr[iz];
 
-      if (energy > 0.02) {
-        const dx = px - mx;
-        const dy = py - my;
-        const distSq = dx * dx + dy * dy;
+      if (cursorActive) {
+        projected.set(px, py, pz);
+        projected.project(camera);
 
-        if (distSq < TURBULENCE_RADIUS_SQ) {
-          const dist = Math.sqrt(distSq) || 0.001;
-          const falloff = (1 - dist / TURBULENCE_RADIUS) * energy * turbulenceStrength;
-          const nx = dx / dist;
-          const ny = dy / dist;
+        if (projected.z <= 1) {
+          const screenX = (projected.x * 0.5 + 0.5) * viewport.width;
+          const screenY = (-projected.y * 0.5 + 0.5) * viewport.height;
+          const dx = screenX - cursorX;
+          const dy = screenY - cursorY;
+          const distSq = dx * dx + dy * dy;
 
-          velocityArr[ix] += nx * falloff * 0.028;
-          velocityArr[iy] += ny * falloff * 0.028;
-          velocityArr[ix] += -ny * falloff * 0.024;
-          velocityArr[iy] += nx * falloff * 0.024;
-          velocityArr[iz] += (data.phases[i] - 0.5) * falloff * 0.01;
+          if (distSq < radiusSq) {
+            const dist = Math.sqrt(distSq) || 0.001;
+            const falloff = (1 - dist / CURSOR_RADIUS_PX) * turbulenceStrength;
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            velocityArr[ix] += nx * falloff * 0.022;
+            velocityArr[iy] += -ny * falloff * 0.022;
+            velocityArr[ix] += -ny * falloff * 0.018;
+            velocityArr[iy] += nx * falloff * 0.018;
+            velocityArr[iz] += (data.phases[i] - 0.5) * falloff * 0.008;
+          }
         }
       }
 
-      velocityArr[ix] *= 0.9;
-      velocityArr[iy] *= 0.9;
-      velocityArr[iz] *= 0.9;
+      velocityArr[ix] *= 0.88;
+      velocityArr[iy] *= 0.88;
+      velocityArr[iz] *= 0.88;
 
-      offsetArr[ix] = offsetArr[ix] * 0.93 + velocityArr[ix];
-      offsetArr[iy] = offsetArr[iy] * 0.93 + velocityArr[iy];
-      offsetArr[iz] = offsetArr[iz] * 0.93 + velocityArr[iz];
+      offsetArr[ix] = offsetArr[ix] * 0.9 + velocityArr[ix];
+      offsetArr[iy] = offsetArr[iy] * 0.9 + velocityArr[iy];
+      offsetArr[iz] = offsetArr[iz] * 0.9 + velocityArr[iz];
 
       arr[ix] = bx + offsetArr[ix];
       arr[iy] = by + offsetArr[iy];
@@ -263,7 +254,7 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         opacity={isDark ? 0.55 : 0.65}
         speed={0.025}
         drift={0.04}
-        turbulenceStrength={1}
+        turbulenceStrength={0.85}
       />
       <ParticleLayer
         data={DRIFT_LAYER}
@@ -272,7 +263,7 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         opacity={isDark ? 0.25 : 0.38}
         speed={0.015}
         drift={0.06}
-        turbulenceStrength={1.25}
+        turbulenceStrength={1}
       />
     </>
   );
