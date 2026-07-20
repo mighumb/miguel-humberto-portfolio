@@ -2,6 +2,18 @@ export type Locale = "en" | "fr";
 
 export const translations = {
   en: {
+    roles: {
+      ai: {
+        title: "AI Creative Producer",
+        description: "I design Gen AI creative workflows from concept to delivery.",
+      },
+      product: {
+        title: "Product Designer",
+        description:
+          "I shape product experiences from research to interface, with clarity and craft.",
+      },
+    },
+    // kept for compatibility during migration
     role: "AI Creative Producer",
     tagline: "I design Gen AI creative workflows from concept to delivery.",
     scrollHint: "Scroll to explore",
@@ -9,6 +21,7 @@ export const translations = {
     prevProject: "Previous project",
     nextProject: "Next project",
     viewProject: "View project",
+    back: "Back",
     manifestoTitle: "Who I am",
     manifesto: [
       "Curious and mostly self-taught. I've built my craft across design, motion, 3D, and UI, project by project.",
@@ -45,6 +58,17 @@ export const translations = {
     },
   },
   fr: {
+    roles: {
+      ai: {
+        title: "Producteur créatif IA",
+        description: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
+      },
+      product: {
+        title: "Product Designer",
+        description:
+          "Je conçois des expériences produit, de la recherche à l'interface, avec clarté et exigence.",
+      },
+    },
     role: "Producteur créatif IA",
     tagline: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
     scrollHint: "Défiler pour explorer",
@@ -52,6 +76,7 @@ export const translations = {
     prevProject: "Projet précédent",
     nextProject: "Projet suivant",
     viewProject: "Voir le projet",
+    back: "Retour",
     manifestoTitle: "Qui je suis",
     manifesto: [
       "Curieux et en grande partie autodidacte. J'ai construit mon savoir-faire entre le design, le motion, la 3D et l'UI, projet après projet.",
