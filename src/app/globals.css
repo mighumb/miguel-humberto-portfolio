@@ -323,3 +323,111 @@ html.modal-open .project-modal {
     filter: none !important;
   }
 }
+
+/* Portfolio pill-enter transition */
+.portfolio-transition-overlay {
+  opacity: 0;
+  mix-blend-mode: normal;
+  transition: opacity 0.2s ease;
+}
+
+.portfolio-transition-overlay.is-active {
+  opacity: 1;
+  animation: portfolio-distortion 0.9s ease-out both;
+}
+
+.portfolio-transition-layer {
+  position: absolute;
+  inset: -4%;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 40% 45%, rgba(255, 255, 255, 0.18), transparent 42%),
+    radial-gradient(circle at 60% 55%, rgba(0, 0, 0, 0.12), transparent 48%);
+}
+
+.portfolio-transition-overlay.is-active .portfolio-transition-layer {
+  opacity: 0.55;
+  animation: portfolio-chroma 0.9s ease-out both;
+}
+
+.portfolio-transition-r {
+  mix-blend-mode: screen;
+  transform: translate(-6px, 0);
+  background: radial-gradient(circle at 45% 50%, rgba(255, 60, 60, 0.35), transparent 55%);
+}
+
+.portfolio-transition-g {
+  mix-blend-mode: screen;
+  transform: translate(0, 2px);
+  background: radial-gradient(circle at 50% 48%, rgba(80, 255, 140, 0.12), transparent 50%);
+}
+
+.portfolio-transition-b {
+  mix-blend-mode: screen;
+  transform: translate(6px, 0);
+  background: radial-gradient(circle at 55% 52%, rgba(70, 130, 255, 0.35), transparent 55%);
+}
+
+.portfolio-transition-overlay.is-ai .portfolio-transition-r {
+  opacity: 0.7;
+}
+
+.portfolio-transition-overlay.is-product .portfolio-transition-b {
+  opacity: 0.7;
+}
+
+.portfolio-transition-blur {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(0px);
+  background: transparent;
+}
+
+.portfolio-transition-overlay.is-active .portfolio-transition-blur {
+  animation: portfolio-blur 0.9s ease-out both;
+}
+
+@keyframes portfolio-distortion {
+  0% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.06) skewX(-0.6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@keyframes portfolio-chroma {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  30% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes portfolio-blur {
+  0% {
+    backdrop-filter: blur(0px);
+  }
+  35% {
+    backdrop-filter: blur(10px);
+  }
+  100% {
+    backdrop-filter: blur(0px);
+  }
+}
+
+[data-theme="dark"] .portfolio-experience,
+[data-theme="dark"] .portfolio-canvas-fallback {
+  background: #0a0a0b;
+}
