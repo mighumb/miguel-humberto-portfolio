@@ -325,7 +325,7 @@ html.modal-open .project-modal {
 }
 
 .site-sticky-header {
-  position: relative;
+  /* Keep Tailwind `fixed` — do not set position here or the portal lands in flow at page bottom */
   padding-bottom: 0.5rem;
 }
 
