@@ -3,16 +3,16 @@
 
 :root,
 [data-theme="light"] {
-  /* Cool daylight sky base (atmosphere wash adds the snowy nuance) */
-  --bg-primary: #f3f6fa;
-  --bg-secondary: #e7edf4;
-  --bg-tertiary: #d5dde8;
+  /* Snowy sky: primary matches luminous horizon; real gradients live in AmbientBackground */
+  --bg-primary: #e4eef8;
+  --bg-secondary: #d0e0f2;
+  --bg-tertiary: #b7cee6;
   --text-primary: #1d1d1f;
-  --text-secondary: #6e6e73;
-  --accent: #9aa3b2;
-  --border: #d5dde8;
-  --modal-bg: #f3f6fa;
-  --header-bg: rgba(243, 246, 250, 0.72);
+  --text-secondary: #5c6570;
+  --accent: #8fa4b8;
+  --border: #c5d6e8;
+  --modal-bg: #eef4fa;
+  --header-bg: rgba(228, 238, 248, 0.72);
   --placeholder: #c7c7cc;
   --placeholder-dark: #aeaeb2;
   --hero-particle: #ffffff;
@@ -75,6 +75,15 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Let the fixed ambient sky show through; avoid painting a flat slab over it */
+[data-theme="light"] body {
+  background-color: #b7cee6;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg-primary);
 }
 
 a[href],

@@ -392,8 +392,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         isDark={isDark}
         size={isDark ? 0.016 : 0.028}
         opacity={isDark ? 0.62 : 0.72}
-        speed={0.025}
-        drift={0.04}
+        speed={0.014}
+        drift={0.03}
         turbulenceStrength={0.85}
         blending={starBlend}
       />
@@ -402,8 +402,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         isDark={isDark}
         size={isDark ? 0.028 : 0.042}
         opacity={isDark ? 0.32 : 0.55}
-        speed={0.015}
-        drift={0.06}
+        speed={0.008}
+        drift={0.045}
         turbulenceStrength={1}
         blending={starBlend}
       />
@@ -413,8 +413,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         isDark={isDark}
         size={isDark ? 0.042 : 0.058}
         opacity={isDark ? 0.48 : 0.62}
-        speed={0.032}
-        drift={0.08}
+        speed={0.018}
+        drift={0.055}
         turbulenceStrength={1.15}
         blending={starBlend}
       />

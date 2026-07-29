@@ -9,6 +9,32 @@ const HeroScene = dynamic(() => import("./HeroScene"), {
   loading: () => null,
 });
 
+const SPACE_SKY = `
+  radial-gradient(ellipse 95% 65% at 50% 10%, rgba(56, 72, 128, 0.34), transparent 60%),
+  radial-gradient(ellipse 60% 45% at 85% 75%, rgba(30, 40, 88, 0.28), transparent 55%),
+  radial-gradient(ellipse 50% 40% at 12% 70%, rgba(22, 30, 64, 0.22), transparent 50%)
+`;
+
+/* Overcast winter sky: cool zenith, soft cloud blooms, luminous horizon — not flat gray */
+const SNOW_SKY = `
+  radial-gradient(ellipse 120% 70% at 50% -8%, rgba(255, 255, 255, 0.92), transparent 52%),
+  radial-gradient(ellipse 55% 40% at 18% 28%, rgba(255, 255, 255, 0.55), transparent 60%),
+  radial-gradient(ellipse 50% 36% at 82% 22%, rgba(236, 244, 252, 0.65), transparent 58%),
+  radial-gradient(ellipse 70% 45% at 30% 62%, rgba(168, 198, 228, 0.35), transparent 65%),
+  radial-gradient(ellipse 65% 40% at 78% 70%, rgba(190, 214, 236, 0.4), transparent 60%),
+  radial-gradient(ellipse 100% 55% at 50% 110%, rgba(244, 248, 252, 0.95), transparent 55%),
+  linear-gradient(
+    180deg,
+    #7fa4c8 0%,
+    #9bb8d6 16%,
+    #b7cee6 34%,
+    #d0e0f2 52%,
+    #e4eef8 72%,
+    #f2f6fb 88%,
+    #f7f9fc 100%
+  )
+`;
+
 export default function AmbientBackground() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -24,28 +50,9 @@ export default function AmbientBackground() {
 
   return (
     <div className="ambient-background pointer-events-none fixed inset-0 z-0" aria-hidden>
-      {/* Atmosphere only — particle motion stays in HeroScene */}
       <div
         className="absolute inset-0 transition-[opacity,background] duration-500"
-        style={{
-          background: isDark
-            ? `
-              radial-gradient(ellipse 95% 65% at 50% 10%, rgba(56, 72, 128, 0.34), transparent 60%),
-              radial-gradient(ellipse 60% 45% at 85% 75%, rgba(30, 40, 88, 0.28), transparent 55%),
-              radial-gradient(ellipse 50% 40% at 12% 70%, rgba(22, 30, 64, 0.22), transparent 50%)
-            `
-            : `
-              radial-gradient(ellipse 90% 55% at 68% 12%, rgba(255, 255, 255, 0.7), transparent 58%),
-              radial-gradient(ellipse 75% 50% at 18% 85%, rgba(176, 204, 230, 0.45), transparent 55%),
-              radial-gradient(ellipse 60% 40% at 88% 62%, rgba(210, 226, 242, 0.4), transparent 50%),
-              linear-gradient(180deg,
-                #cfe0f4 0%,
-                #dde9f6 26%,
-                #eef3f9 58%,
-                #f5f7fa 100%
-              )
-            `,
-        }}
+        style={{ background: isDark ? SPACE_SKY : SNOW_SKY }}
       />
 
       {!reducedMotion && <HeroScene />}
