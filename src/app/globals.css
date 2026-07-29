@@ -3,20 +3,20 @@
 
 :root,
 [data-theme="light"] {
-  /* Soft gray–white snow base */
-  --bg-primary: #f0f0f2;
-  --bg-secondary: #e4e4e8;
-  --bg-tertiary: #d2d2d6;
+  /* Near main light base; soft snow nuance lives in AmbientBackground */
+  --bg-primary: #f5f5f7;
+  --bg-secondary: #e8e8ed;
+  --bg-tertiary: #d1d1d6;
   --text-primary: #1d1d1f;
   --text-secondary: #6e6e73;
   --accent: #aeaeb2;
-  --border: #d2d2d6;
-  --modal-bg: #f0f0f2;
-  --header-bg: rgba(240, 240, 242, 0.72);
+  --border: #d1d1d6;
+  --modal-bg: #f5f5f7;
+  --header-bg: rgba(245, 245, 247, 0.72);
   --placeholder: #c7c7cc;
   --placeholder-dark: #aeaeb2;
-  --hero-particle: #ffffff;
-  --hero-particle-alt: #c8c8cc;
+  --hero-particle: #aeaeb2;
+  --hero-particle-alt: #86868b;
 }
 
 [data-theme="dark"] {

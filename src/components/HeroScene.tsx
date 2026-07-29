@@ -43,13 +43,12 @@ function screenFromWorld(
   };
 }
 
-// Light / snow: soft gray–white flakes
-const LIGHT_PARTICLE = new THREE.Color("#c4c4c8");
-const LIGHT_PARTICLE_ALT = new THREE.Color("#ffffff");
+// Match main visibility: darker grays on light sky, lighter grays on night sky
+const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
+const LIGHT_PARTICLE_ALT = new THREE.Color("#86868b");
 
-// Dark / space: quiet star whites (no bright blue cast)
-const DARK_PARTICLE = new THREE.Color("#8a8f9c");
-const DARK_PARTICLE_ALT = new THREE.Color("#e6e8ee");
+const DARK_PARTICLE = new THREE.Color("#6e6e73");
+const DARK_PARTICLE_ALT = new THREE.Color("#aeaeb2");
 
 const mouseInfluence = {
   screenX: 0,
@@ -83,7 +82,8 @@ function generateLayer(count: number, seed: number, spread: number) {
     const y = r * Math.sin(phi) * Math.sin(theta) * 0.5;
     const z = r * Math.cos(phi) * 0.65;
 
-    if (Math.abs(x) < 1.2 && Math.abs(y) < 0.85) continue;
+    // Soft title clearance — smaller than before so the mid-field stays populated
+    if (Math.abs(x) < 0.75 && Math.abs(y) < 0.5) continue;
 
     positions[i * 3] = x;
     positions[i * 3 + 1] = y;
@@ -381,8 +381,6 @@ function ShootingStars() {
 }
 
 function SceneContent({ isDark }: { isDark: boolean }) {
-  const starBlend = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
-
   return (
     <>
       <MouseTurbulenceTracker />
@@ -390,33 +388,30 @@ function SceneContent({ isDark }: { isDark: boolean }) {
       <ParticleLayer
         data={MAIN_LAYER}
         isDark={isDark}
-        size={isDark ? 0.016 : 0.028}
-        opacity={isDark ? 0.62 : 0.72}
+        size={isDark ? 0.016 : 0.022}
+        opacity={isDark ? 0.55 : 0.65}
         speed={0.014}
         drift={0.03}
         turbulenceStrength={0.85}
-        blending={starBlend}
       />
       <ParticleLayer
         data={DRIFT_LAYER}
         isDark={isDark}
-        size={isDark ? 0.028 : 0.042}
-        opacity={isDark ? 0.32 : 0.55}
+        size={isDark ? 0.028 : 0.034}
+        opacity={isDark ? 0.25 : 0.38}
         speed={0.008}
         drift={0.045}
         turbulenceStrength={1}
-        blending={starBlend}
       />
       {/* Foreground layer — closer, larger, more lively depth */}
       <ParticleLayer
         data={NEAR_LAYER}
         isDark={isDark}
-        size={isDark ? 0.042 : 0.058}
-        opacity={isDark ? 0.48 : 0.62}
+        size={isDark ? 0.038 : 0.046}
+        opacity={isDark ? 0.35 : 0.42}
         speed={0.018}
         drift={0.055}
         turbulenceStrength={1.15}
-        blending={starBlend}
       />
       {isDark && <ShootingStars />}
     </>
