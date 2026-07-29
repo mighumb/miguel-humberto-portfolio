@@ -24,20 +24,26 @@ export default function AmbientBackground() {
 
   return (
     <div className="ambient-background pointer-events-none fixed inset-0 z-0" aria-hidden>
-      {/* Atmospheric wash behind particles */}
+      {/* Atmosphere only — particle motion stays in HeroScene */}
       <div
-        className="absolute inset-0 transition-opacity duration-500"
+        className="absolute inset-0 transition-[opacity,background] duration-500"
         style={{
           background: isDark
             ? `
-              radial-gradient(ellipse 90% 60% at 50% 18%, rgba(48, 62, 110, 0.28), transparent 58%),
-              radial-gradient(ellipse 70% 50% at 80% 80%, rgba(28, 36, 72, 0.22), transparent 55%),
-              radial-gradient(ellipse 50% 40% at 15% 70%, rgba(20, 28, 56, 0.18), transparent 50%)
+              radial-gradient(ellipse 95% 65% at 50% 10%, rgba(56, 72, 128, 0.34), transparent 60%),
+              radial-gradient(ellipse 60% 45% at 85% 75%, rgba(30, 40, 88, 0.28), transparent 55%),
+              radial-gradient(ellipse 50% 40% at 12% 70%, rgba(22, 30, 64, 0.22), transparent 50%)
             `
             : `
-              radial-gradient(ellipse 100% 70% at 50% 0%, rgba(210, 224, 240, 0.55), transparent 62%),
-              radial-gradient(ellipse 80% 50% at 20% 100%, rgba(230, 236, 244, 0.4), transparent 55%),
-              linear-gradient(180deg, rgba(236, 241, 248, 0.35) 0%, transparent 48%)
+              radial-gradient(ellipse 90% 55% at 68% 12%, rgba(255, 255, 255, 0.7), transparent 58%),
+              radial-gradient(ellipse 75% 50% at 18% 85%, rgba(176, 204, 230, 0.45), transparent 55%),
+              radial-gradient(ellipse 60% 40% at 88% 62%, rgba(210, 226, 242, 0.4), transparent 50%),
+              linear-gradient(180deg,
+                #cfe0f4 0%,
+                #dde9f6 26%,
+                #eef3f9 58%,
+                #f5f7fa 100%
+              )
             `,
         }}
       />
@@ -45,25 +51,22 @@ export default function AmbientBackground() {
       {!reducedMotion && <HeroScene />}
 
       {reducedMotion && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 opacity-45">
           <div
-            className="absolute inset-0 opacity-40"
+            className="absolute inset-0"
             style={{
               backgroundImage: isDark
-                ? `radial-gradient(1px 1px at 12% 18%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1px 1px at 28% 42%, var(--hero-particle), transparent),
-                   radial-gradient(1.5px 1.5px at 46% 22%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1px 1px at 62% 58%, var(--hero-particle), transparent),
-                   radial-gradient(1px 1px at 78% 30%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1.5px 1.5px at 88% 68%, var(--hero-particle), transparent),
-                   radial-gradient(1px 1px at 34% 76%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1px 1px at 54% 84%, var(--hero-particle), transparent)`
-                : `radial-gradient(2px 2px at 18% 12%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1.5px 1.5px at 36% 28%, var(--hero-particle), transparent),
-                   radial-gradient(2px 2px at 58% 16%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1.5px 1.5px at 72% 40%, var(--hero-particle), transparent),
-                   radial-gradient(2px 2px at 84% 22%, var(--hero-particle-alt), transparent),
-                   radial-gradient(1.5px 1.5px at 44% 52%, var(--hero-particle), transparent)`,
+                ? `radial-gradient(1.5px 1.5px at 14% 20%, #f4f7ff, transparent),
+                   radial-gradient(1px 1px at 30% 48%, #c5d0ea, transparent),
+                   radial-gradient(2px 2px at 52% 24%, #ffffff, transparent),
+                   radial-gradient(1px 1px at 68% 62%, #d7dff2, transparent),
+                   radial-gradient(1.5px 1.5px at 82% 34%, #f4f7ff, transparent),
+                   radial-gradient(1px 1px at 40% 78%, #b8c4dc, transparent)`
+                : `radial-gradient(2.5px 2.5px at 20% 18%, #ffffff, transparent),
+                   radial-gradient(2px 2px at 42% 36%, #e8eef6, transparent),
+                   radial-gradient(3px 3px at 64% 22%, #ffffff, transparent),
+                   radial-gradient(2px 2px at 78% 48%, #dce6f2, transparent),
+                   radial-gradient(2.5px 2.5px at 34% 64%, #ffffff, transparent)`,
               backgroundRepeat: "no-repeat",
               backgroundSize: "100% 100%",
             }}

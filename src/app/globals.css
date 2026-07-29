@@ -3,37 +3,37 @@
 
 :root,
 [data-theme="light"] {
-  /* Soft snowy sky */
-  --bg-primary: #eef2f7;
-  --bg-secondary: #e2e8f0;
-  --bg-tertiary: #d0d7e2;
+  /* Cool daylight sky base (atmosphere wash adds the snowy nuance) */
+  --bg-primary: #f3f6fa;
+  --bg-secondary: #e7edf4;
+  --bg-tertiary: #d5dde8;
   --text-primary: #1d1d1f;
   --text-secondary: #6e6e73;
   --accent: #9aa3b2;
-  --border: #d0d7e2;
-  --modal-bg: #eef2f7;
-  --header-bg: rgba(238, 242, 247, 0.72);
+  --border: #d5dde8;
+  --modal-bg: #f3f6fa;
+  --header-bg: rgba(243, 246, 250, 0.72);
   --placeholder: #c7c7cc;
   --placeholder-dark: #aeaeb2;
-  --hero-particle: #c5ceda;
-  --hero-particle-alt: #9aa3b2;
+  --hero-particle: #ffffff;
+  --hero-particle-alt: #c5d0de;
 }
 
 [data-theme="dark"] {
-  /* Deep space */
-  --bg-primary: #07080d;
-  --bg-secondary: #0d1018;
-  --bg-tertiary: #171b26;
+  /* Deep space base (nebula wash lives in AmbientBackground) */
+  --bg-primary: #08090e;
+  --bg-secondary: #10131a;
+  --bg-tertiary: #1a1e28;
   --text-primary: #e8e8ed;
   --text-secondary: #6e6e73;
   --accent: #6e6e73;
-  --border: #242836;
-  --modal-bg: #07080d;
-  --header-bg: rgba(7, 8, 13, 0.72);
-  --placeholder: #242836;
-  --placeholder-dark: #32384a;
-  --hero-particle: #8b93a7;
-  --hero-particle-alt: #c5d4ff;
+  --border: #2a2f3a;
+  --modal-bg: #08090e;
+  --header-bg: rgba(8, 9, 14, 0.72);
+  --placeholder: #2a2f3a;
+  --placeholder-dark: #3a4150;
+  --hero-particle: #f4f7ff;
+  --hero-particle-alt: #9aa3b8;
 }
 
 @theme inline {
