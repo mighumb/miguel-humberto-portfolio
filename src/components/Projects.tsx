@@ -8,6 +8,7 @@ import { translations } from "@/lib/i18n";
 import { projectsForTrack, type Project } from "@/lib/projects";
 import {
   getFocusedWorkCardIndex,
+  getWorkCarouselEndGutterWidth,
   scrollWorkCarouselToIndex,
   whenWorkCarouselScrollSettles,
 } from "@/lib/workCarouselNav";
@@ -32,6 +33,16 @@ import ProjectSharedFlight from "./ProjectSharedFlight";
 
 function ScrollGutter() {
   return <div aria-hidden className="work-scroll-gutter shrink-0 w-6 md:w-10" />;
+}
+
+function EndScrollGutter({ width }: { width: number }) {
+  return (
+    <div
+      aria-hidden
+      className="work-scroll-end-gutter shrink-0"
+      style={{ width }}
+    />
+  );
 }
 
 function WorkCarouselNav({
@@ -165,6 +176,30 @@ export default function Projects() {
     pauseCarousel,
     carouselSnapshotRef,
   );
+  const [endGutterWidth, setEndGutterWidth] = useState(24);
+
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const updateEndGutter = () => {
+      setEndGutterWidth(getWorkCarouselEndGutterWidth(container));
+    };
+
+    updateEndGutter();
+
+    const observer = new ResizeObserver(updateEndGutter);
+    observer.observe(container);
+    container
+      .querySelectorAll<HTMLElement>("[data-project-id]")
+      .forEach((card) => observer.observe(card));
+    window.addEventListener("resize", updateEndGutter);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateEndGutter);
+    };
+  }, [scrollRef, projects.length, mode]);
 
   useEffect(() => {
     setActiveProject(null);
@@ -504,7 +539,7 @@ export default function Projects() {
                 }
               />
             ))}
-            <ScrollGutter />
+            <EndScrollGutter width={endGutterWidth} />
           </div>
         </div>
       </div>
