@@ -9,7 +9,7 @@ export default function Contact() {
 
   return (
     <section id="contact" className="relative z-[2] flex flex-col bg-bg-primary">
-      <div className="mx-auto w-full max-w-3xl px-6 pb-8 pt-24 text-center md:px-10 md:pb-10 md:pt-32">
+      <div className="mx-auto w-full max-w-3xl px-6 pb-12 pt-24 text-center md:px-10 md:pb-16 md:pt-32">
         <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.contactTitle}
         </h2>
@@ -39,7 +39,7 @@ export default function Contact() {
         </div>
       </div>
 
-      <footer className="mt-auto px-6 pb-6 pt-6 text-center md:px-10 md:pb-10 md:pt-8">
+      <footer className="mt-auto px-6 pb-6 pt-10 text-center md:px-10 md:pb-10 md:pt-14">
         <p className="text-xs text-text-secondary">
           © {new Date().getFullYear()} Miguel Humberto
         </p>
