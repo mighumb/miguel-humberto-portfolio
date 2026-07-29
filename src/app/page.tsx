@@ -1,4 +1,5 @@
 import AmbientBackground from "@/components/AmbientBackground";
+import AmbientForeground from "@/components/AmbientForeground";
 import Hero from "@/components/Hero";
 import Projects from "@/components/Projects";
 import Manifesto from "@/components/Manifesto";
@@ -16,6 +17,7 @@ export default function Home() {
       </div>
       <Manifesto />
       <Contact />
+      <AmbientForeground />
     </main>
   );
 }

@@ -184,7 +184,13 @@ html.modal-main-hidden main {
   visibility: hidden;
 }
 
-html.modal-main-hidden .ambient-background {
+html.modal-main-hidden .ambient-background,
+html.modal-main-hidden .ambient-foreground {
+  visibility: hidden;
+}
+
+html.modal-open .ambient-foreground {
+  opacity: 0;
   visibility: hidden;
 }
 
