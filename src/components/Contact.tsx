@@ -39,7 +39,7 @@ export default function Contact() {
         </div>
       </div>
 
-      <footer className="mt-auto px-6 pb-6 pt-10 text-center md:px-10 md:pb-10 md:pt-14">
+      <footer className="mt-auto px-6 pb-4 pt-10 text-center md:px-10 md:pb-5 md:pt-14">
         <p className="text-xs text-text-secondary">
           © {new Date().getFullYear()} Miguel Humberto
         </p>

@@ -325,7 +325,11 @@ html.modal-open .project-modal {
 }
 
 .site-sticky-header {
-  /* Keep Tailwind `fixed` — do not set position here or the portal lands in flow at page bottom */
+  /* Explicit fixed so portal nav cannot fall back into document flow at page bottom */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   padding-bottom: 0.5rem;
 }
 
