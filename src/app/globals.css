@@ -327,13 +327,30 @@ html.modal-open .project-modal {
 .site-sticky-header {
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--bg-primary) 78%, transparent),
-    color-mix(in srgb, var(--bg-primary) 35%, transparent) 60%,
-    transparent
+    color-mix(in srgb, var(--bg-primary) 72%, transparent) 0%,
+    color-mix(in srgb, var(--bg-primary) 48%, transparent) 38%,
+    color-mix(in srgb, var(--bg-primary) 22%, transparent) 68%,
+    color-mix(in srgb, var(--bg-primary) 8%, transparent) 86%,
+    transparent 100%
   );
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  padding-bottom: 0.75rem;
+  /* Extra fade length so the falloff reads soft, not like a hard edge */
+  padding-bottom: 1.75rem;
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {
