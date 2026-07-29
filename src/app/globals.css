@@ -323,3 +323,21 @@ html.modal-open .project-modal {
     filter: none !important;
   }
 }
+
+.site-sticky-header {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--bg-primary) 78%, transparent),
+    color-mix(in srgb, var(--bg-primary) 35%, transparent) 60%,
+    transparent
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding-bottom: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-sticky-header {
+    transition: none !important;
+  }
+}
