@@ -2,6 +2,16 @@ export type Locale = "en" | "fr";
 
 export const translations = {
   en: {
+    modes: {
+      ai: {
+        role: "AI Creative Producer",
+        tagline: "I design Gen AI creative workflows from concept to delivery.",
+      },
+      craft: {
+        role: "Creative Designer",
+        tagline: "I design visual worlds across UI, motion, and 3D.",
+      },
+    },
     role: "AI Creative Producer",
     tagline: "I design Gen AI creative workflows from concept to delivery.",
     scrollHint: "Scroll to explore",
@@ -13,7 +23,7 @@ export const translations = {
     manifesto: [
       "Curious and mostly self-taught. I've built my craft across design, motion, 3D, and UI, project by project.",
       "I'm meticulous with the finish, always exploring in the process. I test new tools, compare workflows, and give ideas the time they need to go somewhere less obvious.",
-      "Today I lead Gen AI production for brands, labels, and platforms, from concept through to delivery.",
+      "I've learned this: people who combine craft and AI aren't replaced — they raise the bar. That's how I work today, across brands, labels, and platforms.",
     ],
     contactTitle: "Let's work together",
     contactSubtitle: "Open to collaborations, freelance projects, and creative roles.",
@@ -45,6 +55,16 @@ export const translations = {
     },
   },
   fr: {
+    modes: {
+      ai: {
+        role: "Producteur créatif IA",
+        tagline: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
+      },
+      craft: {
+        role: "Creative Designer",
+        tagline: "Je conçois des univers visuels entre UI, motion et 3D.",
+      },
+    },
     role: "Producteur créatif IA",
     tagline: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
     scrollHint: "Défiler pour explorer",
@@ -56,7 +76,7 @@ export const translations = {
     manifesto: [
       "Curieux et en grande partie autodidacte. J'ai construit mon savoir-faire entre le design, le motion, la 3D et l'UI, projet après projet.",
       "Méticuleux sur la finition, curieux sur la méthode. Je teste, je compare, et je laisse aux idées le temps d'aller vers quelque chose de moins évident.",
-      "Aujourd'hui, je pilote la production Gen AI pour des marques, des labels et des plateformes, du concept à la livraison.",
+      "J'ai appris ceci : les personnes qui allient craft et IA ne sont pas remplacées — elles élèvent le niveau. C'est comme ça que je travaille aujourd'hui, pour des marques, des labels et des plateformes.",
     ],
     contactTitle: "Travaillons ensemble",
     contactSubtitle: "Ouvert aux collaborations, projets freelance et rôles créatifs.",

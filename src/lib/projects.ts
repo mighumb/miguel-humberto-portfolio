@@ -1,5 +1,8 @@
+export type ProjectTrack = "ai" | "craft";
+
 export interface Project {
   id: string;
+  track: ProjectTrack;
   title: { en: string; fr: string };
   description: { en: string; fr: string };
   tags: string[];
@@ -20,6 +23,7 @@ export interface Project {
 export const projects: Project[] = [
   {
     id: "01",
+    track: "ai",
     title: { en: "Cinematic AI Short Film", fr: "Court-métrage IA cinématique" },
     description: {
       en: "A narrative short film generated and edited entirely with AI tools, exploring atmospheric storytelling.",
@@ -36,6 +40,7 @@ export const projects: Project[] = [
   },
   {
     id: "02",
+    track: "ai",
     title: { en: "Social Campaign — Brand X", fr: "Campagne social — Brand X" },
     description: {
       en: "Multi-format social assets for a client campaign, from concept to delivery in 48 hours.",
@@ -51,6 +56,7 @@ export const projects: Project[] = [
   },
   {
     id: "03",
+    track: "ai",
     title: { en: "Prompt Engineering Tutorial Series", fr: "Série de tutoriels prompting" },
     description: {
       en: "Educational video series teaching advanced prompting techniques for image and video generation.",
@@ -67,6 +73,7 @@ export const projects: Project[] = [
   },
   {
     id: "04",
+    track: "ai",
     title: { en: "Generative Visual Identity", fr: "Identité visuelle générative" },
     description: {
       en: "AI-generated brand visuals and motion assets for a startup's launch campaign.",
@@ -83,6 +90,7 @@ export const projects: Project[] = [
   },
   {
     id: "05",
+    track: "ai",
     title: { en: "TikTok AI Art Experiments", fr: "Expériences art IA TikTok" },
     description: {
       en: "Short-form experimental content pushing the boundaries of AI-generated aesthetics.",
@@ -99,6 +107,7 @@ export const projects: Project[] = [
   },
   {
     id: "06",
+    track: "ai",
     title: { en: "Audio-Visual AI Installation", fr: "Installation audio-visuelle IA" },
     description: {
       en: "An immersive audio-visual piece combining generative soundscapes with reactive visuals.",
@@ -112,4 +121,104 @@ export const projects: Project[] = [
     links: { youtube: "#", notion: "#" },
     deliverableCount: 5,
   },
+  {
+    id: "c01",
+    track: "craft",
+    title: { en: "Product UI System", fr: "Système UI produit" },
+    description: {
+      en: "A modular interface system for a B2B product — components, spacing, and interaction states built for clarity at scale.",
+      fr: "Un système d'interface modulaire pour un produit B2B — composants, espacements et états d'interaction pensés pour la clarté à l'échelle.",
+    },
+    tags: ["UI", "Design System", "Product"],
+    year: "2025",
+    type: "Craft",
+    hasVideo: false,
+    tools: ["Figma", "FigJam", "Notion"],
+    links: { notion: "#" },
+    deliverableCount: 8,
+  },
+  {
+    id: "c02",
+    track: "craft",
+    title: { en: "Motion Brand Language", fr: "Langage motion de marque" },
+    description: {
+      en: "A motion kit defining timing, easing, and transitions for a brand identity across web and social.",
+      fr: "Un kit motion définissant timing, easing et transitions pour une identité de marque web et social.",
+    },
+    tags: ["Motion", "Branding", "After Effects"],
+    year: "2025",
+    type: "Craft",
+    hasVideo: false,
+    tools: ["After Effects", "Figma", "Lottie"],
+    links: { notion: "#" },
+    deliverableCount: 6,
+  },
+  {
+    id: "c03",
+    track: "craft",
+    title: { en: "3D Product Visualization", fr: "Visualisation produit 3D" },
+    description: {
+      en: "Stylized 3D scenes and stills for a product launch — lighting, materials, and composition focused on shelf appeal.",
+      fr: "Scènes et stills 3D stylisés pour un lancement produit — lumière, matières et composition orientées désirabilité.",
+    },
+    tags: ["3D", "Product", "Lookdev"],
+    year: "2024",
+    type: "Craft",
+    hasVideo: false,
+    tools: ["Blender", "Substance", "Photoshop"],
+    links: { notion: "#" },
+    deliverableCount: 7,
+  },
+  {
+    id: "c04",
+    track: "craft",
+    title: { en: "Editorial Web Experience", fr: "Expérience web éditoriale" },
+    description: {
+      en: "A scrolling editorial layout combining typography, imagery, and subtle interaction for a cultural platform.",
+      fr: "Une mise en page éditoriale scrollable alliant typographie, images et interactions discrètes pour une plateforme culturelle.",
+    },
+    tags: ["UI", "Editorial", "Web"],
+    year: "2024",
+    type: "Craft",
+    hasVideo: false,
+    tools: ["Figma", "Framer", "Photoshop"],
+    links: { notion: "#" },
+    deliverableCount: 9,
+  },
+  {
+    id: "c05",
+    track: "craft",
+    title: { en: "App Onboarding Flows", fr: "Parcours d'onboarding app" },
+    description: {
+      en: "Wireframes to high-fidelity screens for a mobile onboarding sequence with progressive disclosure.",
+      fr: "Des wireframes aux écrans haute fidélité pour un onboarding mobile en divulgation progressive.",
+    },
+    tags: ["UX", "Mobile", "UI"],
+    year: "2025",
+    type: "Craft",
+    hasVideo: false,
+    tools: ["Figma", "Maze"],
+    links: { notion: "#" },
+    deliverableCount: 5,
+  },
+  {
+    id: "c06",
+    track: "craft",
+    title: { en: "Spatial Interface Concept", fr: "Concept d'interface spatiale" },
+    description: {
+      en: "A speculative UI concept exploring depth, layers, and gesture in a spatial computing context.",
+      fr: "Un concept UI spéculatif explorant profondeur, calques et gestes dans un contexte de spatial computing.",
+    },
+    tags: ["3D", "UI", "Concept"],
+    year: "2024",
+    type: "Craft",
+    hasVideo: false,
+    tools: ["Figma", "Spline", "Blender"],
+    links: { notion: "#" },
+    deliverableCount: 6,
+  },
 ];
+
+export function projectsForTrack(track: ProjectTrack) {
+  return projects.filter((project) => project.track === track);
+}

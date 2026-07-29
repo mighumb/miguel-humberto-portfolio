@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useRef, useLayoutEffect, type RefObject } from "react";
+import { useState, useCallback, useRef, useLayoutEffect, useMemo, useEffect, type RefObject } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
-import { projects, type Project } from "@/lib/projects";
+import { projectsForTrack, type Project } from "@/lib/projects";
 import {
   getFocusedWorkCardIndex,
   scrollWorkCarouselToIndex,
@@ -123,7 +124,9 @@ function restoreFrozenCarousel(
 
 export default function Projects() {
   const { locale } = useLocale();
+  const { mode } = useTheme();
   const t = translations[locale];
+  const projects = useMemo(() => projectsForTrack(mode), [mode]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [phase, setPhase] = useState<TransitionPhase>("idle");
@@ -162,6 +165,32 @@ export default function Projects() {
     pauseCarousel,
     carouselSnapshotRef,
   );
+
+  useEffect(() => {
+    setActiveProject(null);
+    setActiveIndex(0);
+    setFocusedCardIndex(0);
+    pinnedCardIndexRef.current = null;
+    scrollSettleCleanupRef.current?.();
+    scrollSettleCleanupRef.current = null;
+    flipCleanupRef.current?.();
+    flipCleanupRef.current = null;
+    document.documentElement.classList.remove("is-closing-flip", "modal-main-hidden");
+    setPhase("idle");
+    setCardOrigin(null);
+    setFlight(null);
+    setSharedHiddenId(null);
+    setSharedContentVisible(false);
+    setFlightShowVideo(false);
+    setFlightVideoTime(0);
+    carouselSnapshotRef.current = null;
+
+    const container = scrollRef.current;
+    if (container) {
+      stopWorkCarouselMotion(container);
+      container.scrollLeft = 0;
+    }
+  }, [mode, scrollRef]);
 
   const carouselNavDisabled = activeProject !== null;
 

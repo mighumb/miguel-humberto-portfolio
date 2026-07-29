@@ -1,12 +1,15 @@
 "use client";
 
 import { useLocale } from "@/contexts/LocaleContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
 
 export default function Hero() {
   const { locale } = useLocale();
+  const { mode } = useTheme();
   const t = translations[locale];
+  const copy = t.modes[mode];
 
   return (
     <section
@@ -20,10 +23,10 @@ export default function Hero() {
           Miguel Humberto
         </h1>
         <p className="mt-4 text-lg font-medium text-text-secondary md:text-xl">
-          {t.role}
+          {copy.role}
         </p>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary md:text-lg">
-          {t.tagline}
+          {copy.tagline}
         </p>
       </div>
     </section>
