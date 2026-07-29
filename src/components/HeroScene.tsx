@@ -43,13 +43,13 @@ function screenFromWorld(
   };
 }
 
-// Light / snow: soft white flakes that read on a cool sky
-const LIGHT_PARTICLE = new THREE.Color("#b8c4d4");
+// Light / snow: soft gray–white flakes
+const LIGHT_PARTICLE = new THREE.Color("#c4c4c8");
 const LIGHT_PARTICLE_ALT = new THREE.Color("#ffffff");
 
-// Dark / space: star whites with a cool blue hint
-const DARK_PARTICLE = new THREE.Color("#9aa3b8");
-const DARK_PARTICLE_ALT = new THREE.Color("#f4f7ff");
+// Dark / space: quiet star whites (no bright blue cast)
+const DARK_PARTICLE = new THREE.Color("#8a8f9c");
+const DARK_PARTICLE_ALT = new THREE.Color("#e6e8ee");
 
 const mouseInfluence = {
   screenX: 0,
@@ -370,7 +370,7 @@ function ShootingStars() {
       <planeGeometry args={[1, 0.012]} />
       <meshBasicMaterial
         ref={materialRef}
-        color="#eef3ff"
+        color="#e4e6ec"
         transparent
         opacity={0}
         depthWrite={false}
