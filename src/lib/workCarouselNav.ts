@@ -3,8 +3,34 @@ function getWorkCards(container: HTMLElement) {
 }
 
 function getFocusInset(container: HTMLElement) {
-  const gutter = container.firstElementChild as HTMLElement | null;
+  const gutter =
+    container.querySelector<HTMLElement>(".work-scroll-gutter") ??
+    (container.firstElementChild as HTMLElement | null);
   return gutter?.offsetWidth ?? 24;
+}
+
+function getCarouselGap(container: HTMLElement) {
+  const styles = getComputedStyle(container);
+  return (
+    Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 0
+  );
+}
+
+/**
+ * Trailing spacer width so max scrollLeft can reach the last card's ideal
+ * focus (offsetLeft - focusInset), matching the first card's face-on position.
+ */
+export function getWorkCarouselEndGutterWidth(container: HTMLElement) {
+  const cards = getWorkCards(container);
+  const last = cards[cards.length - 1];
+  if (!last) return getFocusInset(container);
+
+  const focusInset = getFocusInset(container);
+  const gap = getCarouselGap(container);
+  return Math.max(
+    0,
+    Math.ceil(container.clientWidth - focusInset - last.offsetWidth - gap),
+  );
 }
 
 export function getFocusedWorkCardIndex(container: HTMLElement) {
