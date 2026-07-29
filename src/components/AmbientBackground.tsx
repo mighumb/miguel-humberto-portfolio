@@ -9,29 +9,28 @@ const HeroScene = dynamic(() => import("./HeroScene"), {
   loading: () => null,
 });
 
+/* Night space: deep near-black blue, very low chroma */
 const SPACE_SKY = `
-  radial-gradient(ellipse 95% 65% at 50% 10%, rgba(56, 72, 128, 0.34), transparent 60%),
-  radial-gradient(ellipse 60% 45% at 85% 75%, rgba(30, 40, 88, 0.28), transparent 55%),
-  radial-gradient(ellipse 50% 40% at 12% 70%, rgba(22, 30, 64, 0.22), transparent 50%)
+  radial-gradient(ellipse 90% 60% at 50% 8%, rgba(18, 24, 42, 0.55), transparent 58%),
+  radial-gradient(ellipse 55% 40% at 80% 78%, rgba(12, 16, 28, 0.45), transparent 55%),
+  radial-gradient(ellipse 45% 35% at 15% 65%, rgba(10, 14, 24, 0.4), transparent 50%)
 `;
 
-/* Overcast winter sky: cool zenith, soft cloud blooms, luminous horizon — not flat gray */
+/* Snowy overcast: gray + white soft bands — no blue cast */
 const SNOW_SKY = `
-  radial-gradient(ellipse 120% 70% at 50% -8%, rgba(255, 255, 255, 0.92), transparent 52%),
-  radial-gradient(ellipse 55% 40% at 18% 28%, rgba(255, 255, 255, 0.55), transparent 60%),
-  radial-gradient(ellipse 50% 36% at 82% 22%, rgba(236, 244, 252, 0.65), transparent 58%),
-  radial-gradient(ellipse 70% 45% at 30% 62%, rgba(168, 198, 228, 0.35), transparent 65%),
-  radial-gradient(ellipse 65% 40% at 78% 70%, rgba(190, 214, 236, 0.4), transparent 60%),
-  radial-gradient(ellipse 100% 55% at 50% 110%, rgba(244, 248, 252, 0.95), transparent 55%),
+  radial-gradient(ellipse 110% 65% at 50% -5%, rgba(255, 255, 255, 0.95), transparent 55%),
+  radial-gradient(ellipse 55% 38% at 22% 30%, rgba(255, 255, 255, 0.55), transparent 62%),
+  radial-gradient(ellipse 50% 34% at 78% 24%, rgba(245, 245, 247, 0.6), transparent 58%),
+  radial-gradient(ellipse 70% 42% at 35% 68%, rgba(190, 190, 196, 0.28), transparent 65%),
+  radial-gradient(ellipse 65% 38% at 72% 72%, rgba(210, 210, 214, 0.32), transparent 60%),
   linear-gradient(
     180deg,
-    #7fa4c8 0%,
-    #9bb8d6 16%,
-    #b7cee6 34%,
-    #d0e0f2 52%,
-    #e4eef8 72%,
-    #f2f6fb 88%,
-    #f7f9fc 100%
+    #b8b8be 0%,
+    #c9c9ce 18%,
+    #dbdbdf 38%,
+    #e8e8eb 58%,
+    #f2f2f4 78%,
+    #f7f7f8 100%
   )
 `;
 
@@ -63,16 +62,16 @@ export default function AmbientBackground() {
             className="absolute inset-0"
             style={{
               backgroundImage: isDark
-                ? `radial-gradient(1.5px 1.5px at 14% 20%, #f4f7ff, transparent),
-                   radial-gradient(1px 1px at 30% 48%, #c5d0ea, transparent),
-                   radial-gradient(2px 2px at 52% 24%, #ffffff, transparent),
-                   radial-gradient(1px 1px at 68% 62%, #d7dff2, transparent),
-                   radial-gradient(1.5px 1.5px at 82% 34%, #f4f7ff, transparent),
-                   radial-gradient(1px 1px at 40% 78%, #b8c4dc, transparent)`
+                ? `radial-gradient(1.5px 1.5px at 14% 20%, #e8eaf0, transparent),
+                   radial-gradient(1px 1px at 30% 48%, #9aa0b0, transparent),
+                   radial-gradient(2px 2px at 52% 24%, #f0f1f5, transparent),
+                   radial-gradient(1px 1px at 68% 62%, #b0b4c0, transparent),
+                   radial-gradient(1.5px 1.5px at 82% 34%, #e8eaf0, transparent),
+                   radial-gradient(1px 1px at 40% 78%, #8a90a0, transparent)`
                 : `radial-gradient(2.5px 2.5px at 20% 18%, #ffffff, transparent),
-                   radial-gradient(2px 2px at 42% 36%, #e8eef6, transparent),
+                   radial-gradient(2px 2px at 42% 36%, #e8e8eb, transparent),
                    radial-gradient(3px 3px at 64% 22%, #ffffff, transparent),
-                   radial-gradient(2px 2px at 78% 48%, #dce6f2, transparent),
+                   radial-gradient(2px 2px at 78% 48%, #d8d8dc, transparent),
                    radial-gradient(2.5px 2.5px at 34% 64%, #ffffff, transparent)`,
               backgroundRepeat: "no-repeat",
               backgroundSize: "100% 100%",

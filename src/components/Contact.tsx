@@ -8,7 +8,7 @@ export default function Contact() {
   const t = translations[locale];
 
   return (
-    <section id="contact" className="relative z-[2] flex flex-col bg-transparent">
+    <section id="contact" className="relative z-[2] flex flex-col bg-bg-primary">
       <div className="mx-auto w-full max-w-3xl px-6 pb-14 pt-24 text-center md:px-10 md:pb-20 md:pt-32">
         <h2 className="text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.contactTitle}

@@ -3,37 +3,37 @@
 
 :root,
 [data-theme="light"] {
-  /* Snowy sky: primary matches luminous horizon; real gradients live in AmbientBackground */
-  --bg-primary: #e4eef8;
-  --bg-secondary: #d0e0f2;
-  --bg-tertiary: #b7cee6;
+  /* Soft gray–white snow base */
+  --bg-primary: #f0f0f2;
+  --bg-secondary: #e4e4e8;
+  --bg-tertiary: #d2d2d6;
   --text-primary: #1d1d1f;
-  --text-secondary: #5c6570;
-  --accent: #8fa4b8;
-  --border: #c5d6e8;
-  --modal-bg: #eef4fa;
-  --header-bg: rgba(228, 238, 248, 0.72);
+  --text-secondary: #6e6e73;
+  --accent: #aeaeb2;
+  --border: #d2d2d6;
+  --modal-bg: #f0f0f2;
+  --header-bg: rgba(240, 240, 242, 0.72);
   --placeholder: #c7c7cc;
   --placeholder-dark: #aeaeb2;
   --hero-particle: #ffffff;
-  --hero-particle-alt: #c5d0de;
+  --hero-particle-alt: #c8c8cc;
 }
 
 [data-theme="dark"] {
-  /* Deep space base (nebula wash lives in AmbientBackground) */
-  --bg-primary: #08090e;
-  --bg-secondary: #10131a;
-  --bg-tertiary: #1a1e28;
+  /* Near-black night blue */
+  --bg-primary: #05060a;
+  --bg-secondary: #0a0c12;
+  --bg-tertiary: #12151c;
   --text-primary: #e8e8ed;
   --text-secondary: #6e6e73;
   --accent: #6e6e73;
-  --border: #2a2f3a;
-  --modal-bg: #08090e;
-  --header-bg: rgba(8, 9, 14, 0.72);
-  --placeholder: #2a2f3a;
-  --placeholder-dark: #3a4150;
-  --hero-particle: #f4f7ff;
-  --hero-particle-alt: #9aa3b8;
+  --border: #1e222c;
+  --modal-bg: #05060a;
+  --header-bg: rgba(5, 6, 10, 0.72);
+  --placeholder: #1e222c;
+  --placeholder-dark: #2c313c;
+  --hero-particle: #e8eaf0;
+  --hero-particle-alt: #7a8294;
 }
 
 @theme inline {
@@ -77,14 +77,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Let the fixed ambient sky show through; avoid painting a flat slab over it */
-[data-theme="light"] body {
-  background-color: #b7cee6;
-}
-
-[data-theme="dark"] body {
-  background-color: var(--bg-primary);
-}
 
 a[href],
 button:not(:disabled),
