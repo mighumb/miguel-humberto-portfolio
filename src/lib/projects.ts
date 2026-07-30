@@ -7,6 +7,8 @@ export interface Project {
   track: ProjectTrack;
   title: { en: string; fr: string };
   description: { en: string; fr: string };
+  /** Modal Context section. Falls back to a generic placeholder when omitted. */
+  context?: { en: string; fr: string };
   tags: string[];
   year: string;
   type: string;
@@ -50,7 +52,7 @@ export function projectThumbnailUrl(project: Project) {
   return projectFileUrl(project, project.thumbnail);
 }
 
-/** Modal hero still when there is no local/embed video — reuses thumbnail if needed. */
+/** Modal hero still when there is no local/embed video. Reuses thumbnail if needed. */
 export function projectCoverUrl(project: Project) {
   return projectFileUrl(project, project.cover ?? project.thumbnail);
 }
@@ -168,8 +170,12 @@ export const projects: Project[] = [
     track: "craft",
     title: { en: "Ekara Design System", fr: "Ekara Design System" },
     description: {
-      en: "A modular interface system for a B2B product — components, spacing, and interaction states built for clarity at scale.",
-      fr: "Un système d'interface modulaire pour un produit B2B — composants, espacements et états d'interaction pensés pour la clarté à l'échelle.",
+      en: "A modular interface system for new product interfaces: components, spacing, and interaction states built for clarity and consistency.",
+      fr: "Un système d'interface modulaire pour de nouvelles interfaces produit : composants, espacements et états d'interaction pensés pour la clarté et la cohérence.",
+    },
+    context: {
+      en: "Ekara needed a new shared UI language for its new interfaces. I designed a modular system of components, spacing, and states for clear, consistent screens.",
+      fr: "Ekara avait besoin d’un nouveau langage UI commun pour ses nouvelles interfaces. J’ai conçu un système modulaire, composants, espacements, états, pour des écrans clairs et cohérents.",
     },
     tags: ["UI", "Design System", "Product"],
     year: "2025",

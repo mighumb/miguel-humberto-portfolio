@@ -285,7 +285,7 @@ export default function ProjectModal({
                 {mt.context}
               </h3>
               <p className="max-w-2xl text-base leading-relaxed text-text-secondary md:text-lg">
-                {mt.contextPlaceholder}
+                {project.context?.[locale] ?? mt.contextPlaceholder}
               </p>
             </section>
 
