@@ -5,6 +5,8 @@ export const MAX_ROTATE_Y = 17;
 export const MAX_TRANSLATE_Z = -280;
 export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
+/** Stronger on mobile — 1.15px was nearly invisible on retina / Safari peeks. */
+export const MAX_BLUR_MOBILE = 3.6;
 
 export interface CardPerspective {
   articleTranslateY: number;
@@ -52,7 +54,7 @@ export function computeCardFocus(
     rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
     translateZ: progress * MAX_TRANSLATE_Z,
     bodyOpacity: isMobileViewport() ? 1 : 1 - progress * 0.14,
-    blur: progress * MAX_BLUR,
+    blur: progress * (isMobileViewport() ? MAX_BLUR_MOBILE : MAX_BLUR),
   };
 }
 
@@ -89,7 +91,10 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   const body = card.querySelector<HTMLElement>(".work-card-body");
   if (!body) return;
 
-  const visual = card.querySelector<HTMLElement>(".work-card-visual");
+  // Prefer media node: filter + preserve-3d on .work-card-visual is unreliable in Safari.
+  const media =
+    card.querySelector<HTMLElement>(".work-card-media") ??
+    card.querySelector<HTMLElement>(".work-card-visual");
   const filter = flightFilterStyle(perspective);
   const mobile = isMobileViewport();
 
@@ -97,13 +102,23 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   body.style.transform = flightTransformStyle(perspective);
   body.style.opacity = `${perspective.bodyOpacity}`;
 
-  // Mobile: blur off-axis media only so “View project” stays crisp.
+  // Mobile: blur/dim off-axis media only so “View project” stays crisp.
   if (mobile) {
     body.style.filter = "";
-    if (visual) visual.style.filter = filter;
+    if (media) {
+      media.style.filter = filter;
+      // Flatten 3D so CSS filter actually paints on WebKit.
+      media.style.transformStyle = filter === "none" ? "" : "flat";
+      const blurProgress = Math.min(1, perspective.blur / MAX_BLUR_MOBILE);
+      media.style.opacity = `${1 - blurProgress * 0.28}`;
+    }
   } else {
     body.style.filter = filter;
-    if (visual) visual.style.filter = "";
+    if (media) {
+      media.style.filter = "";
+      media.style.transformStyle = "";
+      media.style.opacity = "";
+    }
   }
 }
 
@@ -146,6 +161,12 @@ export function resetCardPerspective(card: HTMLElement) {
     body.style.filter = "";
   }
 
-  const visual = card.querySelector<HTMLElement>(".work-card-visual");
-  if (visual) visual.style.filter = "";
+  const media =
+    card.querySelector<HTMLElement>(".work-card-media") ??
+    card.querySelector<HTMLElement>(".work-card-visual");
+  if (media) {
+    media.style.filter = "";
+    media.style.transformStyle = "";
+    media.style.opacity = "";
+  }
 }
