@@ -45,6 +45,39 @@ function ResourceLink({ href, children }: { href: string; children: ReactNode })
   );
 }
 
+/** Renders plain text with optional markdown links: [label](https://…). */
+function LinkedText({ text }: { text: string }) {
+  const parts: ReactNode[] = [];
+  const linkRe = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+
+  while ((match = linkRe.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <a
+        key={key++}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-text-primary underline underline-offset-2 transition-colors hover:text-accent"
+      >
+        {match[1]}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return <>{parts.length > 0 ? parts : text}</>;
+}
+
 export default function ProjectModal({
   project,
   onRequestClose,
@@ -285,7 +318,9 @@ export default function ProjectModal({
                 {mt.context}
               </h3>
               <p className="max-w-2xl text-base leading-relaxed text-text-secondary md:text-lg">
-                {project.context?.[locale] ?? mt.contextPlaceholder}
+                <LinkedText
+                  text={project.context?.[locale] ?? mt.contextPlaceholder}
+                />
               </p>
             </section>
 

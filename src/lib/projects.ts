@@ -174,8 +174,8 @@ export const projects: Project[] = [
       fr: "Un système d'interface modulaire pour de nouvelles interfaces produit : composants, espacements et états d'interaction pensés pour la clarté et la cohérence.",
     },
     context: {
-      en: "Ekara needed a new shared UI language for its new interfaces. I designed a modular system of components, spacing, and states for clear, consistent screens.",
-      fr: "Ekara avait besoin d’un nouveau langage UI commun pour ses nouvelles interfaces. J’ai conçu un système modulaire, composants, espacements, états, pour des écrans clairs et cohérents.",
+      en: "[Ekara](https://ip-label.com/fr/) needed a new shared UI language for its new interfaces. I designed a modular system of components, spacing, and states for clear, consistent screens.",
+      fr: "[Ekara](https://ip-label.com/fr/) avait besoin d’un nouveau langage UI commun pour ses nouvelles interfaces. J’ai conçu un système modulaire, composants, espacements, états, pour des écrans clairs et cohérents.",
     },
     tags: ["UI", "Design System", "Product"],
     year: "2025",
