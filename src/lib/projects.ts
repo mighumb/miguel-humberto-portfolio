@@ -72,7 +72,7 @@ export const projects: Project[] = [
     hasVideo: true,
     videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
     thumbnail: "thumbnail-ai-cgi-station-f.png",
-    tools: ["Figma Weave", "Nano Banana", "Kling"],
+    tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
     links: { youtube: "#" },
     deliverableCount: 8,
   },
