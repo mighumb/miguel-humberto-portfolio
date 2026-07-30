@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
@@ -28,6 +28,11 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const [isHovering, setIsHovering] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
   const videoIsHero = project.hasVideo && !!project.videoUrl && !thumbnailUrl;
+
+  useEffect(() => {
+    if (!videoIsHero || !videoRef.current) return;
+    videoRef.current.play().catch(() => {});
+  }, [videoIsHero]);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
