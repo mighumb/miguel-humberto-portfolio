@@ -1,5 +1,5 @@
 const SHOWREEL_EMBED_SRC =
-  "https://www.youtube.com/embed/NnuX3o_F5vg?si=vo-9tLnK7TxL9HvJ";
+  "https://www.youtube.com/embed/NnuX3o_F5vg?si=vo-9tLnK7TxL9HvJ&controls=0";
 
 /** Media-only showreel between Who I am and Contact — no section title. */
 export default function Showreel() {
