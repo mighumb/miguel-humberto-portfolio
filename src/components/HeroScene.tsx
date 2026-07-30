@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useLayoutEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Points, PointMaterial } from "@react-three/drei";
+import { Points } from "@react-three/drei";
 import * as THREE from "three";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -136,6 +136,62 @@ function getSoftParticleTexture() {
   return texture;
 }
 
+const PARTICLE_VERTEX = /* glsl */ `
+attribute float aScale;
+attribute float aPhase;
+attribute vec3 color;
+
+uniform float uSize;
+uniform float uTime;
+uniform float uScale;
+uniform float uPixelRatio;
+uniform float uTwinkleAmp;
+
+varying vec3 vColor;
+varying float vAlpha;
+
+void main() {
+  vColor = color;
+
+  vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+  float depth = max(0.35, -mvPosition.z);
+
+  // Closer particles read a bit brighter / more present
+  float depthFade = smoothstep(11.0, 2.2, depth);
+
+  // Soft twinkle — phase-offset so the field does not pulse as one
+  float twinkle = 1.0 - uTwinkleAmp
+    + uTwinkleAmp * (0.5 + 0.5 * sin(uTime * (1.6 + aPhase * 2.4) + aPhase * 6.2831853));
+
+  // Subtle size breath (smaller amp than opacity twinkle)
+  float sizePulse = 0.9 + 0.1 * sin(uTime * (0.9 + aPhase) + aPhase * 4.0);
+
+  vAlpha = depthFade * twinkle;
+
+  float pointSize = uSize * aScale * sizePulse * (uScale / depth) * uPixelRatio;
+  gl_PointSize = clamp(pointSize, 1.5, 72.0);
+  gl_Position = projectionMatrix * mvPosition;
+}
+`;
+
+const PARTICLE_FRAGMENT = /* glsl */ `
+uniform sampler2D uMap;
+uniform float uOpacity;
+
+varying vec3 vColor;
+varying float vAlpha;
+
+void main() {
+  vec4 texel = texture2D(uMap, gl_PointCoord);
+  float alpha = texel.a * uOpacity * vAlpha;
+  if (alpha < 0.012) discard;
+
+  // Soft map luminance lifts the core slightly without hard edges
+  vec3 col = vColor * (0.72 + 0.55 * texel.r);
+  gl_FragColor = vec4(col, alpha);
+}
+`;
+
 function buildColors(mix: Float32Array, count: number, isDark: boolean) {
   const colors = new Float32Array(count * 3);
   const low = isDark ? DARK_PARTICLE : LIGHT_PARTICLE;
@@ -200,6 +256,7 @@ function ParticleLayer({
 }: ParticleLayerProps) {
   const { camera, size: viewport, gl } = useThree();
   const ref = useRef<THREE.Points>(null);
+  const materialRef = useRef<THREE.ShaderMaterial | null>(null);
   const basePositions = useMemo(() => data.positions.slice(), [data.positions]);
   const offsets = useRef(new Float32Array(data.actualCount * 3));
   const velocities = useRef(new Float32Array(data.actualCount * 3));
@@ -210,12 +267,63 @@ function ParticleLayer({
   const cameraUp = useMemo(() => new THREE.Vector3(), []);
   const projected = useMemo(() => new THREE.Vector3(), []);
   const layerRotation = useMemo(() => new THREE.Quaternion(), []);
-  const softMap = useMemo(() => getSoftParticleTexture(), []);
 
   const colors = useMemo(
     () => buildColors(data.mix, data.actualCount, isDark),
     [data.mix, data.actualCount, isDark],
   );
+
+  const scales = useMemo(() => {
+    const out = new Float32Array(data.actualCount);
+    for (let i = 0; i < data.actualCount; i++) {
+      // Mix drives size variety so the field feels less uniform
+      out[i] = 0.52 + data.mix[i] * 1.05;
+    }
+    return out;
+  }, [data.mix, data.actualCount]);
+
+  const material = useMemo(() => {
+    const map = getSoftParticleTexture();
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uMap: { value: map },
+        uSize: { value: size },
+        uOpacity: { value: opacity },
+        uTime: { value: 0 },
+        uScale: { value: 300 },
+        uPixelRatio: { value: 1 },
+        uTwinkleAmp: { value: isDark ? 0.26 : 0.12 },
+      },
+      vertexShader: PARTICLE_VERTEX,
+      fragmentShader: PARTICLE_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      blending,
+      toneMapped: false,
+    });
+    materialRef.current = mat;
+    return mat;
+  }, [blending, isDark, opacity, size]);
+
+  useEffect(() => {
+    material.uniforms.uSize.value = size;
+    material.uniforms.uOpacity.value = opacity;
+    material.uniforms.uTwinkleAmp.value = isDark ? 0.26 : 0.12;
+    material.blending = blending;
+  }, [material, size, opacity, isDark, blending]);
+
+  useEffect(() => {
+    return () => {
+      material.dispose();
+    };
+  }, [material]);
+
+  useLayoutEffect(() => {
+    const geo = ref.current?.geometry;
+    if (!geo) return;
+    geo.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
+    geo.setAttribute("aPhase", new THREE.BufferAttribute(data.phases, 1));
+  }, [scales, data.phases]);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -232,6 +340,15 @@ function ParticleLayer({
     points.rotation.y = t * speed;
     points.rotation.x = Math.sin(t * 0.1) * 0.04;
     points.updateMatrixWorld();
+
+    const mat = materialRef.current;
+    if (mat) {
+      mat.uniforms.uTime.value = t;
+      mat.uniforms.uPixelRatio.value = gl.getPixelRatio();
+      const persp = camera as THREE.PerspectiveCamera;
+      const fovRad = THREE.MathUtils.degToRad(persp.fov);
+      mat.uniforms.uScale.value = viewport.height * 0.5 / Math.tan(fovRad * 0.5);
+    }
 
     const posAttr = points.geometry.attributes.position;
     const arr = posAttr.array as Float32Array;
@@ -320,19 +437,8 @@ function ParticleLayer({
       colors={colors}
       stride={3}
       frustumCulled={false}
-    >
-      <PointMaterial
-        map={softMap ?? undefined}
-        transparent
-        vertexColors
-        size={size}
-        sizeAttenuation
-        depthWrite={false}
-        opacity={opacity}
-        blending={blending}
-        toneMapped={false}
-      />
-    </Points>
+      material={material}
+    />
   );
 }
 
