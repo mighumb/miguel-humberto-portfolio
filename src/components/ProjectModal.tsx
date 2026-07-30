@@ -186,11 +186,19 @@ export default function ProjectModal({
 
 
   const measureTargets = useCallback((): ModalTargets | null => {
+    const modal = modalRef.current;
     const hero = heroRef.current;
     const title = titleRef.current;
     const year = yearRef.current;
     const tags = tagsRef.current;
     if (!hero || !title || !year || !tags) return null;
+
+    // Snap to top so the hero is at its natural viewport position for the FLIP.
+    // The modal hides (visibility:hidden) synchronously after this call returns,
+    // so the scroll reset is never painted as a visible frame.
+    if (modal && modal.scrollTop !== 0) {
+      modal.scrollTop = 0;
+    }
 
     return {
       thumbnail: toRect(hero.getBoundingClientRect()),
