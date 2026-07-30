@@ -38,6 +38,8 @@ function ResourceLink({ href, children }: { href: string; children: ReactNode })
   return (
     <a
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="inline-flex items-center gap-2 text-sm font-medium text-text-primary transition-colors hover:text-accent"
     >
       {children}
