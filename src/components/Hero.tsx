@@ -5,6 +5,28 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
 
+/** On mobile, start a new line at "from concept" / "du concept". */
+function MobileTaglineBreak({ text }: { text: string }) {
+  const breakAt = text.includes("from concept")
+    ? "from concept"
+    : text.includes("du concept")
+      ? "du concept"
+      : null;
+
+  if (!breakAt) return text;
+
+  const index = text.indexOf(breakAt);
+  if (index <= 0) return text;
+
+  return (
+    <>
+      {text.slice(0, index)}
+      <br className="md:hidden" />
+      {text.slice(index)}
+    </>
+  );
+}
+
 export default function Hero() {
   const { locale } = useLocale();
   const { mode } = useTheme();
@@ -29,7 +51,7 @@ export default function Hero() {
           {copy.role}
         </p>
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary md:text-lg">
-          {copy.tagline}
+          <MobileTaglineBreak text={copy.tagline} />
         </p>
       </div>
     </section>
