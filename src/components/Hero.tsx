@@ -18,11 +18,18 @@ function MobileTaglineBreak({ text }: { text: string }) {
   const index = text.indexOf(breakAt);
   if (index <= 0) return text;
 
+  const before = text.slice(0, index);
+  const after = text.slice(index);
+  // FR has a comma before "du concept"; drop it on the mobile break so the
+  // line does not look like the end of a sentence (same phrase continues).
+  const beforeMobile = before.replace(/,\s*$/, "").trimEnd();
+
   return (
     <>
-      {text.slice(0, index)}
+      <span className="md:hidden">{beforeMobile}</span>
+      <span className="hidden md:inline">{before}</span>
       <br className="md:hidden" />
-      {text.slice(index)}
+      {after}
     </>
   );
 }
