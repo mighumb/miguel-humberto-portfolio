@@ -197,6 +197,96 @@ function getParticleTexture(kind: ParticleKind) {
   return kind === "star" ? getStarParticleTexture() : getSnowParticleTexture();
 }
 
+/** Horizontal streak: bright head (right) → dissolving tail (left), soft across width. */
+let streakParticleTexture: THREE.CanvasTexture | null = null;
+
+function getStreakParticleTexture() {
+  if (streakParticleTexture) return streakParticleTexture;
+  streakParticleTexture = makeCanvasTexture((ctx, size) => {
+    const w = size;
+    const h = size;
+    const cy = h / 2;
+
+    for (let x = 0; x < w; x++) {
+      const t = x / (w - 1);
+      const along =
+        t < 0.78
+          ? Math.pow(t / 0.78, 1.8) * 0.45
+          : 0.45 + Math.pow((t - 0.78) / 0.22, 0.55) * 0.55;
+      for (let y = 0; y < h; y++) {
+        const across = Math.abs(y - cy) / cy;
+        const width = Math.pow(Math.max(0, 1 - across), 2.4);
+        const a = along * width;
+        if (a < 0.004) continue;
+        ctx.fillStyle = `rgba(255,255,255,${Math.min(1, a)})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  });
+  return streakParticleTexture;
+}
+
+const STREAK_VERTEX = /* glsl */ `
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const STREAK_FRAGMENT = /* glsl */ `
+uniform sampler2D uMap;
+uniform float uFade;
+uniform float uBrightness;
+uniform float uAlphaPower;
+uniform vec3 uColor;
+
+varying vec2 vUv;
+
+void main() {
+  vec4 texel = texture2D(uMap, vUv);
+  float soft = pow(max(texel.a, 0.0), uAlphaPower);
+
+  float along = vUv.x;
+  float across = abs(vUv.y - 0.5) * 2.0;
+  float lengthMask = pow(along, 0.55);
+  float widthMask = pow(max(0.0, 1.0 - across), 2.1);
+  float alpha = soft * lengthMask * widthMask * uFade * uBrightness;
+  if (alpha < 0.01) discard;
+
+  vec3 col = uColor * (0.55 + 0.7 * soft * along);
+  gl_FragColor = vec4(col, alpha);
+}
+`;
+
+const HEAD_VERTEX = /* glsl */ `
+varying vec2 vUv;
+
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+const HEAD_FRAGMENT = /* glsl */ `
+uniform sampler2D uMap;
+uniform float uFade;
+uniform float uBrightness;
+uniform vec3 uColor;
+
+varying vec2 vUv;
+
+void main() {
+  vec4 texel = texture2D(uMap, vUv);
+  float soft = pow(max(texel.a, 0.0), 1.85);
+  float alpha = soft * uFade * uBrightness;
+  if (alpha < 0.012) discard;
+  vec3 col = uColor * (0.75 + 0.5 * soft);
+  gl_FragColor = vec4(col, alpha);
+}
+`;
+
 const PARTICLE_VERTEX = /* glsl */ `
 attribute float aScale;
 attribute float aPhase;
@@ -558,11 +648,24 @@ function ParticleLayer({
   );
 }
 
-function ShootingStars() {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
-  const nextSpawn = useRef(3 + Math.random() * 4);
-  const star = useRef({
+type StreakState = {
+  active: boolean;
+  life: number;
+  duration: number;
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  length: number;
+  width: number;
+  headSize: number;
+  brightness: number;
+  nextSpawn: number;
+};
+
+function createStreakState(initialDelay: number): StreakState {
+  return {
     active: false,
     life: 0,
     duration: 1,
@@ -572,32 +675,111 @@ function ShootingStars() {
     vx: 0,
     vy: 0,
     length: 0.8,
-  });
+    width: 0.03,
+    headSize: 0.06,
+    brightness: 0.8,
+    nextSpawn: initialDelay,
+  };
+}
 
-  useFrame((state, delta) => {
-    const mesh = meshRef.current;
-    const material = materialRef.current;
-    if (!mesh || !material) return;
+function spawnStreak(s: StreakState, t: number) {
+  s.active = true;
+  s.life = 0;
+  const bold = Math.random() > 0.55;
+  s.duration = bold ? 0.55 + Math.random() * 0.55 : 0.35 + Math.random() * 0.35;
+  s.x = (Math.random() - 0.2) * 6.5;
+  s.y = 1.1 + Math.random() * 2.6;
+  s.z = 0.15 + Math.random() * 1.8;
 
-    const t = state.clock.elapsedTime;
-    const s = star.current;
+  const speed = bold ? 3.2 + Math.random() * 2.8 : 2.4 + Math.random() * 2.0;
+  const angle =
+    -Math.PI * (0.12 + Math.random() * 0.38) + (Math.random() > 0.82 ? Math.PI * 0.08 : 0);
+  s.vx = Math.cos(angle) * -speed;
+  s.vy = Math.sin(angle) * speed;
+
+  s.length = bold ? 0.75 + Math.random() * 0.9 : 0.4 + Math.random() * 0.45;
+  s.width = bold ? 0.028 + Math.random() * 0.022 : 0.016 + Math.random() * 0.014;
+  s.headSize = bold ? 0.055 + Math.random() * 0.035 : 0.035 + Math.random() * 0.02;
+  s.brightness = bold ? 0.7 + Math.random() * 0.35 : 0.35 + Math.random() * 0.3;
+  s.nextSpawn = t + (bold ? 4.5 + Math.random() * 5.5 : 2.8 + Math.random() * 4.5);
+}
+
+function streakLifeFade(progress: number) {
+  if (progress < 0.12) return progress / 0.12;
+  if (progress > 0.62) return Math.max(0, 1 - (progress - 0.62) / 0.38);
+  return 1;
+}
+
+function ShootingStarSlot({ initialDelay }: { initialDelay: number }) {
+  const trailRef = useRef<THREE.Mesh>(null);
+  const headRef = useRef<THREE.Mesh>(null);
+  const trailMatRef = useRef<THREE.ShaderMaterial | null>(null);
+  const headMatRef = useRef<THREE.ShaderMaterial | null>(null);
+  const state = useRef(createStreakState(initialDelay));
+
+  const trailMaterial = useMemo(() => {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uMap: { value: getStreakParticleTexture() },
+        uFade: { value: 0 },
+        uBrightness: { value: 1 },
+        uAlphaPower: { value: 1.55 },
+        uColor: { value: new THREE.Color("#e8eaf2") },
+      },
+      vertexShader: STREAK_VERTEX,
+      fragmentShader: STREAK_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+    });
+    trailMatRef.current = mat;
+    return mat;
+  }, []);
+
+  const headMaterial = useMemo(() => {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uMap: { value: getStarParticleTexture() },
+        uFade: { value: 0 },
+        uBrightness: { value: 1 },
+        uColor: { value: new THREE.Color("#f2f4fa") },
+      },
+      vertexShader: HEAD_VERTEX,
+      fragmentShader: HEAD_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      side: THREE.DoubleSide,
+    });
+    headMatRef.current = mat;
+    return mat;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      trailMaterial.dispose();
+      headMaterial.dispose();
+    };
+  }, [trailMaterial, headMaterial]);
+
+  useFrame((clockState, delta) => {
+    const trail = trailRef.current;
+    const head = headRef.current;
+    const trailMat = trailMatRef.current;
+    const headMat = headMatRef.current;
+    if (!trail || !head || !trailMat || !headMat) return;
+
+    const t = clockState.clock.elapsedTime;
+    const s = state.current;
     const dt = Math.min(delta, 0.05);
 
     if (!s.active) {
-      mesh.visible = false;
-      if (t >= nextSpawn.current) {
-        s.active = true;
-        s.life = 0;
-        s.duration = 0.55 + Math.random() * 0.5;
-        s.x = (Math.random() - 0.15) * 6;
-        s.y = 1.4 + Math.random() * 2.2;
-        s.z = 0.2 + Math.random() * 1.6;
-        const speed = 3.4 + Math.random() * 2.2;
-        s.vx = -(0.75 + Math.random() * 0.35) * speed;
-        s.vy = -(0.35 + Math.random() * 0.25) * speed;
-        s.length = 0.6 + Math.random() * 0.75;
-        nextSpawn.current = t + 5 + Math.random() * 6;
-      }
+      trail.visible = false;
+      head.visible = false;
+      if (t >= s.nextSpawn) spawnStreak(s, t);
       return;
     }
 
@@ -606,37 +788,51 @@ function ShootingStars() {
     s.y += s.vy * dt;
 
     const progress = s.life / s.duration;
-    const fade =
-      progress < 0.15
-        ? progress / 0.15
-        : progress > 0.65
-          ? Math.max(0, 1 - (progress - 0.65) / 0.35)
-          : 1;
+    const fade = streakLifeFade(progress);
+    const angle = Math.atan2(s.vy, s.vx);
 
-    mesh.visible = fade > 0.02;
-    mesh.position.set(s.x, s.y, s.z);
-    mesh.rotation.z = Math.atan2(s.vy, s.vx);
-    mesh.scale.set(s.length, 1, 1);
-    material.opacity = 0.85 * fade;
+    const midX = s.x - Math.cos(angle) * s.length * 0.5;
+    const midY = s.y - Math.sin(angle) * s.length * 0.5;
+
+    trail.visible = fade > 0.02;
+    trail.position.set(midX, midY, s.z);
+    trail.rotation.z = angle;
+    trail.scale.set(s.length, s.width, 1);
+    trailMat.uniforms.uFade.value = fade;
+    trailMat.uniforms.uBrightness.value = s.brightness;
+
+    head.visible = fade > 0.02;
+    head.position.set(s.x, s.y, s.z + 0.001);
+    head.scale.setScalar(s.headSize);
+    headMat.uniforms.uFade.value = fade;
+    headMat.uniforms.uBrightness.value = s.brightness * 1.15;
 
     if (progress >= 1) {
       s.active = false;
-      mesh.visible = false;
+      trail.visible = false;
+      head.visible = false;
     }
   });
 
   return (
-    <mesh ref={meshRef} visible={false} frustumCulled={false}>
-      <planeGeometry args={[1, 0.012]} />
-      <meshBasicMaterial
-        ref={materialRef}
-        color="#e4e6ec"
-        transparent
-        opacity={0}
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
-    </mesh>
+    <group>
+      <mesh ref={trailRef} visible={false} frustumCulled={false} material={trailMaterial}>
+        <planeGeometry args={[1, 1]} />
+      </mesh>
+      <mesh ref={headRef} visible={false} frustumCulled={false} material={headMaterial}>
+        <planeGeometry args={[1, 1]} />
+      </mesh>
+    </group>
+  );
+}
+
+function ShootingStars() {
+  return (
+    <>
+      <ShootingStarSlot initialDelay={2.2 + Math.random() * 2} />
+      <ShootingStarSlot initialDelay={5.5 + Math.random() * 3} />
+      <ShootingStarSlot initialDelay={9 + Math.random() * 4} />
+    </>
   );
 }
 
