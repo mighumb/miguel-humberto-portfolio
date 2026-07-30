@@ -1,8 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef } from "react";
 import {
-  applyCardPerspective,
   computeCardFocus,
   flightFilterStyle,
   flightTransformStyle,
@@ -58,6 +57,8 @@ export function useWorkScrollFocus(
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    let raf = 0;
+
     const update = () => {
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
@@ -99,6 +100,15 @@ export function useWorkScrollFocus(
       });
     };
 
+    // Coalesce scroll events to one paint per frame — keeps 3D (incl. blur) intact.
+    const scheduleUpdate = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        update();
+      });
+    };
+
     if (hadSnapshot) {
       requestAnimationFrame(() => {
         requestAnimationFrame(update);
@@ -108,12 +118,13 @@ export function useWorkScrollFocus(
       requestAnimationFrame(update);
     }
 
-    container.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
+    container.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
 
     return () => {
-      container.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
+      if (raf) cancelAnimationFrame(raf);
+      container.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
     };
   }, [itemCount, pauseMode, snapshotRef]);
 
