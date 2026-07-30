@@ -134,7 +134,7 @@ function FlightTags({
       {tags.map((tag) => (
         <span
           key={tag}
-          className={`rounded-full bg-bg-secondary text-text-secondary ${
+          className={`rounded-full bg-bg-tertiary text-text-secondary ${
             isCard ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-xs"
           }`}
         >

@@ -261,7 +261,7 @@ export default function ProjectModal({
                   {project.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full bg-bg-secondary px-3 py-1 text-xs text-text-secondary"
+                      className="rounded-full bg-bg-tertiary px-3 py-1 text-xs text-text-secondary"
                     >
                       {tag}
                     </span>
