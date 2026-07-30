@@ -26,6 +26,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Mobile: keep card body (incl. “View project”) fully opaque while off-axis. */
+function keepBodyOpaqueOnMobile() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
 export function computeCardFocus(
   card: HTMLElement,
   container: HTMLElement,
@@ -45,7 +51,7 @@ export function computeCardFocus(
     articleTranslateY: progress * MAX_SHIFT_Y,
     rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
     translateZ: progress * MAX_TRANSLATE_Z,
-    bodyOpacity: 1 - progress * 0.14,
+    bodyOpacity: keepBodyOpaqueOnMobile() ? 1 : 1 - progress * 0.14,
     blur: progress * MAX_BLUR,
   };
 }
