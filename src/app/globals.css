@@ -25,8 +25,8 @@
   --bg-primary: #05060a;
   --bg-secondary: #0a0c12;
   --bg-tertiary: #12151c;
-  /* Lifted flat fill so chips read as cells on near-black / ambient */
-  --chip-bg: #2a303c;
+  /* Soft lift so chips read as cells without shouting */
+  --chip-bg: #1a1e28;
   --text-primary: #e8e8ed;
   --text-secondary: #6e6e73;
   --accent: #6e6e73;
