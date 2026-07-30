@@ -66,12 +66,13 @@ export default function Hero() {
   const handleScrollToWork = useCallback(() => {
     const section = document.getElementById("projects");
     if (!section) return;
-    const sectionTop = section.offsetTop;
-    const sectionHeight = section.offsetHeight;
     const vh = window.innerHeight;
-    // Center the section in the viewport; clamp so we never scroll negative
-    const target = Math.max(0, sectionTop + sectionHeight / 2 - vh / 2);
-    smoothScrollTo(target, 1300);
+    // Account for the fixed sticky header so equal breathing room appears
+    // above and below the section inside the available content area.
+    const navEl = document.querySelector<HTMLElement>(".site-sticky-header");
+    const navH = navEl ? navEl.offsetHeight : Math.min(vh * 0.055, 52);
+    const target = section.offsetTop + section.offsetHeight / 2 - vh / 2 - navH / 2;
+    smoothScrollTo(Math.max(0, target), 1300);
   }, []);
 
   return (
