@@ -26,19 +26,17 @@ function getCarouselGap(container: HTMLElement) {
   );
 }
 
-/** Ideal scrollLeft so a card sits face-on. Card 0 is always flush to the start. */
+/**
+ * Ideal scrollLeft so a card sits face-on at the shared left inset.
+ * Same formula for every card (including the first): offsetLeft - padding/inset.
+ * With pl-6 / md:pl-10, card 0 → 0 and later cards keep the same screen edge.
+ */
 export function getCardIdealScroll(
   container: HTMLElement,
   card: HTMLElement,
-  index = -1,
+  _index = -1,
 ) {
-  const cards = getWorkCards(container);
-  const cardIndex = index >= 0 ? index : cards.indexOf(card);
-  if (cardIndex <= 0) return 0;
-
-  // With padding-left, offsetLeft of cards is relative to the content box (0 for first).
-  // Later cards: keep them at the same left inset as card 0.
-  return Math.max(0, card.offsetLeft);
+  return Math.max(0, card.offsetLeft - getFocusInset(container));
 }
 
 /**
@@ -52,8 +50,8 @@ export function getWorkCarouselEndGutterWidth(container: HTMLElement) {
   if (last.offsetWidth < 32) return getFocusInset(container);
 
   const focusInset = getFocusInset(container);
-  // padding-left already insets the track; end space should let the last card
-  // sit at the same left inset as the first (scrollLeft === last.offsetLeft).
+  // Trailing space so max scrollLeft can reach last.offsetLeft - focusInset
+  // (same face-on left edge as card 0).
   return Math.max(0, Math.ceil(container.clientWidth - focusInset - last.offsetWidth));
 }
 
