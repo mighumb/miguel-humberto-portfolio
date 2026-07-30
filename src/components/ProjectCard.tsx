@@ -166,10 +166,6 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
             ))}
           </div>
 
-          <p className="line-clamp-2 text-sm leading-relaxed text-text-secondary md:text-base">
-            {project.description[locale]}
-          </p>
-
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent transition-colors group-hover:text-text-primary">
             {t.viewProject}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
