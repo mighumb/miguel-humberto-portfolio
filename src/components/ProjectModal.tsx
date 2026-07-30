@@ -120,6 +120,14 @@ export default function ProjectModal({
     syncVideoPlayback(video, videoTime);
   }, [project.id, project.hasVideo, videoPlaying, videoTime]);
 
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video || !project.hasVideo || !project.videoUrl || videoPlaying) return;
+    if (sharedContentVisible) {
+      video.play().catch(() => {});
+    }
+  }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);
+
   const measureTargets = useCallback((): ModalTargets | null => {
     const hero = heroRef.current;
     const title = titleRef.current;
