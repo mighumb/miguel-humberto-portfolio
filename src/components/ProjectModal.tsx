@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project, projectCoverUrl } from "@/lib/projects";
+import { type Project, type Deliverable, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectModalProps {
@@ -38,6 +38,8 @@ function ResourceLink({ href, children }: { href: string; children: ReactNode })
   return (
     <a
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="inline-flex items-center gap-2 text-sm font-medium text-text-primary transition-colors hover:text-accent"
     >
       {children}
@@ -87,6 +89,60 @@ function LinkedText({ text }: { text: string }) {
   return <>{parts.length > 0 ? parts : text}</>;
 }
 
+function DeliverableVideo({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onPause = () => setPlaying(false);
+    video.addEventListener("pause", onPause);
+    return () => video.removeEventListener("pause", onPause);
+  }, []);
+
+  const handlePlay = () => {
+    setPlaying(true);
+    videoRef.current?.play().catch(() => {});
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-xl bg-bg-secondary">
+      <video
+        ref={videoRef}
+        src={src}
+        controls={playing}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        className="h-full w-full object-cover"
+      />
+      {!playing && (
+        <button
+          type="button"
+          onClick={handlePlay}
+          className="absolute inset-0 cursor-pointer border-0 bg-transparent"
+          aria-label="Play video"
+        >
+          <span
+            className="absolute inset-0 bg-bg-primary/25 transition-colors group-hover:bg-bg-primary/15"
+            aria-hidden
+          />
+          <span
+            className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+            aria-hidden
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+              <path d="M8 5.14v13.72L19 12 8 5.14z" />
+            </svg>
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ProjectModal({
   project,
   onRequestClose,
@@ -127,6 +183,7 @@ export default function ProjectModal({
       video.play().catch(() => {});
     }
   }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);
+
 
   const measureTargets = useCallback((): ModalTargets | null => {
     const hero = heroRef.current;
@@ -347,23 +404,59 @@ export default function ProjectModal({
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-                {Array.from({ length: project.deliverableCount }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-[4/3] overflow-hidden rounded-lg"
-                    style={{
-                      background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
-                    }}
-                  >
-                    <div className="flex h-full items-center justify-center">
-                      <span className="text-sm text-text-secondary opacity-40">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+              {project.deliverables ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {project.deliverables.map((deliverable, i) =>
+                    deliverable.type === "video" ? (
+                      <DeliverableVideo
+                        key={i}
+                        src={`/projects/${project.track}/${project.slug}/${deliverable.url}`}
+                      />
+                    ) : deliverable.type === "instagram" ? (
+                      <div key={i} className="overflow-hidden rounded-xl">
+                        <blockquote
+                          className="instagram-media"
+                          data-instgrm-permalink={`${deliverable.url}?utm_source=ig_embed&utm_campaign=loading`}
+                          data-instgrm-version="14"
+                          style={{ margin: 0, width: "100%", maxWidth: "100%" }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={i}
+                        className="aspect-[4/3] overflow-hidden rounded-lg"
+                        style={{
+                          background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
+                        }}
+                      >
+                        <div className="flex h-full items-center justify-center">
+                          <span className="text-sm text-text-secondary opacity-40">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+                  {Array.from({ length: project.deliverableCount }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[4/3] overflow-hidden rounded-lg"
+                      style={{
+                        background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
+                      }}
+                    >
+                      <div className="flex h-full items-center justify-center">
+                        <span className="text-sm text-text-secondary opacity-40">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="mt-16 pt-16">
