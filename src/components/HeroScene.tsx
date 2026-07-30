@@ -8,6 +8,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 const PARTICLE_COUNT = 3200;
 const DRIFT_COUNT = 800;
+const NEAR_COUNT = 480;
 
 // Base screen-space radius (~cursor footprint in px), extended per particle size
 const CURSOR_RADIUS_PX = 14;
@@ -42,11 +43,10 @@ function screenFromWorld(
   };
 }
 
-// Light mode: darker grays on #F5F5F7 — must read clearly against the page
+// Match main visibility: darker grays on light sky, lighter grays on night sky
 const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
 const LIGHT_PARTICLE_ALT = new THREE.Color("#86868b");
 
-// Dark mode: lighter grays on #0A0A0B
 const DARK_PARTICLE = new THREE.Color("#6e6e73");
 const DARK_PARTICLE_ALT = new THREE.Color("#aeaeb2");
 
@@ -82,7 +82,8 @@ function generateLayer(count: number, seed: number, spread: number) {
     const y = r * Math.sin(phi) * Math.sin(theta) * 0.5;
     const z = r * Math.cos(phi) * 0.65;
 
-    if (Math.abs(x) < 1.2 && Math.abs(y) < 0.85) continue;
+    // Soft title clearance — smaller than before so the mid-field stays populated
+    if (Math.abs(x) < 0.75 && Math.abs(y) < 0.5) continue;
 
     positions[i * 3] = x;
     positions[i * 3 + 1] = y;
@@ -98,6 +99,7 @@ function generateLayer(count: number, seed: number, spread: number) {
 
 const MAIN_LAYER = generateLayer(PARTICLE_COUNT, 42, 4.2);
 const DRIFT_LAYER = generateLayer(DRIFT_COUNT, 137, 3.6);
+const NEAR_LAYER = generateLayer(NEAR_COUNT, 911, 2.6);
 
 function buildColors(mix: Float32Array, count: number, isDark: boolean) {
   const colors = new Float32Array(count * 3);
@@ -148,6 +150,7 @@ interface ParticleLayerProps {
   speed: number;
   drift: number;
   turbulenceStrength: number;
+  blending?: THREE.Blending;
 }
 
 function ParticleLayer({
@@ -158,6 +161,7 @@ function ParticleLayer({
   speed,
   drift,
   turbulenceStrength,
+  blending = THREE.NormalBlending,
 }: ParticleLayerProps) {
   const { camera, size: viewport, gl } = useThree();
   const ref = useRef<THREE.Points>(null);
@@ -288,9 +292,91 @@ function ParticleLayer({
         sizeAttenuation
         depthWrite={false}
         opacity={opacity}
-        blending={THREE.NormalBlending}
+        blending={blending}
       />
     </Points>
+  );
+}
+
+function ShootingStars() {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+  const nextSpawn = useRef(3 + Math.random() * 4);
+  const star = useRef({
+    active: false,
+    life: 0,
+    duration: 1,
+    x: 0,
+    y: 0,
+    z: 0,
+    vx: 0,
+    vy: 0,
+    length: 0.8,
+  });
+
+  useFrame((state, delta) => {
+    const mesh = meshRef.current;
+    const material = materialRef.current;
+    if (!mesh || !material) return;
+
+    const t = state.clock.elapsedTime;
+    const s = star.current;
+    const dt = Math.min(delta, 0.05);
+
+    if (!s.active) {
+      mesh.visible = false;
+      if (t >= nextSpawn.current) {
+        s.active = true;
+        s.life = 0;
+        s.duration = 0.55 + Math.random() * 0.5;
+        s.x = (Math.random() - 0.15) * 6;
+        s.y = 1.4 + Math.random() * 2.2;
+        s.z = 0.2 + Math.random() * 1.6;
+        const speed = 3.4 + Math.random() * 2.2;
+        s.vx = -(0.75 + Math.random() * 0.35) * speed;
+        s.vy = -(0.35 + Math.random() * 0.25) * speed;
+        s.length = 0.6 + Math.random() * 0.75;
+        nextSpawn.current = t + 5 + Math.random() * 6;
+      }
+      return;
+    }
+
+    s.life += dt;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+
+    const progress = s.life / s.duration;
+    const fade =
+      progress < 0.15
+        ? progress / 0.15
+        : progress > 0.65
+          ? Math.max(0, 1 - (progress - 0.65) / 0.35)
+          : 1;
+
+    mesh.visible = fade > 0.02;
+    mesh.position.set(s.x, s.y, s.z);
+    mesh.rotation.z = Math.atan2(s.vy, s.vx);
+    mesh.scale.set(s.length, 1, 1);
+    material.opacity = 0.85 * fade;
+
+    if (progress >= 1) {
+      s.active = false;
+      mesh.visible = false;
+    }
+  });
+
+  return (
+    <mesh ref={meshRef} visible={false} frustumCulled={false}>
+      <planeGeometry args={[1, 0.012]} />
+      <meshBasicMaterial
+        ref={materialRef}
+        color="#e4e6ec"
+        transparent
+        opacity={0}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </mesh>
   );
 }
 
@@ -304,8 +390,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         isDark={isDark}
         size={isDark ? 0.016 : 0.022}
         opacity={isDark ? 0.55 : 0.65}
-        speed={0.025}
-        drift={0.04}
+        speed={0.014}
+        drift={0.03}
         turbulenceStrength={0.85}
       />
       <ParticleLayer
@@ -313,10 +399,20 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         isDark={isDark}
         size={isDark ? 0.028 : 0.034}
         opacity={isDark ? 0.25 : 0.38}
-        speed={0.015}
-        drift={0.06}
+        speed={0.008}
+        drift={0.045}
         turbulenceStrength={1}
       />
+      <ParticleLayer
+        data={NEAR_LAYER}
+        isDark={isDark}
+        size={isDark ? 0.038 : 0.046}
+        opacity={isDark ? 0.35 : 0.42}
+        speed={0.018}
+        drift={0.055}
+        turbulenceStrength={1.15}
+      />
+      {isDark && <ShootingStars />}
     </>
   );
 }

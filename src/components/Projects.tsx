@@ -31,16 +31,13 @@ import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
-function ScrollGutter() {
-  return <div aria-hidden className="work-scroll-gutter shrink-0 w-6 md:w-10" />;
-}
-
 function EndScrollGutter({ width }: { width: number }) {
   return (
     <div
       aria-hidden
+      data-work-gutter="end"
       className="work-scroll-end-gutter shrink-0"
-      style={{ width }}
+      style={{ width, overflowAnchor: "none" }}
     />
   );
 }
@@ -177,13 +174,22 @@ export default function Projects() {
     carouselSnapshotRef,
   );
   const [endGutterWidth, setEndGutterWidth] = useState(24);
+  const shouldAnchorStartRef = useRef(true);
 
   useLayoutEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
     const updateEndGutter = () => {
-      setEndGutterWidth(getWorkCarouselEndGutterWidth(container));
+      const nextWidth = getWorkCarouselEndGutterWidth(container);
+      setEndGutterWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+
+      // Keep the first card flush left after layout/gutter measurement settles.
+      if (shouldAnchorStartRef.current && pinnedCardIndexRef.current === null) {
+        stopWorkCarouselMotion(container);
+        container.scrollTo({ left: 0, behavior: "auto" });
+        setFocusedCardIndex(0);
+      }
     };
 
     updateEndGutter();
@@ -202,6 +208,7 @@ export default function Projects() {
   }, [scrollRef, projects.length, mode]);
 
   useEffect(() => {
+    shouldAnchorStartRef.current = true;
     setActiveProject(null);
     setActiveIndex(0);
     setFocusedCardIndex(0);
@@ -226,6 +233,39 @@ export default function Projects() {
       container.scrollLeft = 0;
     }
   }, [mode, scrollRef]);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const releaseAnchor = () => {
+      shouldAnchorStartRef.current = false;
+    };
+
+    // User interaction ends start-anchoring; ignore programmatic scrollLeft=0.
+    container.addEventListener("pointerdown", releaseAnchor, { passive: true });
+
+    // Re-assert left start after Safari layout / scroll-anchoring settles.
+    const anchorStart = () => {
+      if (!shouldAnchorStartRef.current) return;
+      stopWorkCarouselMotion(container);
+      container.scrollTo({ left: 0, behavior: "auto" });
+    };
+    const raf1 = window.requestAnimationFrame(() => {
+      anchorStart();
+      window.requestAnimationFrame(anchorStart);
+    });
+    const timer = window.setTimeout(() => {
+      anchorStart();
+      releaseAnchor();
+    }, 800);
+
+    return () => {
+      container.removeEventListener("pointerdown", releaseAnchor);
+      window.cancelAnimationFrame(raf1);
+      window.clearTimeout(timer);
+    };
+  }, [scrollRef, mode, projects.length]);
 
   const carouselNavDisabled = activeProject !== null;
 
@@ -522,9 +562,9 @@ export default function Projects() {
         <div className="work-scroll-stage relative">
           <div
             ref={scrollRef}
-            className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-12 pt-0 md:gap-10 md:pb-14"
+            dir="ltr"
+            className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-10 md:scroll-pl-10 md:pb-14 md:pl-10"
           >
-            <ScrollGutter />
             {projects.map((project, index) => (
               <ProjectCard
                 key={project.id}
