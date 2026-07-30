@@ -360,16 +360,6 @@ html.modal-open .project-modal {
     opacity: 1 !important;
     filter: none !important;
   }
-
-  .work-card-visual {
-    filter: none !important;
-  }
-
-  .work-card-media {
-    filter: none !important;
-    opacity: 1 !important;
-    transform-style: preserve-3d !important;
-  }
 }
 
 .site-sticky-header {

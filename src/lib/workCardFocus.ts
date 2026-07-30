@@ -5,8 +5,8 @@ export const MAX_ROTATE_Y = 17;
 export const MAX_TRANSLATE_Z = -280;
 export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
-/** Stronger on mobile — 1.15px was nearly invisible on retina / Safari peeks. */
-export const MAX_BLUR_MOBILE = 3.6;
+/** Stronger on mobile so off-axis peeks read clearly on retina. */
+export const MAX_BLUR_MOBILE = 4.2;
 
 export interface CardPerspective {
   articleTranslateY: number;
@@ -28,7 +28,6 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Mobile: keep meta/CTA fully opaque; blur stays on the media only. */
 function isMobileViewport() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(max-width: 767px)").matches;
@@ -48,13 +47,15 @@ export function computeCardFocus(
   const step = card.offsetWidth + gap;
   const progress = Math.min(1, Math.abs(delta) / step);
   const direction = step === 0 ? 0 : delta / step;
+  const mobile = isMobileViewport();
 
   return {
     articleTranslateY: progress * MAX_SHIFT_Y,
     rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
     translateZ: progress * MAX_TRANSLATE_Z,
-    bodyOpacity: isMobileViewport() ? 1 : 1 - progress * 0.14,
-    blur: progress * (isMobileViewport() ? MAX_BLUR_MOBILE : MAX_BLUR),
+    // Mobile: no opacity wash on the focused CTA; side cards still blur.
+    bodyOpacity: mobile ? 1 : 1 - progress * 0.14,
+    blur: progress * (mobile ? MAX_BLUR_MOBILE : MAX_BLUR),
   };
 }
 
@@ -91,35 +92,12 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   const body = card.querySelector<HTMLElement>(".work-card-body");
   if (!body) return;
 
-  // Prefer media node: filter + preserve-3d on .work-card-visual is unreliable in Safari.
-  const media =
-    card.querySelector<HTMLElement>(".work-card-media") ??
-    card.querySelector<HTMLElement>(".work-card-visual");
-  const filter = flightFilterStyle(perspective);
-  const mobile = isMobileViewport();
-
+  // Same path as desktop: filter on the 3D body (works in Safari).
+  // Media-only filters under preserve-3d were ignored on iOS.
   body.style.transformOrigin = "center bottom";
   body.style.transform = flightTransformStyle(perspective);
   body.style.opacity = `${perspective.bodyOpacity}`;
-
-  // Mobile: blur/dim off-axis media only so “View project” stays crisp.
-  if (mobile) {
-    body.style.filter = "";
-    if (media) {
-      media.style.filter = filter;
-      // Flatten 3D so CSS filter actually paints on WebKit.
-      media.style.transformStyle = filter === "none" ? "" : "flat";
-      const blurProgress = Math.min(1, perspective.blur / MAX_BLUR_MOBILE);
-      media.style.opacity = `${1 - blurProgress * 0.28}`;
-    }
-  } else {
-    body.style.filter = filter;
-    if (media) {
-      media.style.filter = "";
-      media.style.transformStyle = "";
-      media.style.opacity = "";
-    }
-  }
+  body.style.filter = flightFilterStyle(perspective);
 }
 
 export function captureCardPerspectives(container: HTMLElement): Map<string, CardPerspective> {
@@ -155,18 +133,9 @@ export function resetCardPerspective(card: HTMLElement) {
   card.style.zIndex = "";
 
   const body = card.querySelector<HTMLElement>(".work-card-body");
-  if (body) {
-    body.style.transform = "";
-    body.style.opacity = "";
-    body.style.filter = "";
-  }
+  if (!body) return;
 
-  const media =
-    card.querySelector<HTMLElement>(".work-card-media") ??
-    card.querySelector<HTMLElement>(".work-card-visual");
-  if (media) {
-    media.style.filter = "";
-    media.style.transformStyle = "";
-    media.style.opacity = "";
-  }
+  body.style.transform = "";
+  body.style.opacity = "";
+  body.style.filter = "";
 }
