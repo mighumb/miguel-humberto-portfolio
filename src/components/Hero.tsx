@@ -1,9 +1,30 @@
 "use client";
 
+import { useCallback } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
+
+function easeInOutQuart(t: number): number {
+  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+}
+
+function smoothScrollTo(target: number, duration: number) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    window.scrollTo(0, target);
+    return;
+  }
+  const start = window.scrollY;
+  const distance = target - start;
+  const startTime = performance.now();
+  function step(now: number) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    window.scrollTo(0, start + distance * easeInOutQuart(progress));
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
 
 const MOBILE_TAGLINE_BREAKS = [
   "from concept",
@@ -42,6 +63,12 @@ export default function Hero() {
   const t = translations[locale];
   const copy = t.modes[mode];
 
+  const handleScrollToWork = useCallback(() => {
+    const hero = document.querySelector<HTMLElement>('[aria-label="Introduction"]');
+    const target = hero ? hero.offsetHeight : window.innerHeight;
+    smoothScrollTo(target, 900);
+  }, []);
+
   return (
     <section
       className="relative flex h-[calc(100svh-min(5.5svh,3.25rem))] w-full flex-col"
@@ -62,6 +89,35 @@ export default function Hero() {
         <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary md:text-lg">
           <MobileTaglineBreak text={copy.tagline} />
         </p>
+
+        <button
+          type="button"
+          onClick={handleScrollToWork}
+          className="hero-arrow mt-12 cursor-pointer border-0 bg-transparent p-2 text-text-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          aria-label="Scroll to work"
+        >
+          <svg
+            width="28"
+            height="16"
+            viewBox="0 0 28 16"
+            fill="none"
+            aria-hidden
+            className="hero-arrow-chevron"
+          >
+            <defs>
+              <linearGradient id="chevron-l" x1="1" y1="1" x2="14" y2="14" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+              </linearGradient>
+              <linearGradient id="chevron-r" x1="27" y1="1" x2="14" y2="14" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
+                <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+              </linearGradient>
+            </defs>
+            <path d="M1 1 L14 14" stroke="url(#chevron-l)" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M27 1 L14 14" stroke="url(#chevron-r)" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
       </div>
     </section>
   );
