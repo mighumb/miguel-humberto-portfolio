@@ -10,6 +10,7 @@ import {
   restoreCardPerspectives,
   type CardPerspective,
 } from "@/lib/workCardFocus";
+import { getCardIdealScroll } from "@/lib/workCarouselNav";
 import { attachWorkDragScroll } from "@/lib/workDragScroll";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
@@ -62,13 +63,11 @@ export function useWorkScrollFocus(
       if (!cards.length) return;
 
       const scrollLeft = container.scrollLeft;
-      const gutter = container.firstElementChild as HTMLElement | null;
-      const focusInset = gutter?.offsetWidth ?? 24;
       const styles = getComputedStyle(container);
       const gap =
         Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 20;
 
-      cards.forEach((card) => {
+      cards.forEach((card, index) => {
         const body = card.querySelector<HTMLElement>(".work-card-body");
 
         if (reducedMotion) {
@@ -83,7 +82,7 @@ export function useWorkScrollFocus(
         }
 
         const focus = computeCardFocus(card, container);
-        const idealScroll = card.offsetLeft - focusInset;
+        const idealScroll = getCardIdealScroll(container, card, index);
         const delta = scrollLeft - idealScroll;
         const step = card.offsetWidth + gap;
         const progress = Math.min(1, Math.abs(delta) / step);

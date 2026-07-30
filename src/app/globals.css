@@ -234,6 +234,12 @@ html.modal-open .project-modal {
   scrollbar-width: none;
   /* Allow native horizontal swipe as well as vertical page scroll */
   touch-action: pan-x pan-y;
+  /* Prevent browser scroll-anchoring from jumping away from the first card */
+  overflow-anchor: none;
+}
+
+.work-scroll-end-gutter {
+  overflow-anchor: none;
 }
 
 .work-scroll.is-pressing {

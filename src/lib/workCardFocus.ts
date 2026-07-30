@@ -1,3 +1,5 @@
+import { getCardIdealScroll } from "@/lib/workCarouselNav";
+
 export const CARD_PERSPECTIVE = 1100;
 export const MAX_ROTATE_Y = 17;
 export const MAX_TRANSLATE_Z = -280;
@@ -28,14 +30,12 @@ export function computeCardFocus(
   card: HTMLElement,
   container: HTMLElement,
 ): CardPerspective {
-  const gutter = container.firstElementChild as HTMLElement | null;
-  const focusInset = gutter?.offsetWidth ?? 24;
   const styles = getComputedStyle(container);
   const gap =
     Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 20;
 
   const scrollLeft = container.scrollLeft;
-  const idealScroll = card.offsetLeft - focusInset;
+  const idealScroll = getCardIdealScroll(container, card);
   const delta = scrollLeft - idealScroll;
   const step = card.offsetWidth + gap;
   const progress = Math.min(1, Math.abs(delta) / step);

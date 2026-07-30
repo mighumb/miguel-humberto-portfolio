@@ -31,16 +31,23 @@ import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
-function ScrollGutter() {
-  return <div aria-hidden className="work-scroll-gutter shrink-0 w-6 md:w-10" />;
+function StartScrollGutter() {
+  return (
+    <div
+      aria-hidden
+      data-work-gutter="start"
+      className="work-scroll-gutter shrink-0 w-6 md:w-10"
+    />
+  );
 }
 
 function EndScrollGutter({ width }: { width: number }) {
   return (
     <div
       aria-hidden
+      data-work-gutter="end"
       className="work-scroll-end-gutter shrink-0"
-      style={{ width }}
+      style={{ width, overflowAnchor: "none" }}
     />
   );
 }
@@ -187,10 +194,10 @@ export default function Projects() {
       const nextWidth = getWorkCarouselEndGutterWidth(container);
       setEndGutterWidth((prev) => (prev === nextWidth ? prev : nextWidth));
 
-      // Keep the first card left-aligned after layout/gutter measurement settles.
+      // Keep the first card flush left after layout/gutter measurement settles.
       if (shouldAnchorStartRef.current && pinnedCardIndexRef.current === null) {
         stopWorkCarouselMotion(container);
-        container.scrollLeft = 0;
+        container.scrollTo({ left: 0, behavior: "auto" });
         setFocusedCardIndex(0);
       }
     };
@@ -550,9 +557,10 @@ export default function Projects() {
         <div className="work-scroll-stage relative">
           <div
             ref={scrollRef}
+            dir="ltr"
             className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain px-0 pb-12 pt-0 md:gap-10 md:pb-14"
           >
-            <ScrollGutter />
+            <StartScrollGutter />
             {projects.map((project, index) => (
               <ProjectCard
                 key={project.id}
