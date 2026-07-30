@@ -47,8 +47,8 @@ function screenFromWorld(
 const LIGHT_PARTICLE = new THREE.Color("#5e5e64");
 const LIGHT_PARTICLE_ALT = new THREE.Color("#9a9aa2");
 
-const DARK_PARTICLE = new THREE.Color("#8a8e98");
-const DARK_PARTICLE_ALT = new THREE.Color("#e4e7f0");
+const DARK_PARTICLE = new THREE.Color("#b8bcc8");
+const DARK_PARTICLE_ALT = new THREE.Color("#f0f3fa");
 
 const mouseInfluence = {
   screenX: 0,
@@ -469,11 +469,11 @@ function ParticleLayer({
         uTime: { value: 0 },
         uScale: { value: 300 },
         uPixelRatio: { value: 1 },
-        uTwinkleAmp: { value: kind === "star" ? 0.28 : 0.08 },
+        uTwinkleAmp: { value: kind === "star" ? 0.2 : 0.08 },
         uSizeBreath: { value: kind === "star" ? 0.1 : 0.04 },
         uSpin: { value: kind === "star" ? 0.0 : 0.22 },
-        uCoreBoost: { value: kind === "star" ? 0.72 : 0.85 },
-        uAlphaPower: { value: kind === "star" ? 1.95 : 1.75 },
+        uCoreBoost: { value: kind === "star" ? 0.88 : 0.85 },
+        uAlphaPower: { value: kind === "star" ? 1.65 : 1.75 },
       },
       vertexShader: PARTICLE_VERTEX,
       fragmentShader: PARTICLE_FRAGMENT,
@@ -490,11 +490,11 @@ function ParticleLayer({
     material.uniforms.uMap.value = getParticleTexture(kind);
     material.uniforms.uSize.value = size;
     material.uniforms.uOpacity.value = opacity;
-    material.uniforms.uTwinkleAmp.value = kind === "star" ? 0.28 : 0.08;
+    material.uniforms.uTwinkleAmp.value = kind === "star" ? 0.2 : 0.08;
     material.uniforms.uSizeBreath.value = kind === "star" ? 0.1 : 0.04;
     material.uniforms.uSpin.value = kind === "star" ? 0.0 : 0.22;
-    material.uniforms.uCoreBoost.value = kind === "star" ? 0.72 : 0.85;
-    material.uniforms.uAlphaPower.value = kind === "star" ? 1.95 : 1.75;
+    material.uniforms.uCoreBoost.value = kind === "star" ? 0.88 : 0.85;
+    material.uniforms.uAlphaPower.value = kind === "star" ? 1.65 : 1.75;
     material.blending = blending;
   }, [material, size, opacity, kind, blending]);
 
@@ -848,8 +848,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         data={MAIN_LAYER}
         isDark={isDark}
         kind={kind}
-        size={isDark ? 0.02 : 0.034}
-        opacity={isDark ? 0.78 : 0.58}
+        size={isDark ? 0.024 : 0.034}
+        opacity={isDark ? 0.88 : 0.58}
         speed={isDark ? 0.014 : 0.006}
         drift={isDark ? 0.03 : 0.05}
         fallSpeed={isDark ? 0 : 0.09}
@@ -860,8 +860,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         data={DRIFT_LAYER}
         isDark={isDark}
         kind={kind}
-        size={isDark ? 0.038 : 0.05}
-        opacity={isDark ? 0.32 : 0.36}
+        size={isDark ? 0.044 : 0.05}
+        opacity={isDark ? 0.48 : 0.36}
         speed={isDark ? 0.008 : 0.004}
         drift={isDark ? 0.045 : 0.07}
         fallSpeed={isDark ? 0 : 0.06}
@@ -872,8 +872,8 @@ function SceneContent({ isDark }: { isDark: boolean }) {
         data={NEAR_LAYER}
         isDark={isDark}
         kind={kind}
-        size={isDark ? 0.05 : 0.066}
-        opacity={isDark ? 0.5 : 0.4}
+        size={isDark ? 0.056 : 0.066}
+        opacity={isDark ? 0.62 : 0.4}
         speed={isDark ? 0.018 : 0.008}
         drift={isDark ? 0.055 : 0.08}
         fallSpeed={isDark ? 0 : 0.12}
