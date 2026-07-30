@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -87,6 +87,52 @@ function LinkedText({ text }: { text: string }) {
   }
 
   return <>{parts.length > 0 ? parts : text}</>;
+}
+
+function DeliverableVideo({ src }: { src: string }) {
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handlePlay = () => {
+    setPlaying(true);
+    videoRef.current?.play().catch(() => {});
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-xl bg-bg-secondary">
+      <video
+        ref={videoRef}
+        src={src}
+        controls={playing}
+        muted
+        loop
+        playsInline
+        preload="metadata"
+        className="h-full w-full object-cover"
+      />
+      {!playing && (
+        <button
+          type="button"
+          onClick={handlePlay}
+          className="absolute inset-0 cursor-pointer border-0 bg-transparent"
+          aria-label="Play video"
+        >
+          <span
+            className="absolute inset-0 bg-bg-primary/25 transition-colors group-hover:bg-bg-primary/15"
+            aria-hidden
+          />
+          <span
+            className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+            aria-hidden
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+              <path d="M8 5.14v13.72L19 12 8 5.14z" />
+            </svg>
+          </span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function ProjectModal({
@@ -354,17 +400,10 @@ export default function ProjectModal({
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {project.deliverables.map((deliverable, i) =>
                     deliverable.type === "video" ? (
-                      <div key={i} className="overflow-hidden rounded-xl bg-bg-secondary">
-                        <video
-                          src={`/projects/${project.track}/${project.slug}/${deliverable.url}`}
-                          controls
-                          muted
-                          loop
-                          playsInline
-                          preload="metadata"
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
+                      <DeliverableVideo
+                        key={i}
+                        src={`/projects/${project.track}/${project.slug}/${deliverable.url}`}
+                      />
                     ) : deliverable.type === "instagram" ? (
                       <div key={i} className="overflow-hidden rounded-xl">
                         <blockquote
