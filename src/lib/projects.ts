@@ -82,6 +82,7 @@ export const projects: Project[] = [
     links: {
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
       notion: "https://zenith-flood-86d.notion.site/WORKFLOW-CGI-g-n-rative-avec-Weavy-AI-2bb7cd46589480cab066f0cf921e8e1d?pvs=143",
+      instagram: "https://www.instagram.com/p/DR9fJ8YDb_Y/?img_index=1",
     },
     deliverableCount: 3,
     deliverables: [
