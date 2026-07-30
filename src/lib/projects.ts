@@ -1,5 +1,9 @@
 export type ProjectTrack = "ai" | "craft";
 
+export type Deliverable =
+  | { type: "instagram"; url: string }
+  | { type: "placeholder" };
+
 export interface Project {
   id: string;
   /** Folder name under public/projects/{track}/ */
@@ -28,6 +32,8 @@ export interface Project {
     tiktok?: string;
   };
   deliverableCount: number;
+  /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
+  deliverables?: Deliverable[];
 }
 
 /** Public URL root for a project's local assets. */
@@ -76,7 +82,12 @@ export const projects: Project[] = [
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
       notion: "https://zenith-flood-86d.notion.site/WORKFLOW-CGI-g-n-rative-avec-Weavy-AI-2bb7cd46589480cab066f0cf921e8e1d?pvs=143",
     },
-    deliverableCount: 8,
+    deliverableCount: 3,
+    deliverables: [
+      { type: "instagram", url: "https://www.instagram.com/reel/DRsGeWUjbAT/" },
+      { type: "instagram", url: "https://www.instagram.com/reel/DRz4qu_DfLs/" },
+      { type: "instagram", url: "https://www.instagram.com/reel/DSS38pujQYu/" },
+    ],
   },
   {
     id: "02",

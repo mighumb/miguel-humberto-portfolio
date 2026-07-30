@@ -6,7 +6,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project, projectCoverUrl } from "@/lib/projects";
+import { type Project, type Deliverable, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectModalProps {
@@ -127,6 +127,32 @@ export default function ProjectModal({
       video.play().catch(() => {});
     }
   }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);
+
+  useEffect(() => {
+    const hasInstagram = project.deliverables?.some((d: Deliverable) => d.type === "instagram");
+    if (!hasInstagram || !sharedContentVisible) return;
+
+    const process = () => {
+      (window as { instgrm?: { Embeds?: { process?: () => void } } }).instgrm?.Embeds?.process?.();
+    };
+
+    if ((window as { instgrm?: unknown }).instgrm) {
+      process();
+      return;
+    }
+
+    const existing = document.querySelector('script[src*="instagram.com/embed.js"]');
+    if (existing) {
+      existing.addEventListener("load", process, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = process;
+    document.body.appendChild(script);
+  }, [project.deliverables, sharedContentVisible]);
 
   const measureTargets = useCallback((): ModalTargets | null => {
     const hero = heroRef.current;
@@ -347,23 +373,54 @@ export default function ProjectModal({
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
-                {Array.from({ length: project.deliverableCount }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-[4/3] overflow-hidden rounded-lg"
-                    style={{
-                      background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
-                    }}
-                  >
-                    <div className="flex h-full items-center justify-center">
-                      <span className="text-sm text-text-secondary opacity-40">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+              {project.deliverables ? (
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {project.deliverables.map((deliverable, i) =>
+                    deliverable.type === "instagram" ? (
+                      <div key={i} className="overflow-hidden rounded-xl">
+                        <blockquote
+                          className="instagram-media"
+                          data-instgrm-permalink={`${deliverable.url}?utm_source=ig_embed&utm_campaign=loading`}
+                          data-instgrm-version="14"
+                          style={{ margin: 0, width: "100%", maxWidth: "100%" }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        key={i}
+                        className="aspect-[4/3] overflow-hidden rounded-lg"
+                        style={{
+                          background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
+                        }}
+                      >
+                        <div className="flex h-full items-center justify-center">
+                          <span className="text-sm text-text-secondary opacity-40">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6">
+                  {Array.from({ length: project.deliverableCount }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[4/3] overflow-hidden rounded-lg"
+                      style={{
+                        background: `linear-gradient(135deg, var(--placeholder) 0%, var(--placeholder-dark) 100%)`,
+                      }}
+                    >
+                      <div className="flex h-full items-center justify-center">
+                        <span className="text-sm text-text-secondary opacity-40">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="mt-16 pt-16">
