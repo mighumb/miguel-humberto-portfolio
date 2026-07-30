@@ -47,8 +47,8 @@ function screenFromWorld(
 const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
 const LIGHT_PARTICLE_ALT = new THREE.Color("#86868b");
 
-const DARK_PARTICLE = new THREE.Color("#6e6e73");
-const DARK_PARTICLE_ALT = new THREE.Color("#aeaeb2");
+const DARK_PARTICLE = new THREE.Color("#8a8e98");
+const DARK_PARTICLE_ALT = new THREE.Color("#d4d7e0");
 
 const mouseInfluence = {
   screenX: 0,
@@ -100,6 +100,41 @@ function generateLayer(count: number, seed: number, spread: number) {
 const MAIN_LAYER = generateLayer(PARTICLE_COUNT, 42, 4.2);
 const DRIFT_LAYER = generateLayer(DRIFT_COUNT, 137, 3.6);
 const NEAR_LAYER = generateLayer(NEAR_COUNT, 911, 2.6);
+
+/** Soft radial sprite: bright core + falloff halo (replaces hard PointMaterial discs). */
+let softParticleTexture: THREE.CanvasTexture | null = null;
+
+function getSoftParticleTexture() {
+  if (softParticleTexture) return softParticleTexture;
+  if (typeof document === "undefined") return null;
+
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const cx = size / 2;
+  const gradient = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.12, "rgba(255,255,255,0.92)");
+  gradient.addColorStop(0.35, "rgba(255,255,255,0.28)");
+  gradient.addColorStop(0.62, "rgba(255,255,255,0.08)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  softParticleTexture = texture;
+  return texture;
+}
 
 function buildColors(mix: Float32Array, count: number, isDark: boolean) {
   const colors = new Float32Array(count * 3);
@@ -175,6 +210,7 @@ function ParticleLayer({
   const cameraUp = useMemo(() => new THREE.Vector3(), []);
   const projected = useMemo(() => new THREE.Vector3(), []);
   const layerRotation = useMemo(() => new THREE.Quaternion(), []);
+  const softMap = useMemo(() => getSoftParticleTexture(), []);
 
   const colors = useMemo(
     () => buildColors(data.mix, data.actualCount, isDark),
@@ -286,6 +322,7 @@ function ParticleLayer({
       frustumCulled={false}
     >
       <PointMaterial
+        map={softMap ?? undefined}
         transparent
         vertexColors
         size={size}
@@ -293,6 +330,7 @@ function ParticleLayer({
         depthWrite={false}
         opacity={opacity}
         blending={blending}
+        toneMapped={false}
       />
     </Points>
   );
@@ -381,6 +419,9 @@ function ShootingStars() {
 }
 
 function SceneContent({ isDark }: { isDark: boolean }) {
+  const darkBlending = THREE.AdditiveBlending;
+  const lightBlending = THREE.NormalBlending;
+
   return (
     <>
       <MouseTurbulenceTracker />
@@ -388,29 +429,32 @@ function SceneContent({ isDark }: { isDark: boolean }) {
       <ParticleLayer
         data={MAIN_LAYER}
         isDark={isDark}
-        size={isDark ? 0.016 : 0.022}
-        opacity={isDark ? 0.55 : 0.65}
+        size={isDark ? 0.022 : 0.028}
+        opacity={isDark ? 0.75 : 0.7}
         speed={0.014}
         drift={0.03}
         turbulenceStrength={0.85}
+        blending={isDark ? darkBlending : lightBlending}
       />
       <ParticleLayer
         data={DRIFT_LAYER}
         isDark={isDark}
-        size={isDark ? 0.028 : 0.034}
-        opacity={isDark ? 0.25 : 0.38}
+        size={isDark ? 0.04 : 0.044}
+        opacity={isDark ? 0.35 : 0.42}
         speed={0.008}
         drift={0.045}
         turbulenceStrength={1}
+        blending={isDark ? darkBlending : lightBlending}
       />
       <ParticleLayer
         data={NEAR_LAYER}
         isDark={isDark}
-        size={isDark ? 0.038 : 0.046}
-        opacity={isDark ? 0.35 : 0.42}
+        size={isDark ? 0.052 : 0.058}
+        opacity={isDark ? 0.48 : 0.46}
         speed={0.018}
         drift={0.055}
         turbulenceStrength={1.15}
+        blending={isDark ? darkBlending : lightBlending}
       />
       {isDark && <ShootingStars />}
     </>
