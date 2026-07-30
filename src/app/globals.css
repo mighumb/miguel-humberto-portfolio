@@ -8,6 +8,7 @@
   --bg-secondary: #e8e8ed;
   --bg-tertiary: #d1d1d6;
   --chip-bg: #e0e0e5;
+  --chip-text: #4e4e52;
   --text-primary: #1d1d1f;
   --text-secondary: #6e6e73;
   --accent: #aeaeb2;
@@ -27,6 +28,7 @@
   --bg-tertiary: #12151c;
   /* Soft lift so chips read as cells without shouting */
   --chip-bg: #1a1e28;
+  --chip-text: #c2c2c7;
   --text-primary: #e8e8ed;
   --text-secondary: #6e6e73;
   --accent: #6e6e73;
@@ -45,6 +47,7 @@
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-tertiary: var(--bg-tertiary);
   --color-chip: var(--chip-bg);
+  --color-chip-text: var(--chip-text);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-accent: var(--accent);
