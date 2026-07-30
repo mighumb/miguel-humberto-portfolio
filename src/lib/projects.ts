@@ -71,7 +71,6 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4",
-    thumbnail: "thumbnail-ai-cgi-station-f.png",
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
     links: {
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
