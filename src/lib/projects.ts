@@ -6,7 +6,6 @@ export interface Project {
   slug: string;
   track: ProjectTrack;
   title: { en: string; fr: string };
-  description: { en: string; fr: string };
   /** Modal Context section. Falls back to a generic placeholder when omitted. */
   context?: { en: string; fr: string };
   tags: string[];
@@ -60,20 +59,21 @@ export function projectCoverUrl(project: Project) {
 export const projects: Project[] = [
   {
     id: "01",
-    slug: "cinematic-ai-short-film",
+    slug: "ai-cgi-station-f",
     track: "ai",
-    title: { en: "Cinematic AI Short Film", fr: "Court-métrage IA cinématique" },
-    description: {
-      en: "A narrative short film generated and edited entirely with AI tools, exploring atmospheric storytelling.",
-      fr: "Un court-métrage narratif généré et monté entièrement avec des outils IA, explorant la narration atmosphérique.",
+    title: { en: "AI CGI Station F", fr: "AI CGI Station F" },
+    context: {
+      en: "Station F is the world's largest startup campus, in Paris, home to hundreds of startups backed by Meta, Microsoft and Google. Its iconic clay sculpture became the starting point of this CGI project. Using AI, I transformed it into a series of iconic tech logos.",
+      fr: "Station F est le plus grand campus de startups au monde, à Paris, accueillant des centaines d'entreprises soutenues par Meta, Microsoft et Google. Sa sculpture d'argile emblématique est devenue le point de départ de ce projet CGI. À l'aide de l'IA, je l'ai transformée en une série de logos iconiques du monde de la tech.",
     },
-    tags: ["Video", "Cinematic", "Runway"],
+    tags: ["Video", "CGI", "AI"],
     year: "2025",
     type: "Video",
     hasVideo: true,
     videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    tools: ["Runway Gen-3", "Midjourney", "Premiere Pro", "ElevenLabs"],
-    links: { notion: "#", youtube: "#", instagram: "#" },
+    thumbnail: "thumbnail-ai-cgi-station-f.png",
+    tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
+    links: { youtube: "#" },
     deliverableCount: 8,
   },
   {
@@ -81,10 +81,6 @@ export const projects: Project[] = [
     slug: "social-campaign-brand-x",
     track: "ai",
     title: { en: "Social Campaign, Brand X", fr: "Campagne social, Brand X" },
-    description: {
-      en: "Multi-format social assets for a client campaign, from concept to delivery in 48 hours.",
-      fr: "Assets social multi-formats pour une campagne client, du concept à la livraison en 48 heures.",
-    },
     tags: ["Client", "Social", "Image"],
     year: "2025",
     type: "Client",
@@ -98,10 +94,6 @@ export const projects: Project[] = [
     slug: "prompt-engineering-tutorial-series",
     track: "ai",
     title: { en: "Prompt Engineering Tutorial Series", fr: "Série de tutoriels prompting" },
-    description: {
-      en: "Educational video series teaching advanced prompting techniques for image and video generation.",
-      fr: "Série vidéo éducative enseignant des techniques de prompting avancées pour l'image et la vidéo.",
-    },
     tags: ["Tutorial", "YouTube", "Education"],
     year: "2024",
     type: "Social",
@@ -116,10 +108,6 @@ export const projects: Project[] = [
     slug: "generative-visual-identity",
     track: "ai",
     title: { en: "Generative Visual Identity", fr: "Identité visuelle générative" },
-    description: {
-      en: "AI-generated brand visuals and motion assets for a startup's launch campaign.",
-      fr: "Visuels de marque et assets motion générés par IA pour le lancement d'une startup.",
-    },
     tags: ["Client", "Branding", "Motion"],
     year: "2024",
     type: "Client",
@@ -134,10 +122,6 @@ export const projects: Project[] = [
     slug: "tiktok-ai-art-experiments",
     track: "ai",
     title: { en: "TikTok AI Art Experiments", fr: "Expériences art IA TikTok" },
-    description: {
-      en: "Short-form experimental content pushing the boundaries of AI-generated aesthetics.",
-      fr: "Contenu court expérimental repoussant les limites de l'esthétique générée par IA.",
-    },
     tags: ["Social", "TikTok", "Experimental"],
     year: "2025",
     type: "Social",
@@ -152,10 +136,6 @@ export const projects: Project[] = [
     slug: "audio-visual-ai-installation",
     track: "ai",
     title: { en: "Audio-Visual AI Installation", fr: "Installation audio-visuelle IA" },
-    description: {
-      en: "An immersive audio-visual piece combining generative soundscapes with reactive visuals.",
-      fr: "Une pièce audio-visuelle immersive combinant paysages sonores génératifs et visuels réactifs.",
-    },
     tags: ["Audio", "Installation", "Experimental"],
     year: "2024",
     type: "Audio",
@@ -169,19 +149,15 @@ export const projects: Project[] = [
     slug: "ekara-design-system",
     track: "craft",
     title: { en: "Ekara Design System", fr: "Ekara Design System" },
-    description: {
-      en: "A modular interface system for new product interfaces: components, spacing, and interaction states built for clarity and consistency.",
-      fr: "Un système d'interface modulaire pour de nouvelles interfaces produit : composants, espacements et états d'interaction pensés pour la clarté et la cohérence.",
-    },
     context: {
       en: "[Ekara](https://ip-label.com/fr/) needed a new shared UI language for its new interfaces. I designed a modular system: components, spacing, and states, for clear, consistent screens.",
-      fr: "[Ekara](https://ip-label.com/fr/) avait besoin d’un nouveau langage UI commun pour ses nouvelles interfaces. J’ai conçu un système modulaire : composants, espacements et états, pour des écrans clairs et cohérents.",
+      fr: "[Ekara](https://ip-label.com/fr/) avait besoin d'un nouveau langage UI commun pour ses nouvelles interfaces. J'ai conçu un système modulaire : composants, espacements et états, pour des écrans clairs et cohérents.",
     },
     tags: ["UI", "Design System", "Product"],
     year: "2025",
     type: "Craft",
     hasVideo: false,
-    thumbnail: "thumbnail-ekara-design-system-cover.png",
+    thumbnail: "thumbnail-ekara-design-system.png",
     tools: ["Figma", "FigJam", "Notion"],
     links: { notion: "#" },
     deliverableCount: 8,
@@ -191,10 +167,6 @@ export const projects: Project[] = [
     slug: "motion-brand-language",
     track: "craft",
     title: { en: "Motion Brand Language", fr: "Langage motion de marque" },
-    description: {
-      en: "A motion kit defining timing, easing, and transitions for a brand identity across web and social.",
-      fr: "Un kit motion définissant timing, easing et transitions pour une identité de marque web et social.",
-    },
     tags: ["Motion", "Branding", "After Effects"],
     year: "2025",
     type: "Craft",
@@ -208,10 +180,6 @@ export const projects: Project[] = [
     slug: "3d-product-visualization",
     track: "craft",
     title: { en: "3D Product Visualization", fr: "Visualisation produit 3D" },
-    description: {
-      en: "Stylized 3D scenes and stills for a product launch: lighting, materials, and composition focused on shelf appeal.",
-      fr: "Scènes et stills 3D stylisés pour un lancement produit: lumière, matières et composition orientées désirabilité.",
-    },
     tags: ["3D", "Product", "Lookdev"],
     year: "2024",
     type: "Craft",
@@ -225,10 +193,6 @@ export const projects: Project[] = [
     slug: "editorial-web-experience",
     track: "craft",
     title: { en: "Editorial Web Experience", fr: "Expérience web éditoriale" },
-    description: {
-      en: "A scrolling editorial layout combining typography, imagery, and subtle interaction for a cultural platform.",
-      fr: "Une mise en page éditoriale scrollable alliant typographie, images et interactions discrètes pour une plateforme culturelle.",
-    },
     tags: ["UI", "Editorial", "Web"],
     year: "2024",
     type: "Craft",
@@ -242,10 +206,6 @@ export const projects: Project[] = [
     slug: "app-onboarding-flows",
     track: "craft",
     title: { en: "App Onboarding Flows", fr: "Parcours d'onboarding app" },
-    description: {
-      en: "Wireframes to high-fidelity screens for a mobile onboarding sequence with progressive disclosure.",
-      fr: "Des wireframes aux écrans haute fidélité pour un onboarding mobile en divulgation progressive.",
-    },
     tags: ["UX", "Mobile", "UI"],
     year: "2025",
     type: "Craft",
@@ -259,10 +219,6 @@ export const projects: Project[] = [
     slug: "spatial-interface-concept",
     track: "craft",
     title: { en: "Spatial Interface Concept", fr: "Concept d'interface spatiale" },
-    description: {
-      en: "A speculative UI concept exploring depth, layers, and gesture in a spatial computing context.",
-      fr: "Un concept UI spéculatif explorant profondeur, calques et gestes dans un contexte de spatial computing.",
-    },
     tags: ["3D", "UI", "Concept"],
     year: "2024",
     type: "Craft",
