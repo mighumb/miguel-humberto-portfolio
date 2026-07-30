@@ -4,10 +4,10 @@ import { useState } from "react";
 
 const SHOWREEL_ID = "NnuX3o_F5vg";
 
-/** Params strip as much YouTube chrome as the embed API still allows. */
+/** Chrome-reducing params; controls stay on after the facade click. */
 const SHOWREEL_EMBED_SRC =
   `https://www.youtube.com/embed/${SHOWREEL_ID}` +
-  "?autoplay=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&playsinline=1&disablekb=1";
+  "?autoplay=1&controls=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1";
 
 const SHOWREEL_POSTER = `https://i.ytimg.com/vi/${SHOWREEL_ID}/maxresdefault.jpg`;
 
