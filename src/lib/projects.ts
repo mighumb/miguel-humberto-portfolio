@@ -70,10 +70,13 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4",
     thumbnail: "thumbnail-ai-cgi-station-f.png",
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
-    links: { youtube: "#" },
+    links: {
+      youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
+      notion: "https://zenith-flood-86d.notion.site/WORKFLOW-CGI-g-n-rative-avec-Weavy-AI-2bb7cd46589480cab066f0cf921e8e1d?pvs=143",
+    },
     deliverableCount: 8,
   },
   {

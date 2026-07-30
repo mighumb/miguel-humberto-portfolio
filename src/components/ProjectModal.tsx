@@ -25,6 +25,15 @@ interface ProjectModalProps {
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
 
+function youtubeEmbedUrl(watchUrl: string): string | null {
+  try {
+    const vid = new URL(watchUrl).searchParams.get("v");
+    return vid ? `https://www.youtube.com/embed/${vid}` : null;
+  } catch {
+    return null;
+  }
+}
+
 function ResourceLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
@@ -351,26 +360,48 @@ export default function ProjectModal({
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.process}
               </h3>
-              <div className="space-y-12">
-                {mt.steps.map((step, i) => (
-                  <div key={step} className="grid gap-6 md:grid-cols-[80px_1fr_200px] md:items-start">
-                    <span className="text-3xl font-light text-accent md:text-4xl">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h4 className="text-lg font-medium text-text-primary">{step}</h4>
-                      <p className="mt-2 text-sm leading-relaxed text-text-secondary md:text-base">
-                        {mt.stepDescriptions[i]}
-                      </p>
+              {project.links.youtube || project.links.notion ? (
+                <div className="space-y-6">
+                  {project.links.youtube && (() => {
+                    const embedUrl = youtubeEmbedUrl(project.links.youtube);
+                    return embedUrl ? (
+                      <div className="aspect-video w-full overflow-hidden rounded-xl bg-bg-secondary">
+                        <iframe
+                          src={embedUrl}
+                          title={mt.youtube}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          className="h-full w-full border-0"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
+                  {project.links.notion && (
+                    <ResourceLink href={project.links.notion}>{mt.notion}</ResourceLink>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-12">
+                  {mt.steps.map((step, i) => (
+                    <div key={step} className="grid gap-6 md:grid-cols-[80px_1fr_200px] md:items-start">
+                      <span className="text-3xl font-light text-accent md:text-4xl">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <div>
+                        <h4 className="text-lg font-medium text-text-primary">{step}</h4>
+                        <p className="mt-2 text-sm leading-relaxed text-text-secondary md:text-base">
+                          {mt.stepDescriptions[i]}
+                        </p>
+                      </div>
+                      <div
+                        className="aspect-[4/3] rounded-lg md:aspect-square"
+                        style={{ background: "var(--placeholder)" }}
+                        aria-hidden
+                      />
                     </div>
-                    <div
-                      className="aspect-[4/3] rounded-lg md:aspect-square"
-                      style={{ background: "var(--placeholder)" }}
-                      aria-hidden
-                    />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="mt-16 pt-16">
