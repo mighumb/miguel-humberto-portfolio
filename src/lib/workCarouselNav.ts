@@ -3,18 +3,19 @@ import {
   stopWorkCarouselMotion,
 } from "@/lib/workDragScroll";
 
-/** Softer than the browser's default smooth scroll (~300ms). */
-const ARROW_SCROLL_MIN_MS = 580;
-const ARROW_SCROLL_MAX_MS = 840;
-/** ~670ms for a typical mobile card step (~370px). */
-const ARROW_SCROLL_PX_PER_MS = 0.55;
+/** Slow cinematic glide for arrow prev/next (feels composed, not snappy). */
+const ARROW_SCROLL_MIN_MS = 1050;
+const ARROW_SCROLL_MAX_MS = 1400;
+/** ~1160ms for a typical mobile card step (~370px). */
+const ARROW_SCROLL_PX_PER_MS = 0.32;
 
 function getWorkCards(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>("[data-project-id]"));
 }
 
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+/** Long ease-in and ease-out so the card floats rather than snaps. */
+function easeInOutQuint(t: number) {
+  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 }
 
 /**
@@ -140,7 +141,7 @@ export function scrollWorkCarouselToIndex(
 
   const tick = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
-    container.scrollLeft = start + delta * easeInOutCubic(progress);
+    container.scrollLeft = start + delta * easeInOutQuint(progress);
 
     if (progress < 1) {
       raf = requestAnimationFrame(tick);
@@ -181,8 +182,8 @@ export function whenWorkCarouselScrollSettles(
   };
 
   container.addEventListener("scroll", onScroll, { passive: true });
-  // Cover the slower arrow glide (up to ~840ms) plus a short settle buffer.
-  timer = window.setTimeout(finish, 1100);
+  // Cover the slower arrow glide (up to ~1400ms) plus a short settle buffer.
+  timer = window.setTimeout(finish, 1700);
 
   return () => {
     container.removeEventListener("scroll", onScroll);
