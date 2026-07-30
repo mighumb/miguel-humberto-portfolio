@@ -53,6 +53,7 @@
 
 html {
   scroll-behavior: auto;
+  overflow-x: hidden;
 }
 
 html.scroll-snap,
@@ -73,6 +74,7 @@ body {
   font-family: "Satoshi", system-ui, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

@@ -2,16 +2,19 @@ function getWorkCards(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>("[data-project-id]"));
 }
 
-/** Left inset for face-on focus — padding or start gutter, never the end spacer. */
+/**
+ * Left inset for face-on focus.
+ * Prefer padding-left (matches header px-6 / md:px-10); never read the end spacer.
+ */
 export function getFocusInset(container: HTMLElement) {
+  const padding = Number.parseFloat(getComputedStyle(container).paddingLeft) || 0;
+  if (padding >= 8 && padding <= 80) return padding;
+
   const gutter = container.querySelector<HTMLElement>("[data-work-gutter='start']");
   if (gutter) {
     const width = gutter.offsetWidth;
     if (width >= 8 && width <= 80) return width;
   }
-
-  const padding = Number.parseFloat(getComputedStyle(container).paddingLeft) || 0;
-  if (padding >= 8 && padding <= 80) return padding;
 
   return window.matchMedia("(min-width: 768px)").matches ? 40 : 24;
 }
@@ -23,33 +26,35 @@ function getCarouselGap(container: HTMLElement) {
   );
 }
 
-/** Ideal scrollLeft so a card sits face-on at the left inset. First card is always 0. */
-export function getCardIdealScroll(container: HTMLElement, card: HTMLElement, index = -1) {
+/** Ideal scrollLeft so a card sits face-on. Card 0 is always flush to the start. */
+export function getCardIdealScroll(
+  container: HTMLElement,
+  card: HTMLElement,
+  index = -1,
+) {
   const cards = getWorkCards(container);
   const cardIndex = index >= 0 ? index : cards.indexOf(card);
   if (cardIndex <= 0) return 0;
 
-  return Math.max(0, card.offsetLeft - getFocusInset(container));
+  // With padding-left, offsetLeft of cards is relative to the content box (0 for first).
+  // Later cards: keep them at the same left inset as card 0.
+  return Math.max(0, card.offsetLeft);
 }
 
 /**
- * Trailing spacer width so max scrollLeft can reach the last card's ideal
- * focus, matching the first card's face-on position.
+ * Trailing spacer so max scrollLeft can reach the last card's face-on position.
  */
 export function getWorkCarouselEndGutterWidth(container: HTMLElement) {
   const cards = getWorkCards(container);
   const last = cards[cards.length - 1];
   if (!last) return getFocusInset(container);
 
-  // Wait until cards are laid out — a 0-width measure invents a huge end spacer.
   if (last.offsetWidth < 32) return getFocusInset(container);
 
   const focusInset = getFocusInset(container);
-  const gap = getCarouselGap(container);
-  return Math.max(
-    0,
-    Math.ceil(container.clientWidth - focusInset - last.offsetWidth - gap),
-  );
+  // padding-left already insets the track; end space should let the last card
+  // sit at the same left inset as the first (scrollLeft === last.offsetLeft).
+  return Math.max(0, Math.ceil(container.clientWidth - focusInset - last.offsetWidth));
 }
 
 export function getFocusedWorkCardIndex(container: HTMLElement) {
