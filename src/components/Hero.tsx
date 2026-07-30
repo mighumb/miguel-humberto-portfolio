@@ -5,13 +5,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
 
-/** On mobile, start a new line at "from concept" / "du concept". */
+const MOBILE_TAGLINE_BREAKS = [
+  "from concept",
+  "du concept",
+  "entre UI, motion et",
+] as const;
+
+/** On mobile, start a new line at a known phrase in the tagline. */
 function MobileTaglineBreak({ text }: { text: string }) {
-  const breakAt = text.includes("from concept")
-    ? "from concept"
-    : text.includes("du concept")
-      ? "du concept"
-      : null;
+  const breakAt = MOBILE_TAGLINE_BREAKS.find((phrase) => text.includes(phrase)) ?? null;
 
   if (!breakAt) return text;
 
