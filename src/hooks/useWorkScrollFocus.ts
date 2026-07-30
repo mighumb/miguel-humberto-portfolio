@@ -2,14 +2,12 @@
 
 import { useLayoutEffect, useRef } from "react";
 import {
+  applyCardPerspective,
   computeCardFocus,
-  flightFilterStyle,
-  flightTransformStyle,
   resetCardPerspective,
   restoreCardPerspectives,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { getCardIdealScroll } from "@/lib/workCarouselNav";
 import { attachWorkDragScroll } from "@/lib/workDragScroll";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
@@ -63,40 +61,13 @@ export function useWorkScrollFocus(
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
 
-      const scrollLeft = container.scrollLeft;
-      const styles = getComputedStyle(container);
-      const gap =
-        Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 20;
-
-      cards.forEach((card, index) => {
-        const body = card.querySelector<HTMLElement>(".work-card-body");
-
+      cards.forEach((card) => {
         if (reducedMotion) {
-          card.style.transform = "";
-          card.style.zIndex = "";
-          if (body) {
-            body.style.transform = "";
-            body.style.opacity = "";
-            body.style.filter = "";
-          }
+          resetCardPerspective(card);
           return;
         }
 
-        const focus = computeCardFocus(card, container);
-        const idealScroll = getCardIdealScroll(container, card, index);
-        const delta = scrollLeft - idealScroll;
-        const step = card.offsetWidth + gap;
-        const progress = Math.min(1, Math.abs(delta) / step);
-
-        card.style.transform = `translateY(${focus.articleTranslateY}px)`;
-        card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
-
-        if (body) {
-          body.style.transformOrigin = "center bottom";
-          body.style.transform = flightTransformStyle(focus);
-          body.style.opacity = `${focus.bodyOpacity}`;
-          body.style.filter = flightFilterStyle(focus);
-        }
+        applyCardPerspective(card, computeCardFocus(card, container));
       });
     };
 

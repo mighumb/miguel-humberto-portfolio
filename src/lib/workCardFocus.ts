@@ -26,8 +26,8 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-/** Mobile: keep card body (incl. “View project”) fully opaque while off-axis. */
-function keepBodyOpaqueOnMobile() {
+/** Mobile: keep meta/CTA fully opaque; blur stays on the media only. */
+function isMobileViewport() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(max-width: 767px)").matches;
 }
@@ -51,9 +51,8 @@ export function computeCardFocus(
     articleTranslateY: progress * MAX_SHIFT_Y,
     rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
     translateZ: progress * MAX_TRANSLATE_Z,
-    // Mobile: keep meta/CTA crisp (no opacity fade or soft blur mist).
-    bodyOpacity: keepBodyOpaqueOnMobile() ? 1 : 1 - progress * 0.14,
-    blur: keepBodyOpaqueOnMobile() ? 0 : progress * MAX_BLUR,
+    bodyOpacity: isMobileViewport() ? 1 : 1 - progress * 0.14,
+    blur: progress * MAX_BLUR,
   };
 }
 
@@ -90,10 +89,22 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   const body = card.querySelector<HTMLElement>(".work-card-body");
   if (!body) return;
 
+  const visual = card.querySelector<HTMLElement>(".work-card-visual");
+  const filter = flightFilterStyle(perspective);
+  const mobile = isMobileViewport();
+
   body.style.transformOrigin = "center bottom";
   body.style.transform = flightTransformStyle(perspective);
   body.style.opacity = `${perspective.bodyOpacity}`;
-  body.style.filter = flightFilterStyle(perspective);
+
+  // Mobile: blur off-axis media only so “View project” stays crisp.
+  if (mobile) {
+    body.style.filter = "";
+    if (visual) visual.style.filter = filter;
+  } else {
+    body.style.filter = filter;
+    if (visual) visual.style.filter = "";
+  }
 }
 
 export function captureCardPerspectives(container: HTMLElement): Map<string, CardPerspective> {
@@ -129,9 +140,12 @@ export function resetCardPerspective(card: HTMLElement) {
   card.style.zIndex = "";
 
   const body = card.querySelector<HTMLElement>(".work-card-body");
-  if (!body) return;
+  if (body) {
+    body.style.transform = "";
+    body.style.opacity = "";
+    body.style.filter = "";
+  }
 
-  body.style.transform = "";
-  body.style.opacity = "";
-  body.style.filter = "";
+  const visual = card.querySelector<HTMLElement>(".work-card-visual");
+  if (visual) visual.style.filter = "";
 }
