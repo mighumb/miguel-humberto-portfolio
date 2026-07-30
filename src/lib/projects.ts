@@ -136,9 +136,9 @@ export const projects: Project[] = [
   },
   {
     id: "c01",
-    slug: "product-ui-system",
+    slug: "ekara-design-system",
     track: "craft",
-    title: { en: "Product UI System", fr: "Système UI produit" },
+    title: { en: "Ekara Design System", fr: "Ekara Design System" },
     description: {
       en: "A modular interface system for a B2B product — components, spacing, and interaction states built for clarity at scale.",
       fr: "Un système d'interface modulaire pour un produit B2B — composants, espacements et états d'interaction pensés pour la clarté à l'échelle.",

@@ -33,9 +33,9 @@ Each project folder:
 
 Example local files:
 
-- `/projects/craft/product-ui-system/thumbnail.jpg`
+- `/projects/craft/ekara-design-system/thumbnail.jpg`
 - `/projects/ai/cinematic-ai-short-film/cover.mp4`
-- `/projects/craft/product-ui-system/deliverables/01.jpg`
+- `/projects/craft/ekara-design-system/deliverables/01.jpg`
 
 ## Notes
 
