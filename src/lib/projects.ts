@@ -175,7 +175,7 @@ export const projects: Project[] = [
     year: "2025",
     type: "Craft",
     hasVideo: false,
-    thumbnail: "thumbnail.png",
+    thumbnail: "thumbnail-ekara-design-system-cover.png",
     tools: ["Figma", "FigJam", "Notion"],
     links: { notion: "#" },
     deliverableCount: 8,

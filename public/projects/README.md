@@ -22,11 +22,13 @@ Each project folder:
   assets/                  # extras (logos, raw exports, etc.)
 ```
 
-Drop the still as **`thumbnail.png`** (recommended name), then set in `src/lib/projects.ts`:
+Drop a still into the project folder (any clear name), then set in `src/lib/projects.ts`:
 
 ```ts
-thumbnail: "thumbnail.png",
+thumbnail: "thumbnail-ekara-design-system-cover.png", // your filename
 ```
+
+Recommended short name when you prefer: `thumbnail.png`.
 
 If thumbnail and cover are the same image, **only add `thumbnail`** — do not duplicate the file. The site reuses it as cover automatically.
 
