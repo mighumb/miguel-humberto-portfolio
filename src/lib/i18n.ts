@@ -32,7 +32,7 @@ export const translations = {
     cvSoon: "CV, coming soon",
     modal: {
       context: "Context",
-      deliverables: "All Deliverables",
+      deliverables: "Deliverables",
       process: "Process",
       tools: "Tools",
       links: "Links & Resources",
@@ -85,7 +85,7 @@ export const translations = {
     cvSoon: "CV, bientôt disponible",
     modal: {
       context: "Contexte",
-      deliverables: "Tous les livrables",
+      deliverables: "Livrables",
       process: "Processus",
       tools: "Outils",
       links: "Liens & Ressources",
