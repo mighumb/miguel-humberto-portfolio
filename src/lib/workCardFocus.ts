@@ -51,8 +51,9 @@ export function computeCardFocus(
     articleTranslateY: progress * MAX_SHIFT_Y,
     rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
     translateZ: progress * MAX_TRANSLATE_Z,
+    // Mobile: keep meta/CTA crisp (no opacity fade or soft blur mist).
     bodyOpacity: keepBodyOpaqueOnMobile() ? 1 : 1 - progress * 0.14,
-    blur: progress * MAX_BLUR,
+    blur: keepBodyOpaqueOnMobile() ? 0 : progress * MAX_BLUR,
   };
 }
 
