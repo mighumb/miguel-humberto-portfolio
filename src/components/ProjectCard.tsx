@@ -159,7 +159,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
             {project.tags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-bg-tertiary px-2.5 py-0.5 text-xs text-text-secondary"
+                className="rounded-full bg-chip px-2.5 py-0.5 text-xs text-text-secondary"
               >
                 {tag}
               </span>
