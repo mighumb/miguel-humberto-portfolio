@@ -340,7 +340,7 @@ export default function ProjectModal({
                 {project.tools.map((tool) => (
                   <span
                     key={tool}
-                    className="rounded-full bg-bg-secondary px-3 py-1 text-xs text-text-secondary"
+                    className="rounded-full bg-bg-tertiary px-3 py-1 text-xs text-text-secondary"
                   >
                     {tool}
                   </span>
