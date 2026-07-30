@@ -66,9 +66,11 @@ export function getWorkCarouselEndGutterWidth(container: HTMLElement) {
   if (last.offsetWidth < 32) return getFocusInset(container);
 
   const focusInset = getFocusInset(container);
-  // Trailing space so max scrollLeft can reach last.offsetLeft - focusInset
-  // (same face-on left edge as card 0).
-  return Math.max(0, Math.ceil(container.clientWidth - focusInset - last.offsetWidth));
+  const gap = getCarouselGap(container);
+  // Trailing space so max scrollLeft reaches last.offsetLeft - focusInset.
+  // Subtract gap because the EndScrollGutter is a flex child and the flex
+  // gap is applied once more before it, adding gap to scrollWidth.
+  return Math.max(0, Math.ceil(container.clientWidth - focusInset - last.offsetWidth - gap));
 }
 
 export function getFocusedWorkCardIndex(container: HTMLElement) {
