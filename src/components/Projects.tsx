@@ -144,6 +144,7 @@ export default function Projects() {
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const [flightVideoTime, setFlightVideoTime] = useState(0);
+  const [flightVideoPoster, setFlightVideoPoster] = useState<string | undefined>(undefined);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -445,6 +446,7 @@ export default function Projects() {
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
     setFlightVideoTime(freshOrigin.videoTime);
+    setFlightVideoPoster(freshOrigin.videoPoster);
     setSharedHiddenId(project.id);
     setSharedContentVisible(false);
     setPhase("opening");
@@ -609,6 +611,7 @@ export default function Projects() {
           flight={flight}
           showVideo={flightShowVideo}
           videoTime={flightVideoTime}
+          videoPoster={flightVideoPoster}
           onLanding={handleFlightLanding}
         />
       )}

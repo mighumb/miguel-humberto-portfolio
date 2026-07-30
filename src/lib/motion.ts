@@ -22,6 +22,7 @@ export interface CardOrigin {
   perspective: CardPerspective;
   showVideo: boolean;
   videoTime: number;
+  videoPoster?: string;
 }
 
 export interface ModalTargets {
@@ -78,6 +79,19 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
 
   const video = card.querySelector<HTMLVideoElement>(".work-card-media video");
 
+  let videoPoster: string | undefined;
+  if (showVideo && video && video.videoWidth > 0 && video.videoHeight > 0) {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d")?.drawImage(video, 0, 0);
+      videoPoster = canvas.toDataURL("image/jpeg", 0.8);
+    } catch {
+      // cross-origin or tainted canvas — skip poster capture
+    }
+  }
+
   return {
     thumbnail: toRect(visual.getBoundingClientRect()),
     title: toRect(title.getBoundingClientRect()),
@@ -88,6 +102,7 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
     perspective: computeCardFocus(card, container),
     showVideo,
     videoTime: showVideo && video ? video.currentTime : 0,
+    videoPoster,
   };
 }
 
