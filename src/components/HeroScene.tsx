@@ -43,12 +43,12 @@ function screenFromWorld(
   };
 }
 
-// Match main visibility: darker grays on light sky, lighter grays on night sky
-const LIGHT_PARTICLE = new THREE.Color("#6e6e73");
-const LIGHT_PARTICLE_ALT = new THREE.Color("#86868b");
+// Dark = star dust (cooler/brighter). Light = soft snow grain (deeper gray so flakes read on pale sky).
+const LIGHT_PARTICLE = new THREE.Color("#5e5e64");
+const LIGHT_PARTICLE_ALT = new THREE.Color("#9a9aa2");
 
 const DARK_PARTICLE = new THREE.Color("#8a8e98");
-const DARK_PARTICLE_ALT = new THREE.Color("#d4d7e0");
+const DARK_PARTICLE_ALT = new THREE.Color("#e4e7f0");
 
 const mouseInfluence = {
   screenX: 0,
@@ -101,39 +101,96 @@ const MAIN_LAYER = generateLayer(PARTICLE_COUNT, 42, 4.2);
 const DRIFT_LAYER = generateLayer(DRIFT_COUNT, 137, 3.6);
 const NEAR_LAYER = generateLayer(NEAR_COUNT, 911, 2.6);
 
-/** Soft radial sprite: bright core + falloff halo (replaces hard PointMaterial discs). */
-let softParticleTexture: THREE.CanvasTexture | null = null;
+type ParticleKind = "star" | "snow";
 
-function getSoftParticleTexture() {
-  if (softParticleTexture) return softParticleTexture;
+let starParticleTexture: THREE.CanvasTexture | null = null;
+let snowParticleTexture: THREE.CanvasTexture | null = null;
+
+function makeCanvasTexture(draw: (ctx: CanvasRenderingContext2D, size: number) => void) {
   if (typeof document === "undefined") return null;
-
   const size = 64;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
-
-  const cx = size / 2;
-  const gradient = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
-  gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(0.12, "rgba(255,255,255,0.92)");
-  gradient.addColorStop(0.35, "rgba(255,255,255,0.28)");
-  gradient.addColorStop(0.62, "rgba(255,255,255,0.08)");
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-
   ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, size, size);
-
+  draw(ctx, size);
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.LinearFilter;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps = true;
   texture.needsUpdate = true;
-  softParticleTexture = texture;
   return texture;
+}
+
+/** Space: tight bright core + soft halo (star dust). */
+function getStarParticleTexture() {
+  if (starParticleTexture) return starParticleTexture;
+  starParticleTexture = makeCanvasTexture((ctx, size) => {
+    const cx = size / 2;
+    const gradient = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
+    gradient.addColorStop(0, "rgba(255,255,255,1)");
+    gradient.addColorStop(0.08, "rgba(255,255,255,0.95)");
+    gradient.addColorStop(0.22, "rgba(255,255,255,0.35)");
+    gradient.addColorStop(0.5, "rgba(255,255,255,0.1)");
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, size, size);
+
+    // Soft diffraction cross for a few bright-star reads (very subtle)
+    const arm = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx * 0.9);
+    arm.addColorStop(0, "rgba(255,255,255,0.55)");
+    arm.addColorStop(0.15, "rgba(255,255,255,0.12)");
+    arm.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = arm;
+    ctx.fillRect(cx - 1.2, 4, 2.4, size - 8);
+    ctx.fillRect(4, cx - 1.2, size - 8, 2.4);
+    ctx.globalCompositeOperation = "source-over";
+  });
+  return starParticleTexture;
+}
+
+/** Craft/light: soft flake grain — not hard hexagons, just organic soft arms. */
+function getSnowParticleTexture() {
+  if (snowParticleTexture) return snowParticleTexture;
+  snowParticleTexture = makeCanvasTexture((ctx, size) => {
+    const cx = size / 2;
+    // Soft body
+    const body = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx * 0.72);
+    body.addColorStop(0, "rgba(255,255,255,0.95)");
+    body.addColorStop(0.35, "rgba(255,255,255,0.45)");
+    body.addColorStop(0.7, "rgba(255,255,255,0.12)");
+    body.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = body;
+    ctx.fillRect(0, 0, size, size);
+
+    // Six soft arms
+    ctx.save();
+    ctx.translate(cx, cx);
+    for (let i = 0; i < 6; i++) {
+      ctx.rotate(Math.PI / 3);
+      const arm = ctx.createLinearGradient(0, 0, 0, -cx * 0.85);
+      arm.addColorStop(0, "rgba(255,255,255,0.55)");
+      arm.addColorStop(0.55, "rgba(255,255,255,0.18)");
+      arm.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = arm;
+      ctx.beginPath();
+      ctx.moveTo(-1.6, 0);
+      ctx.lineTo(1.6, 0);
+      ctx.lineTo(0.6, -cx * 0.85);
+      ctx.lineTo(-0.6, -cx * 0.85);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  });
+  return snowParticleTexture;
+}
+
+function getParticleTexture(kind: ParticleKind) {
+  return kind === "star" ? getStarParticleTexture() : getSnowParticleTexture();
 }
 
 const PARTICLE_VERTEX = /* glsl */ `
@@ -146,12 +203,18 @@ uniform float uTime;
 uniform float uScale;
 uniform float uPixelRatio;
 uniform float uTwinkleAmp;
+uniform float uSizeBreath;
+uniform float uSpin;
 
 varying vec3 vColor;
 varying float vAlpha;
+varying float vPhase;
+varying float vSpin;
 
 void main() {
   vColor = color;
+  vPhase = aPhase;
+  vSpin = uSpin;
 
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   float depth = max(0.35, -mvPosition.z);
@@ -163,8 +226,8 @@ void main() {
   float twinkle = 1.0 - uTwinkleAmp
     + uTwinkleAmp * (0.5 + 0.5 * sin(uTime * (1.6 + aPhase * 2.4) + aPhase * 6.2831853));
 
-  // Subtle size breath (smaller amp than opacity twinkle)
-  float sizePulse = 0.9 + 0.1 * sin(uTime * (0.9 + aPhase) + aPhase * 4.0);
+  float sizePulse = 1.0 - uSizeBreath
+    + uSizeBreath * (0.5 + 0.5 * sin(uTime * (0.9 + aPhase) + aPhase * 4.0));
 
   vAlpha = depthFade * twinkle;
 
@@ -177,17 +240,26 @@ void main() {
 const PARTICLE_FRAGMENT = /* glsl */ `
 uniform sampler2D uMap;
 uniform float uOpacity;
+uniform float uTime;
+uniform float uCoreBoost;
 
 varying vec3 vColor;
 varying float vAlpha;
+varying float vPhase;
+varying float vSpin;
 
 void main() {
-  vec4 texel = texture2D(uMap, gl_PointCoord);
+  vec2 uv = gl_PointCoord - 0.5;
+  float angle = vPhase + uTime * vSpin;
+  float c = cos(angle);
+  float s = sin(angle);
+  uv = mat2(c, -s, s, c) * uv + 0.5;
+
+  vec4 texel = texture2D(uMap, uv);
   float alpha = texel.a * uOpacity * vAlpha;
   if (alpha < 0.012) discard;
 
-  // Soft map luminance lifts the core slightly without hard edges
-  vec3 col = vColor * (0.72 + 0.55 * texel.r);
+  vec3 col = vColor * (uCoreBoost + (1.0 - uCoreBoost + 0.35) * texel.r);
   gl_FragColor = vec4(col, alpha);
 }
 `;
@@ -236,22 +308,26 @@ function MouseTurbulenceTracker() {
 interface ParticleLayerProps {
   data: ReturnType<typeof generateLayer>;
   isDark: boolean;
+  kind: ParticleKind;
   size: number;
   opacity: number;
   speed: number;
   drift: number;
   turbulenceStrength: number;
+  fallSpeed?: number;
   blending?: THREE.Blending;
 }
 
 function ParticleLayer({
   data,
   isDark,
+  kind,
   size,
   opacity,
   speed,
   drift,
   turbulenceStrength,
+  fallSpeed = 0,
   blending = THREE.NormalBlending,
 }: ParticleLayerProps) {
   const { camera, size: viewport, gl } = useThree();
@@ -276,14 +352,17 @@ function ParticleLayer({
   const scales = useMemo(() => {
     const out = new Float32Array(data.actualCount);
     for (let i = 0; i < data.actualCount; i++) {
-      // Mix drives size variety so the field feels less uniform
-      out[i] = 0.52 + data.mix[i] * 1.05;
+      // Stars: wider size range. Snow: slightly tighter, softer variety.
+      out[i] =
+        kind === "star"
+          ? 0.45 + data.mix[i] * 1.2
+          : 0.62 + data.mix[i] * 0.85;
     }
     return out;
-  }, [data.mix, data.actualCount]);
+  }, [data.mix, data.actualCount, kind]);
 
   const material = useMemo(() => {
-    const map = getSoftParticleTexture();
+    const map = getParticleTexture(kind);
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         uMap: { value: map },
@@ -292,7 +371,10 @@ function ParticleLayer({
         uTime: { value: 0 },
         uScale: { value: 300 },
         uPixelRatio: { value: 1 },
-        uTwinkleAmp: { value: isDark ? 0.26 : 0.12 },
+        uTwinkleAmp: { value: kind === "star" ? 0.28 : 0.08 },
+        uSizeBreath: { value: kind === "star" ? 0.1 : 0.04 },
+        uSpin: { value: kind === "star" ? 0.0 : 0.22 },
+        uCoreBoost: { value: kind === "star" ? 0.68 : 0.82 },
       },
       vertexShader: PARTICLE_VERTEX,
       fragmentShader: PARTICLE_FRAGMENT,
@@ -303,14 +385,18 @@ function ParticleLayer({
     });
     materialRef.current = mat;
     return mat;
-  }, [blending, isDark, opacity, size]);
+  }, [blending, kind, opacity, size]);
 
   useEffect(() => {
+    material.uniforms.uMap.value = getParticleTexture(kind);
     material.uniforms.uSize.value = size;
     material.uniforms.uOpacity.value = opacity;
-    material.uniforms.uTwinkleAmp.value = isDark ? 0.26 : 0.12;
+    material.uniforms.uTwinkleAmp.value = kind === "star" ? 0.28 : 0.08;
+    material.uniforms.uSizeBreath.value = kind === "star" ? 0.1 : 0.04;
+    material.uniforms.uSpin.value = kind === "star" ? 0.0 : 0.22;
+    material.uniforms.uCoreBoost.value = kind === "star" ? 0.68 : 0.82;
     material.blending = blending;
-  }, [material, size, opacity, isDark, blending]);
+  }, [material, size, opacity, kind, blending]);
 
   useEffect(() => {
     return () => {
@@ -337,8 +423,15 @@ function ParticleLayer({
     if (!ref.current) return;
     const points = ref.current;
     const t = state.clock.elapsedTime;
-    points.rotation.y = t * speed;
-    points.rotation.x = Math.sin(t * 0.1) * 0.04;
+
+    // Stars: slow celestial tumble. Snow: almost no global spin — fall dominates.
+    if (kind === "star") {
+      points.rotation.y = t * speed;
+      points.rotation.x = Math.sin(t * 0.1) * 0.04;
+    } else {
+      points.rotation.y = t * speed * 0.25;
+      points.rotation.x = Math.sin(t * 0.06) * 0.02;
+    }
     points.updateMatrixWorld();
 
     const mat = materialRef.current;
@@ -363,16 +456,29 @@ function ParticleLayer({
     cameraRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
     cameraUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
 
+    const swayX = kind === "snow" ? 1.35 : 1;
+    const swayY = kind === "snow" ? 0.35 : 0.6;
+
     for (let i = 0; i < data.actualCount; i++) {
       const ix = i * 3;
       const iy = i * 3 + 1;
       const iz = i * 3 + 2;
 
-      const bx = basePositions[ix] + Math.sin(t * 0.4 + data.phases[i]) * drift;
+      const fall =
+        fallSpeed > 0
+          ? -(((t * fallSpeed + data.phases[i] * 2.7) % 5.2) - 2.6)
+          : 0;
+
+      const bx =
+        basePositions[ix] +
+        Math.sin(t * 0.4 + data.phases[i]) * drift * swayX;
       const by =
-        basePositions[iy] + Math.cos(t * 0.35 + data.phases[i] * 1.3) * drift * 0.6;
+        basePositions[iy] +
+        Math.cos(t * 0.35 + data.phases[i] * 1.3) * drift * swayY +
+        fall;
       const bz =
-        basePositions[iz] + Math.sin(t * 0.25 + data.phases[i] * 0.7) * drift * 0.4;
+        basePositions[iz] +
+        Math.sin(t * 0.25 + data.phases[i] * 0.7) * drift * 0.4;
 
       const px = bx + offsetArr[ix];
       const py = by + offsetArr[iy];
@@ -525,8 +631,8 @@ function ShootingStars() {
 }
 
 function SceneContent({ isDark }: { isDark: boolean }) {
-  const darkBlending = THREE.AdditiveBlending;
-  const lightBlending = THREE.NormalBlending;
+  const kind: ParticleKind = isDark ? "star" : "snow";
+  const blending = isDark ? THREE.AdditiveBlending : THREE.NormalBlending;
 
   return (
     <>
@@ -535,32 +641,38 @@ function SceneContent({ isDark }: { isDark: boolean }) {
       <ParticleLayer
         data={MAIN_LAYER}
         isDark={isDark}
-        size={isDark ? 0.022 : 0.028}
-        opacity={isDark ? 0.75 : 0.7}
-        speed={0.014}
-        drift={0.03}
+        kind={kind}
+        size={isDark ? 0.02 : 0.034}
+        opacity={isDark ? 0.78 : 0.58}
+        speed={isDark ? 0.014 : 0.006}
+        drift={isDark ? 0.03 : 0.05}
+        fallSpeed={isDark ? 0 : 0.09}
         turbulenceStrength={0.85}
-        blending={isDark ? darkBlending : lightBlending}
+        blending={blending}
       />
       <ParticleLayer
         data={DRIFT_LAYER}
         isDark={isDark}
-        size={isDark ? 0.04 : 0.044}
-        opacity={isDark ? 0.35 : 0.42}
-        speed={0.008}
-        drift={0.045}
+        kind={kind}
+        size={isDark ? 0.038 : 0.05}
+        opacity={isDark ? 0.32 : 0.36}
+        speed={isDark ? 0.008 : 0.004}
+        drift={isDark ? 0.045 : 0.07}
+        fallSpeed={isDark ? 0 : 0.06}
         turbulenceStrength={1}
-        blending={isDark ? darkBlending : lightBlending}
+        blending={blending}
       />
       <ParticleLayer
         data={NEAR_LAYER}
         isDark={isDark}
-        size={isDark ? 0.052 : 0.058}
-        opacity={isDark ? 0.48 : 0.46}
-        speed={0.018}
-        drift={0.055}
+        kind={kind}
+        size={isDark ? 0.05 : 0.066}
+        opacity={isDark ? 0.5 : 0.4}
+        speed={isDark ? 0.018 : 0.008}
+        drift={isDark ? 0.055 : 0.08}
+        fallSpeed={isDark ? 0 : 0.12}
         turbulenceStrength={1.15}
-        blending={isDark ? darkBlending : lightBlending}
+        blending={blending}
       />
       {isDark && <ShootingStars />}
     </>
