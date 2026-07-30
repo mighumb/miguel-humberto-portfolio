@@ -93,6 +93,14 @@ function DeliverableVideo({ src }: { src: string }) {
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onPause = () => setPlaying(false);
+    video.addEventListener("pause", onPause);
+    return () => video.removeEventListener("pause", onPause);
+  }, []);
+
   const handlePlay = () => {
     setPlaying(true);
     videoRef.current?.play().catch(() => {});
