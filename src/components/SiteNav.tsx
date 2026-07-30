@@ -16,7 +16,7 @@ export default function SiteNav({ className = "", onBrandClick }: SiteNavProps) 
 
   return (
     <nav
-      className={`mx-auto flex w-full max-w-7xl items-center justify-between px-6 pt-4 md:px-10 md:pt-5 ${className}`}
+      className={`mx-auto flex w-full max-w-7xl items-center justify-between px-6 pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-10 md:pt-[max(1.25rem,env(safe-area-inset-top,0px))] ${className}`}
       aria-label="Site navigation"
     >
       <a

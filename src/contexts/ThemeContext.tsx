@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { applyThemeColor } from "@/lib/themeColor";
 
 export type PortfolioMode = "ai" | "craft";
 export type Theme = "light" | "dark";
@@ -57,6 +58,7 @@ function applyDocumentMode(mode: PortfolioMode) {
   const theme = modeToTheme(mode);
   document.documentElement.setAttribute("data-theme", theme);
   document.documentElement.dataset.mode = mode;
+  applyThemeColor(theme);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

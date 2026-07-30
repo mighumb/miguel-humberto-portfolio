@@ -43,7 +43,7 @@ export default function AmbientBackground() {
   }, []);
 
   return (
-    <div className="ambient-background pointer-events-none fixed inset-0 z-0" aria-hidden>
+    <div className="ambient-background pointer-events-none fixed inset-0 z-0 min-h-dvh" aria-hidden>
       <div
         className="absolute inset-0 transition-[opacity,background] duration-500"
         style={{ background: isDark ? SPACE_SKY : SNOW_SKY }}
