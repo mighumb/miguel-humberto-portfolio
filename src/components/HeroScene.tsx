@@ -692,8 +692,8 @@ function spawnStreak(s: StreakState, t: number) {
   s.z = 0.15 + Math.random() * 1.8;
 
   const speed = bold ? 3.2 + Math.random() * 2.8 : 2.4 + Math.random() * 2.0;
-  const angle =
-    -Math.PI * (0.12 + Math.random() * 0.38) + (Math.random() > 0.82 ? Math.PI * 0.08 : 0);
+  // Shallow meteor diagonals only (~-20° to -45°) — avoid near-vertical “rain” falls
+  const angle = -((20 + Math.random() * 25) * Math.PI) / 180;
   s.vx = Math.cos(angle) * -speed;
   s.vy = Math.sin(angle) * speed;
 
