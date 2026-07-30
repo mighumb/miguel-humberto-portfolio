@@ -6,7 +6,7 @@ export const MAX_TRANSLATE_Z = -280;
 export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
 /** Stronger on mobile so off-axis peeks read clearly on retina. */
-export const MAX_BLUR_MOBILE = 4.2;
+export const MAX_BLUR_MOBILE = 3.1;
 
 export interface CardPerspective {
   articleTranslateY: number;
