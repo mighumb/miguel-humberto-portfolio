@@ -6,7 +6,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project } from "@/lib/projects";
+import { type Project, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectModalProps {
@@ -62,6 +62,7 @@ export default function ProjectModal({
 }: ProjectModalProps) {
   const { locale } = useLocale();
   const mt = translations[locale].modal;
+  const coverUrl = projectCoverUrl(project);
   const modalRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -210,9 +211,11 @@ export default function ProjectModal({
             <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
-                className={`project-modal-hero project-placeholder-gradient aspect-video w-full overflow-hidden rounded-xl ${
-                  sharedHidden ? "is-shared-hidden" : ""
-                }`}
+                className={`project-modal-hero aspect-video w-full overflow-hidden rounded-xl ${
+                  coverUrl || (project.hasVideo && project.videoUrl)
+                    ? "bg-bg-secondary"
+                    : "project-placeholder-gradient"
+                } ${sharedHidden ? "is-shared-hidden" : ""}`}
               >
                 {project.hasVideo && project.videoUrl ? (
                   <video
@@ -224,6 +227,9 @@ export default function ProjectModal({
                     preload={videoPlaying ? "auto" : "metadata"}
                     className="h-full w-full object-cover"
                   />
+                ) : coverUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={coverUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full items-center justify-center">
                     <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">

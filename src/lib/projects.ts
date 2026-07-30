@@ -12,6 +12,13 @@ export interface Project {
   type: string;
   hasVideo: boolean;
   videoUrl?: string;
+  /**
+   * Local still in the project folder (e.g. "thumbnail.png").
+   * Used for the Work card; also reused as cover when `cover` is omitted.
+   */
+  thumbnail?: string;
+  /** Optional local cover still/loop poster; falls back to `thumbnail` when absent. */
+  cover?: string;
   tools: string[];
   links: {
     notion?: string;
@@ -25,6 +32,27 @@ export interface Project {
 /** Public URL root for a project's local assets. */
 export function projectAssetBase(project: Pick<Project, "track" | "slug">) {
   return `/projects/${project.track}/${project.slug}`;
+}
+
+function projectFileUrl(
+  project: Pick<Project, "track" | "slug">,
+  file: string | undefined,
+): string | null {
+  if (!file) return null;
+  if (file.startsWith("http://") || file.startsWith("https://") || file.startsWith("/")) {
+    return file;
+  }
+  return `${projectAssetBase(project)}/${file}`;
+}
+
+/** Work card / shared-flight still. */
+export function projectThumbnailUrl(project: Project) {
+  return projectFileUrl(project, project.thumbnail);
+}
+
+/** Modal hero still when there is no local/embed video — reuses thumbnail if needed. */
+export function projectCoverUrl(project: Project) {
+  return projectFileUrl(project, project.cover ?? project.thumbnail);
 }
 
 export const projects: Project[] = [
@@ -147,6 +175,7 @@ export const projects: Project[] = [
     year: "2025",
     type: "Craft",
     hasVideo: false,
+    thumbnail: "thumbnail.png",
     tools: ["Figma", "FigJam", "Notion"],
     links: { notion: "#" },
     deliverableCount: 8,

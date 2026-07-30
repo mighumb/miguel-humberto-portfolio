@@ -14,13 +14,21 @@ Each project folder:
 
 ```text
 {slug}/
-  thumbnail.jpg|png|webp   # Work card poster (recommended)
+  thumbnail.png|jpg|webp   # Work card (+ cover fallback if no cover file)
   cover.mp4|webm           # optional local hover / hero loop
-  cover.jpg|png|webp       # optional still if no local video
+  cover.jpg|png|webp       # optional still if different from thumbnail
   deliverables/            # modal “All Deliverables” grid
   process/                 # process / step stills (optional)
   assets/                  # extras (logos, raw exports, etc.)
 ```
+
+Drop the still as **`thumbnail.png`** (recommended name), then set in `src/lib/projects.ts`:
+
+```ts
+thumbnail: "thumbnail.png",
+```
+
+If thumbnail and cover are the same image, **only add `thumbnail`** — do not duplicate the file. The site reuses it as cover automatically.
 
 ## Naming
 
@@ -33,7 +41,7 @@ Each project folder:
 
 Example local files:
 
-- `/projects/craft/ekara-design-system/thumbnail.jpg`
+- `/projects/craft/ekara-design-system/thumbnail.png`
 - `/projects/ai/cinematic-ai-short-film/cover.mp4`
 - `/projects/craft/ekara-design-system/deliverables/01.jpg`
 

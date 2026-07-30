@@ -5,6 +5,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
 import type { Project } from "@/lib/projects";
+import { projectThumbnailUrl } from "@/lib/projects";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
@@ -25,6 +26,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const visualRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const thumbnailUrl = projectThumbnailUrl(project);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -112,18 +114,29 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         >
           <div className="work-card-media relative h-full w-full">
             <div className="absolute inset-0">
-              <div
-                className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
-                  isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
-                }`}
-                aria-hidden
-              >
-                <div className="flex h-full items-center justify-center">
-                  <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
-                    {project.id}
-                  </span>
+              {thumbnailUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={thumbnailUrl}
+                  alt=""
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
+                    isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
+                  }`}
+                />
+              ) : (
+                <div
+                  className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
+                    isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
+                  }`}
+                  aria-hidden
+                >
+                  <div className="flex h-full items-center justify-center">
+                    <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
+                      {project.id}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {project.hasVideo && project.videoUrl && (
                 <video

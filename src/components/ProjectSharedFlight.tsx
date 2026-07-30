@@ -8,7 +8,7 @@ import {
   type ElementRect,
   type FlightPair,
 } from "@/lib/motion";
-import { type Project } from "@/lib/projects";
+import { type Project, projectCoverUrl } from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
@@ -42,6 +42,7 @@ function FlightThumbnail({
   videoTime: number;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const coverUrl = projectCoverUrl(project);
 
   useLayoutEffect(() => {
     const video = videoRef.current;
@@ -51,7 +52,9 @@ function FlightThumbnail({
 
   return (
     <div
-      className="project-shared-flight-thumb project-placeholder-gradient relative overflow-hidden rounded-xl"
+      className={`project-shared-flight-thumb relative overflow-hidden rounded-xl ${
+        coverUrl ? "bg-bg-secondary" : "project-placeholder-gradient"
+      }`}
       style={frameStyle(frame)}
     >
       {showVideo && project.hasVideo && project.videoUrl ? (
@@ -64,6 +67,9 @@ function FlightThumbnail({
           preload="auto"
           className="h-full w-full object-cover"
         />
+      ) : coverUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={coverUrl} alt="" className="h-full w-full object-cover" />
       ) : (
         <div className="flex h-full items-center justify-center">
           <span className="text-4xl font-light text-text-secondary opacity-30 md:text-5xl">
