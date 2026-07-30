@@ -43,7 +43,7 @@ If thumbnail and cover are the same image, **only add `thumbnail`** — do not d
 
 Example local files:
 
-- `/projects/craft/ekara-design-system/thumbnail.png`
+- `/projects/craft/ekara-design-system/thumbnail-ekara-design-system-cover.png`
 - `/projects/ai/cinematic-ai-short-film/cover.mp4`
 - `/projects/craft/ekara-design-system/deliverables/01.jpg`
 
