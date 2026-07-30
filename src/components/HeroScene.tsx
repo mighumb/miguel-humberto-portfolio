@@ -124,63 +124,67 @@ function makeCanvasTexture(draw: (ctx: CanvasRenderingContext2D, size: number) =
   return texture;
 }
 
-/** Space: tight bright core + soft halo (star dust). */
+/** Space: tight bright core + fast-fading halo (edges dissolve into the sky). */
 function getStarParticleTexture() {
   if (starParticleTexture) return starParticleTexture;
   starParticleTexture = makeCanvasTexture((ctx, size) => {
     const cx = size / 2;
     const gradient = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
+    // Opaque only at the very center; halo thins out quickly
     gradient.addColorStop(0, "rgba(255,255,255,1)");
-    gradient.addColorStop(0.08, "rgba(255,255,255,0.95)");
-    gradient.addColorStop(0.22, "rgba(255,255,255,0.35)");
-    gradient.addColorStop(0.5, "rgba(255,255,255,0.1)");
+    gradient.addColorStop(0.06, "rgba(255,255,255,0.85)");
+    gradient.addColorStop(0.16, "rgba(255,255,255,0.28)");
+    gradient.addColorStop(0.32, "rgba(255,255,255,0.08)");
+    gradient.addColorStop(0.55, "rgba(255,255,255,0.02)");
     gradient.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, size, size);
 
-    // Soft diffraction cross for a few bright-star reads (very subtle)
-    const arm = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx * 0.9);
-    arm.addColorStop(0, "rgba(255,255,255,0.55)");
-    arm.addColorStop(0.15, "rgba(255,255,255,0.12)");
-    arm.addColorStop(1, "rgba(255,255,255,0)");
+    // Very soft diffraction cross — low alpha so it never reads as a filled disc
     ctx.globalCompositeOperation = "lighter";
+    const arm = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx * 0.7);
+    arm.addColorStop(0, "rgba(255,255,255,0.22)");
+    arm.addColorStop(0.12, "rgba(255,255,255,0.06)");
+    arm.addColorStop(0.45, "rgba(255,255,255,0.015)");
+    arm.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = arm;
-    ctx.fillRect(cx - 1.2, 4, 2.4, size - 8);
-    ctx.fillRect(4, cx - 1.2, size - 8, 2.4);
+    ctx.fillRect(cx - 0.8, 8, 1.6, size - 16);
+    ctx.fillRect(8, cx - 0.8, size - 16, 1.6);
     ctx.globalCompositeOperation = "source-over";
   });
   return starParticleTexture;
 }
 
-/** Craft/light: soft flake grain — not hard hexagons, just organic soft arms. */
+/** Craft/light: soft flake grain with the same center→edge opacity dissolve. */
 function getSnowParticleTexture() {
   if (snowParticleTexture) return snowParticleTexture;
   snowParticleTexture = makeCanvasTexture((ctx, size) => {
     const cx = size / 2;
-    // Soft body
-    const body = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx * 0.72);
-    body.addColorStop(0, "rgba(255,255,255,0.95)");
-    body.addColorStop(0.35, "rgba(255,255,255,0.45)");
-    body.addColorStop(0.7, "rgba(255,255,255,0.12)");
+    const body = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx * 0.78);
+    body.addColorStop(0, "rgba(255,255,255,0.92)");
+    body.addColorStop(0.12, "rgba(255,255,255,0.4)");
+    body.addColorStop(0.28, "rgba(255,255,255,0.12)");
+    body.addColorStop(0.5, "rgba(255,255,255,0.03)");
     body.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = body;
     ctx.fillRect(0, 0, size, size);
 
-    // Six soft arms
+    // Six soft arms — tip alpha near zero so edges melt into the sky
     ctx.save();
     ctx.translate(cx, cx);
     for (let i = 0; i < 6; i++) {
       ctx.rotate(Math.PI / 3);
-      const arm = ctx.createLinearGradient(0, 0, 0, -cx * 0.85);
-      arm.addColorStop(0, "rgba(255,255,255,0.55)");
-      arm.addColorStop(0.55, "rgba(255,255,255,0.18)");
+      const arm = ctx.createLinearGradient(0, 0, 0, -cx * 0.8);
+      arm.addColorStop(0, "rgba(255,255,255,0.28)");
+      arm.addColorStop(0.35, "rgba(255,255,255,0.08)");
+      arm.addColorStop(0.7, "rgba(255,255,255,0.015)");
       arm.addColorStop(1, "rgba(255,255,255,0)");
       ctx.fillStyle = arm;
       ctx.beginPath();
-      ctx.moveTo(-1.6, 0);
-      ctx.lineTo(1.6, 0);
-      ctx.lineTo(0.6, -cx * 0.85);
-      ctx.lineTo(-0.6, -cx * 0.85);
+      ctx.moveTo(-1.1, 0);
+      ctx.lineTo(1.1, 0);
+      ctx.lineTo(0.45, -cx * 0.8);
+      ctx.lineTo(-0.45, -cx * 0.8);
       ctx.closePath();
       ctx.fill();
     }
@@ -242,6 +246,7 @@ uniform sampler2D uMap;
 uniform float uOpacity;
 uniform float uTime;
 uniform float uCoreBoost;
+uniform float uAlphaPower;
 
 varying vec3 vColor;
 varying float vAlpha;
@@ -256,10 +261,13 @@ void main() {
   uv = mat2(c, -s, s, c) * uv + 0.5;
 
   vec4 texel = texture2D(uMap, uv);
-  float alpha = texel.a * uOpacity * vAlpha;
-  if (alpha < 0.012) discard;
+  // Push mid/edge alphas down so the halo dissolves into the background
+  float softAlpha = pow(max(texel.a, 0.0), uAlphaPower);
+  float alpha = softAlpha * uOpacity * vAlpha;
+  if (alpha < 0.01) discard;
 
-  vec3 col = vColor * (uCoreBoost + (1.0 - uCoreBoost + 0.35) * texel.r);
+  // Color follows the same falloff — edges don't paint a flat grey disc
+  vec3 col = vColor * mix(uCoreBoost, 1.05, softAlpha);
   gl_FragColor = vec4(col, alpha);
 }
 `;
@@ -374,7 +382,8 @@ function ParticleLayer({
         uTwinkleAmp: { value: kind === "star" ? 0.28 : 0.08 },
         uSizeBreath: { value: kind === "star" ? 0.1 : 0.04 },
         uSpin: { value: kind === "star" ? 0.0 : 0.22 },
-        uCoreBoost: { value: kind === "star" ? 0.68 : 0.82 },
+        uCoreBoost: { value: kind === "star" ? 0.72 : 0.85 },
+        uAlphaPower: { value: kind === "star" ? 1.95 : 1.75 },
       },
       vertexShader: PARTICLE_VERTEX,
       fragmentShader: PARTICLE_FRAGMENT,
@@ -394,7 +403,8 @@ function ParticleLayer({
     material.uniforms.uTwinkleAmp.value = kind === "star" ? 0.28 : 0.08;
     material.uniforms.uSizeBreath.value = kind === "star" ? 0.1 : 0.04;
     material.uniforms.uSpin.value = kind === "star" ? 0.0 : 0.22;
-    material.uniforms.uCoreBoost.value = kind === "star" ? 0.68 : 0.82;
+    material.uniforms.uCoreBoost.value = kind === "star" ? 0.72 : 0.85;
+    material.uniforms.uAlphaPower.value = kind === "star" ? 1.95 : 1.75;
     material.blending = blending;
   }, [material, size, opacity, kind, blending]);
 
