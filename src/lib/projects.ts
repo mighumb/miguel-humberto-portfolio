@@ -1,6 +1,7 @@
 export type ProjectTrack = "ai" | "craft";
 
 export type Deliverable =
+  | { type: "video"; url: string }
   | { type: "instagram"; url: string }
   | { type: "placeholder" };
 
@@ -84,9 +85,9 @@ export const projects: Project[] = [
     },
     deliverableCount: 3,
     deliverables: [
-      { type: "instagram", url: "https://www.instagram.com/reel/DRsGeWUjbAT/" },
-      { type: "instagram", url: "https://www.instagram.com/reel/DRz4qu_DfLs/" },
-      { type: "instagram", url: "https://www.instagram.com/reel/DSS38pujQYu/" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4" },
     ],
   },
   {

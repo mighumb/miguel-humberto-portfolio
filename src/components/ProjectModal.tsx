@@ -128,31 +128,6 @@ export default function ProjectModal({
     }
   }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);
 
-  useEffect(() => {
-    const hasInstagram = project.deliverables?.some((d: Deliverable) => d.type === "instagram");
-    if (!hasInstagram || !sharedContentVisible) return;
-
-    const process = () => {
-      (window as { instgrm?: { Embeds?: { process?: () => void } } }).instgrm?.Embeds?.process?.();
-    };
-
-    if ((window as { instgrm?: unknown }).instgrm) {
-      process();
-      return;
-    }
-
-    const existing = document.querySelector('script[src*="instagram.com/embed.js"]');
-    if (existing) {
-      existing.addEventListener("load", process, { once: true });
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://www.instagram.com/embed.js";
-    script.async = true;
-    script.onload = process;
-    document.body.appendChild(script);
-  }, [project.deliverables, sharedContentVisible]);
 
   const measureTargets = useCallback((): ModalTargets | null => {
     const hero = heroRef.current;
@@ -376,7 +351,19 @@ export default function ProjectModal({
               {project.deliverables ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {project.deliverables.map((deliverable, i) =>
-                    deliverable.type === "instagram" ? (
+                    deliverable.type === "video" ? (
+                      <div key={i} className="overflow-hidden rounded-xl bg-bg-secondary">
+                        <video
+                          src={`/projects/${project.track}/${project.slug}/${deliverable.url}`}
+                          controls
+                          muted
+                          loop
+                          playsInline
+                          preload="metadata"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : deliverable.type === "instagram" ? (
                       <div key={i} className="overflow-hidden rounded-xl">
                         <blockquote
                           className="instagram-media"
