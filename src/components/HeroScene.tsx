@@ -9,10 +9,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 const PARTICLE_COUNT = 3200;
 const DRIFT_COUNT = 800;
 const NEAR_COUNT = 480;
-/** Sparse overlay that sits above HTML for depth (separate canvas) */
-const FRONT_COUNT = 220;
-
-export type HeroSceneVariant = "background" | "foreground";
 
 // Base screen-space radius (~cursor footprint in px), extended per particle size
 const CURSOR_RADIUS_PX = 14;
@@ -104,7 +100,6 @@ function generateLayer(count: number, seed: number, spread: number) {
 const MAIN_LAYER = generateLayer(PARTICLE_COUNT, 42, 4.2);
 const DRIFT_LAYER = generateLayer(DRIFT_COUNT, 137, 3.6);
 const NEAR_LAYER = generateLayer(NEAR_COUNT, 911, 2.6);
-const FRONT_LAYER = generateLayer(FRONT_COUNT, 2048, 2.4);
 
 function buildColors(mix: Float32Array, count: number, isDark: boolean) {
   const colors = new Float32Array(count * 3);
@@ -385,7 +380,7 @@ function ShootingStars() {
   );
 }
 
-function BackgroundScene({ isDark }: { isDark: boolean }) {
+function SceneContent({ isDark }: { isDark: boolean }) {
   return (
     <>
       <MouseTurbulenceTracker />
@@ -422,59 +417,18 @@ function BackgroundScene({ isDark }: { isDark: boolean }) {
   );
 }
 
-/** Sparse particles composited above page content for parallax depth */
-function ForegroundScene({ isDark }: { isDark: boolean }) {
-  return (
-    <>
-      <MouseTurbulenceTracker />
-      <ambientLight intensity={0.8} />
-      <ParticleLayer
-        data={FRONT_LAYER}
-        isDark={isDark}
-        size={isDark ? 0.045 : 0.055}
-        opacity={isDark ? 0.28 : 0.32}
-        speed={0.02}
-        drift={0.06}
-        turbulenceStrength={1.2}
-      />
-    </>
-  );
-}
-
-export default function HeroScene({
-  variant = "background",
-}: {
-  variant?: HeroSceneVariant;
-}) {
+export default function HeroScene() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const isForeground = variant === "foreground";
 
   return (
     <Canvas
       camera={{ position: [0, 0, 6], fov: 45 }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
-      style={{
-        background: "transparent",
-        width: "100%",
-        height: "100%",
-        pointerEvents: isForeground ? "none" : undefined,
-      }}
-      onCreated={
-        isForeground
-          ? ({ gl }) => {
-              gl.domElement.style.setProperty("pointer-events", "none", "important");
-              gl.domElement.style.touchAction = "none";
-            }
-          : undefined
-      }
+      style={{ background: "transparent", width: "100%", height: "100%" }}
     >
-      {isForeground ? (
-        <ForegroundScene isDark={isDark} />
-      ) : (
-        <BackgroundScene isDark={isDark} />
-      )}
+      <SceneContent isDark={isDark} />
     </Canvas>
   );
 }
