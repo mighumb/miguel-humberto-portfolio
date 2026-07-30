@@ -6,11 +6,27 @@ const MOMENTUM_FRICTION = 0.92;
 const MOMENTUM_MIN_VELOCITY = 0.015;
 
 type VelocitySample = { x: number; t: number };
+type MotionStop = () => void;
 
-const motionControllers = new WeakMap<HTMLElement, () => void>();
+const motionControllers = new WeakMap<HTMLElement, Set<MotionStop>>();
+
+/** Register a cancelable carousel motion (drag momentum, arrow glide, …). */
+export function registerWorkCarouselMotion(container: HTMLElement, stop: MotionStop) {
+  let set = motionControllers.get(container);
+  if (!set) {
+    set = new Set();
+    motionControllers.set(container, set);
+  }
+  set.add(stop);
+  return () => {
+    set!.delete(stop);
+  };
+}
 
 export function stopWorkCarouselMotion(container: HTMLElement) {
-  motionControllers.get(container)?.();
+  const set = motionControllers.get(container);
+  if (!set?.size) return;
+  [...set].forEach((stop) => stop());
 }
 
 export function attachWorkDragScroll(container: HTMLElement) {
@@ -158,7 +174,8 @@ export function attachWorkDragScroll(container: HTMLElement) {
   const onPointerDown = (event: PointerEvent) => {
     if (event.button !== 0) return;
 
-    stopMomentum();
+    // Cancel arrow glides and leftover momentum before a new drag.
+    stopWorkCarouselMotion(container);
     activePointerId = event.pointerId;
     startX = event.clientX;
     startY = event.clientY;
@@ -182,13 +199,13 @@ export function attachWorkDragScroll(container: HTMLElement) {
     clearDraggedFlag();
   };
 
-  motionControllers.set(container, stopMomentum);
+  const unregisterMomentum = registerWorkCarouselMotion(container, stopMomentum);
 
   container.addEventListener("pointerdown", onPointerDown);
   container.addEventListener("click", onClickCapture, true);
 
   return () => {
-    motionControllers.delete(container);
+    unregisterMomentum();
     window.clearTimeout(suppressClickTimer);
     stopMomentum();
     clearDragCursor();

@@ -1,5 +1,20 @@
+import {
+  registerWorkCarouselMotion,
+  stopWorkCarouselMotion,
+} from "@/lib/workDragScroll";
+
+/** Softer than the browser's default smooth scroll (~300ms). */
+const ARROW_SCROLL_MIN_MS = 580;
+const ARROW_SCROLL_MAX_MS = 840;
+/** ~670ms for a typical mobile card step (~370px). */
+const ARROW_SCROLL_PX_PER_MS = 0.55;
+
 function getWorkCards(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>("[data-project-id]"));
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /**
@@ -93,11 +108,52 @@ export function scrollWorkCarouselToIndex(
   if (target === null) return;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!smooth || reducedMotion) {
+    container.scrollLeft = target;
+    return;
+  }
 
-  container.scrollTo({
-    left: target,
-    behavior: smooth && !reducedMotion ? "smooth" : "auto",
-  });
+  const start = container.scrollLeft;
+  const delta = target - start;
+  if (Math.abs(delta) < 0.5) return;
+
+  // Replace any in-flight glide/momentum before starting a new one.
+  stopWorkCarouselMotion(container);
+
+  const duration = Math.min(
+    ARROW_SCROLL_MAX_MS,
+    Math.max(ARROW_SCROLL_MIN_MS, Math.abs(delta) / ARROW_SCROLL_PX_PER_MS),
+  );
+
+  let raf = 0;
+  const startTime = performance.now();
+
+  const stop = () => {
+    if (raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+    unregister();
+  };
+
+  const unregister = registerWorkCarouselMotion(container, stop);
+
+  const tick = (now: number) => {
+    const progress = Math.min(1, (now - startTime) / duration);
+    container.scrollLeft = start + delta * easeInOutCubic(progress);
+
+    if (progress < 1) {
+      raf = requestAnimationFrame(tick);
+      return;
+    }
+
+    container.scrollLeft = target;
+    stop();
+    // Custom rAF scroll does not always emit scrollend; settle nav pin state.
+    container.dispatchEvent(new Event("scrollend"));
+  };
+
+  raf = requestAnimationFrame(tick);
 }
 
 export function whenWorkCarouselScrollSettles(
@@ -125,7 +181,8 @@ export function whenWorkCarouselScrollSettles(
   };
 
   container.addEventListener("scroll", onScroll, { passive: true });
-  timer = window.setTimeout(finish, 800);
+  // Cover the slower arrow glide (up to ~840ms) plus a short settle buffer.
+  timer = window.setTimeout(finish, 1100);
 
   return () => {
     container.removeEventListener("scroll", onScroll);
