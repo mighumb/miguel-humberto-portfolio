@@ -241,10 +241,12 @@ html.modal-open .project-modal {
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
-  /* Allow native horizontal swipe as well as vertical page scroll */
+  /* Native free scroll on touch — no snap / magnetism; 3D focus unchanged */
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
   /* Prevent browser scroll-anchoring from jumping away from the first card */
   overflow-anchor: none;
+  overscroll-behavior-x: contain;
 }
 
 .work-scroll-end-gutter {

@@ -29,7 +29,22 @@ export function stopWorkCarouselMotion(container: HTMLElement) {
   [...set].forEach((stop) => stop());
 }
 
+/** Touch / coarse pointers: prefer native overflow scrolling (no JS drag fight). */
+function prefersNativeTouchScroll() {
+  return (
+    window.matchMedia("(pointer: coarse)").matches ||
+    window.matchMedia("(hover: none)").matches
+  );
+}
+
 export function attachWorkDragScroll(container: HTMLElement) {
+  // On phones/tablets, custom pointer-drag fights the browser's native pan and
+  // feels sticky. Leave horizontal scroll fully native — no snap / magnetism.
+  // 3D focus (including blur) is unchanged.
+  if (prefersNativeTouchScroll()) {
+    return () => {};
+  }
+
   let activePointerId: number | null = null;
   let startX = 0;
   let startY = 0;
