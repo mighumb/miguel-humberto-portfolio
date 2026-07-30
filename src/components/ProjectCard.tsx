@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
@@ -27,6 +27,12 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
+  const videoIsHero = project.hasVideo && !!project.videoUrl && !thumbnailUrl;
+
+  useEffect(() => {
+    if (!videoIsHero || !videoRef.current) return;
+    videoRef.current.play().catch(() => {});
+  }, [videoIsHero]);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -37,7 +43,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   const handleMouseLeave = () => {
     setIsHovering(false);
-    if (keepVideoAlive || !videoRef.current) return;
+    if (videoIsHero || keepVideoAlive || !videoRef.current) return;
     videoRef.current.pause();
     videoRef.current.currentTime = 0;
   };
@@ -123,7 +129,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                     isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
                   }`}
                 />
-              ) : (
+              ) : !videoIsHero ? (
                 <div
                   className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
                     isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
@@ -136,18 +142,19 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                     </span>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {project.hasVideo && project.videoUrl && (
                 <video
                   ref={videoRef}
                   src={project.videoUrl}
+                  autoPlay={videoIsHero}
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload={videoIsHero ? "auto" : "metadata"}
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
-                    isHovering ? "opacity-100" : "opacity-0"
+                    videoIsHero || isHovering ? "opacity-100" : "opacity-0"
                   }`}
                 />
               )}
