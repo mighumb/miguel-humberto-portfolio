@@ -2,6 +2,8 @@ export type ProjectTrack = "ai" | "craft";
 
 export interface Project {
   id: string;
+  /** Folder name under public/projects/{track}/ */
+  slug: string;
   track: ProjectTrack;
   title: { en: string; fr: string };
   description: { en: string; fr: string };
@@ -20,9 +22,15 @@ export interface Project {
   deliverableCount: number;
 }
 
+/** Public URL root for a project's local assets. */
+export function projectAssetBase(project: Pick<Project, "track" | "slug">) {
+  return `/projects/${project.track}/${project.slug}`;
+}
+
 export const projects: Project[] = [
   {
     id: "01",
+    slug: "cinematic-ai-short-film",
     track: "ai",
     title: { en: "Cinematic AI Short Film", fr: "Court-métrage IA cinématique" },
     description: {
@@ -40,6 +48,7 @@ export const projects: Project[] = [
   },
   {
     id: "02",
+    slug: "social-campaign-brand-x",
     track: "ai",
     title: { en: "Social Campaign — Brand X", fr: "Campagne social — Brand X" },
     description: {
@@ -56,6 +65,7 @@ export const projects: Project[] = [
   },
   {
     id: "03",
+    slug: "prompt-engineering-tutorial-series",
     track: "ai",
     title: { en: "Prompt Engineering Tutorial Series", fr: "Série de tutoriels prompting" },
     description: {
@@ -73,6 +83,7 @@ export const projects: Project[] = [
   },
   {
     id: "04",
+    slug: "generative-visual-identity",
     track: "ai",
     title: { en: "Generative Visual Identity", fr: "Identité visuelle générative" },
     description: {
@@ -90,6 +101,7 @@ export const projects: Project[] = [
   },
   {
     id: "05",
+    slug: "tiktok-ai-art-experiments",
     track: "ai",
     title: { en: "TikTok AI Art Experiments", fr: "Expériences art IA TikTok" },
     description: {
@@ -107,6 +119,7 @@ export const projects: Project[] = [
   },
   {
     id: "06",
+    slug: "audio-visual-ai-installation",
     track: "ai",
     title: { en: "Audio-Visual AI Installation", fr: "Installation audio-visuelle IA" },
     description: {
@@ -123,6 +136,7 @@ export const projects: Project[] = [
   },
   {
     id: "c01",
+    slug: "product-ui-system",
     track: "craft",
     title: { en: "Product UI System", fr: "Système UI produit" },
     description: {
@@ -139,6 +153,7 @@ export const projects: Project[] = [
   },
   {
     id: "c02",
+    slug: "motion-brand-language",
     track: "craft",
     title: { en: "Motion Brand Language", fr: "Langage motion de marque" },
     description: {
@@ -155,6 +170,7 @@ export const projects: Project[] = [
   },
   {
     id: "c03",
+    slug: "3d-product-visualization",
     track: "craft",
     title: { en: "3D Product Visualization", fr: "Visualisation produit 3D" },
     description: {
@@ -171,6 +187,7 @@ export const projects: Project[] = [
   },
   {
     id: "c04",
+    slug: "editorial-web-experience",
     track: "craft",
     title: { en: "Editorial Web Experience", fr: "Expérience web éditoriale" },
     description: {
@@ -187,6 +204,7 @@ export const projects: Project[] = [
   },
   {
     id: "c05",
+    slug: "app-onboarding-flows",
     track: "craft",
     title: { en: "App Onboarding Flows", fr: "Parcours d'onboarding app" },
     description: {
@@ -203,6 +221,7 @@ export const projects: Project[] = [
   },
   {
     id: "c06",
+    slug: "spatial-interface-concept",
     track: "craft",
     title: { en: "Spatial Interface Concept", fr: "Concept d'interface spatiale" },
     description: {
