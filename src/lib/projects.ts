@@ -80,7 +80,7 @@ export const projects: Project[] = [
     id: "02",
     slug: "social-campaign-brand-x",
     track: "ai",
-    title: { en: "Social Campaign — Brand X", fr: "Campagne social — Brand X" },
+    title: { en: "Social Campaign, Brand X", fr: "Campagne social, Brand X" },
     description: {
       en: "Multi-format social assets for a client campaign, from concept to delivery in 48 hours.",
       fr: "Assets social multi-formats pour une campagne client, du concept à la livraison en 48 heures.",
@@ -209,8 +209,8 @@ export const projects: Project[] = [
     track: "craft",
     title: { en: "3D Product Visualization", fr: "Visualisation produit 3D" },
     description: {
-      en: "Stylized 3D scenes and stills for a product launch — lighting, materials, and composition focused on shelf appeal.",
-      fr: "Scènes et stills 3D stylisés pour un lancement produit — lumière, matières et composition orientées désirabilité.",
+      en: "Stylized 3D scenes and stills for a product launch: lighting, materials, and composition focused on shelf appeal.",
+      fr: "Scènes et stills 3D stylisés pour un lancement produit: lumière, matières et composition orientées désirabilité.",
     },
     tags: ["3D", "Product", "Lookdev"],
     year: "2024",
