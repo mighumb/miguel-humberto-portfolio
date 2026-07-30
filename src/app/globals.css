@@ -238,7 +238,14 @@ html.modal-open .project-modal {
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
-  touch-action: pan-y;
+  /* Allow native horizontal swipe as well as vertical page scroll */
+  touch-action: pan-x pan-y;
+}
+
+/* WebGL overlay must never steal touches (iOS ignores parent-only none on canvas) */
+.ambient-foreground,
+.ambient-foreground * {
+  pointer-events: none !important;
 }
 
 .work-scroll.is-pressing {

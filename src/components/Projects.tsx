@@ -177,13 +177,22 @@ export default function Projects() {
     carouselSnapshotRef,
   );
   const [endGutterWidth, setEndGutterWidth] = useState(24);
+  const shouldAnchorStartRef = useRef(true);
 
   useLayoutEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
     const updateEndGutter = () => {
-      setEndGutterWidth(getWorkCarouselEndGutterWidth(container));
+      const nextWidth = getWorkCarouselEndGutterWidth(container);
+      setEndGutterWidth((prev) => (prev === nextWidth ? prev : nextWidth));
+
+      // Keep the first card left-aligned after layout/gutter measurement settles.
+      if (shouldAnchorStartRef.current && pinnedCardIndexRef.current === null) {
+        stopWorkCarouselMotion(container);
+        container.scrollLeft = 0;
+        setFocusedCardIndex(0);
+      }
     };
 
     updateEndGutter();
@@ -202,6 +211,7 @@ export default function Projects() {
   }, [scrollRef, projects.length, mode]);
 
   useEffect(() => {
+    shouldAnchorStartRef.current = true;
     setActiveProject(null);
     setActiveIndex(0);
     setFocusedCardIndex(0);
@@ -226,6 +236,24 @@ export default function Projects() {
       container.scrollLeft = 0;
     }
   }, [mode, scrollRef]);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const releaseAnchor = () => {
+      shouldAnchorStartRef.current = false;
+    };
+
+    // User interaction ends start-anchoring; ignore programmatic scrollLeft=0.
+    container.addEventListener("pointerdown", releaseAnchor, { passive: true });
+    const timer = window.setTimeout(releaseAnchor, 500);
+
+    return () => {
+      container.removeEventListener("pointerdown", releaseAnchor);
+      window.clearTimeout(timer);
+    };
+  }, [scrollRef, mode, projects.length]);
 
   const carouselNavDisabled = activeProject !== null;
 

@@ -25,6 +25,10 @@ export function getWorkCarouselEndGutterWidth(container: HTMLElement) {
   const last = cards[cards.length - 1];
   if (!last) return getFocusInset(container);
 
+  // Wait until cards are laid out — a 0-width measure invents a huge end spacer
+  // and can leave the carousel scrolled away from the first card on mobile.
+  if (last.offsetWidth < 8) return getFocusInset(container);
+
   const focusInset = getFocusInset(container);
   const gap = getCarouselGap(container);
   return Math.max(

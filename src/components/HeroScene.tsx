@@ -448,15 +448,29 @@ export default function HeroScene({
 }) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const isForeground = variant === "foreground";
 
   return (
     <Canvas
       camera={{ position: [0, 0, 6], fov: 45 }}
       dpr={[1, 1.5]}
       gl={{ antialias: true, alpha: true }}
-      style={{ background: "transparent", width: "100%", height: "100%" }}
+      style={{
+        background: "transparent",
+        width: "100%",
+        height: "100%",
+        pointerEvents: isForeground ? "none" : undefined,
+      }}
+      onCreated={
+        isForeground
+          ? ({ gl }) => {
+              gl.domElement.style.setProperty("pointer-events", "none", "important");
+              gl.domElement.style.touchAction = "none";
+            }
+          : undefined
+      }
     >
-      {variant === "foreground" ? (
+      {isForeground ? (
         <ForegroundScene isDark={isDark} />
       ) : (
         <BackgroundScene isDark={isDark} />

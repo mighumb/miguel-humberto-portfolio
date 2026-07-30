@@ -29,6 +29,7 @@ export default function AmbientForeground() {
     <div
       className="ambient-foreground pointer-events-none fixed inset-0 z-[40]"
       aria-hidden
+      style={{ pointerEvents: "none" }}
     >
       <HeroScene variant="foreground" />
     </div>
