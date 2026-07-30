@@ -6,8 +6,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
 
-function easeInOutQuart(t: number): number {
-  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+function easeInOutSine(t: number): number {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
 }
 
 function smoothScrollTo(target: number, duration: number) {
@@ -20,7 +20,7 @@ function smoothScrollTo(target: number, duration: number) {
   const startTime = performance.now();
   function step(now: number) {
     const progress = Math.min((now - startTime) / duration, 1);
-    window.scrollTo(0, start + distance * easeInOutQuart(progress));
+    window.scrollTo(0, start + distance * easeInOutSine(progress));
     if (progress < 1) requestAnimationFrame(step);
   }
   requestAnimationFrame(step);
@@ -64,9 +64,14 @@ export default function Hero() {
   const copy = t.modes[mode];
 
   const handleScrollToWork = useCallback(() => {
-    const hero = document.querySelector<HTMLElement>('[aria-label="Introduction"]');
-    const target = hero ? hero.offsetHeight : window.innerHeight;
-    smoothScrollTo(target, 900);
+    const section = document.getElementById("projects");
+    if (!section) return;
+    const sectionTop = section.offsetTop;
+    const sectionHeight = section.offsetHeight;
+    const vh = window.innerHeight;
+    // Center the section in the viewport; clamp so we never scroll negative
+    const target = Math.max(0, sectionTop + sectionHeight / 2 - vh / 2);
+    smoothScrollTo(target, 1300);
   }, []);
 
   return (
@@ -97,8 +102,8 @@ export default function Hero() {
           aria-label="Scroll to work"
         >
           <svg
-            width="28"
-            height="16"
+            width="44"
+            height="25"
             viewBox="0 0 28 16"
             fill="none"
             aria-hidden
