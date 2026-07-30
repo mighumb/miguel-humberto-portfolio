@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Providers from "@/components/Providers";
 import "./globals.css";
 
@@ -6,6 +6,26 @@ export const metadata: Metadata = {
   title: "Miguel Humberto, AI Creative Producer",
   description:
     "Gen AI creative workflows from concept to delivery. Portfolio of Miguel Humberto.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Miguel Humberto",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+};
+
+/** Edge-to-edge on notched phones so ambient/WebGL can paint under the status area. */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#05060a" },
+    { color: "#05060a" },
+  ],
 };
 
 const modeBootstrap = `
@@ -20,6 +40,23 @@ const modeBootstrap = `
     var theme = mode === "craft" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.dataset.mode = mode;
+
+    var color = theme === "light" ? "#f5f5f7" : "#05060a";
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "theme-color");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", color);
+
+    var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!statusBar) {
+      statusBar = document.createElement("meta");
+      statusBar.setAttribute("name", "apple-mobile-web-app-status-bar-style");
+      document.head.appendChild(statusBar);
+    }
+    statusBar.setAttribute("content", "black-translucent");
   } catch (e) {}
 })();
 `;
