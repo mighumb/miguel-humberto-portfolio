@@ -264,6 +264,8 @@ export default function ProjectModal({
                     ref={heroVideoRef}
                     src={project.videoUrl}
                     controls={sharedContentVisible}
+                    autoPlay
+                    loop
                     muted
                     playsInline
                     preload={videoPlaying ? "auto" : "metadata"}
@@ -360,9 +362,9 @@ export default function ProjectModal({
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.process}
               </h3>
-              {project.links.youtube || project.links.notion ? (
+              {project.links.youtube ? (
                 <div className="space-y-6">
-                  {project.links.youtube && (() => {
+                  {(() => {
                     const embedUrl = youtubeEmbedUrl(project.links.youtube);
                     return embedUrl ? (
                       <div className="aspect-video w-full overflow-hidden rounded-xl bg-bg-secondary">
@@ -376,9 +378,6 @@ export default function ProjectModal({
                       </div>
                     ) : null;
                   })()}
-                  {project.links.notion && (
-                    <ResourceLink href={project.links.notion}>{mt.notion}</ResourceLink>
-                  )}
                 </div>
               ) : (
                 <div className="space-y-12">
@@ -427,9 +426,6 @@ export default function ProjectModal({
               <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
                 {project.links.notion && (
                   <ResourceLink href={project.links.notion}>{mt.notion}</ResourceLink>
-                )}
-                {project.links.youtube && (
-                  <ResourceLink href={project.links.youtube}>{mt.youtube}</ResourceLink>
                 )}
                 {project.links.instagram && (
                   <ResourceLink href={project.links.instagram}>{mt.instagram}</ResourceLink>
