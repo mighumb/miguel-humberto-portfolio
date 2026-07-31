@@ -259,26 +259,24 @@ html.modal-main-hidden .ambient-background {
 }
 
 @keyframes process-card-in {
-  from { opacity: 0; transform: translateY(36px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(36px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.process-card {
-  transition: opacity 0.4s ease, transform 0.4s ease;
-}
-
+/* Exit: falls down behind ghost cards. Transition declared here so it only
+   fires when the class is added, not on entry or reset. */
 .process-card.is-exiting {
   opacity: 0 !important;
-  transform: translateY(36px) !important;
+  transform: translateY(88px) scale(0.88) !important;
+  transition: opacity 0.48s ease-in, transform 0.52s cubic-bezier(0.4, 0, 1, 1) !important;
 }
 
 .process-card-enter {
-  animation: process-card-in 0.46s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: process-card-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .process-card { transition: none; }
-  .process-card.is-exiting { opacity: 0 !important; transform: none !important; }
+  .process-card.is-exiting { opacity: 0 !important; transform: none !important; transition: none !important; }
   .process-card-enter { animation: none; }
 }
 

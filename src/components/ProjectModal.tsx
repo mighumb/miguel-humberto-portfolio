@@ -183,10 +183,13 @@ function ProcessLightbox({
   );
 }
 
-// Peek amounts: ghost1 = 20px below front card, ghost2 = 40px below (20px visible below ghost1)
-const PEEK_1 = 20;
-const PEEK_2 = 40;
-const PAD_BOTTOM = 44; // wrapper padding-bottom to contain the overflow
+// Ghost cards peek this many px below the front card in idle state
+const PEEK_1 = 36;
+const PEEK_2 = 72;
+// Wrapper padding-bottom so peeking ghost cards don't clip
+const PAD_BOTTOM = 84;
+// How long the exit phase lasts before we swap to the new index
+const EXIT_MS = 560;
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);
@@ -201,15 +204,15 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   const navigate = useCallback((newIndex: number) => {
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    // Phase 1: exit — ghost cards animate upward (CSS transitions fire here)
+    // Trigger exit phase — front card falls behind ghost cards (z-index flips immediately)
     setPhase("exiting");
     setTimeout(() => {
-      // Phase 2: instant reset — swap index, kill transitions, snap ghosts back
+      // Swap content + reset ghost positions instantly (transition: "none")
       setDisplayIndex(newIndex);
       setAnimKey((k) => k + 1);
       setPhase("idle");
       setTimeout(() => { isNavigatingRef.current = false; }, 60);
-    }, 420);
+    }, EXIT_MS);
   }, []);
 
   const goNext = useCallback(() => navigate((displayIndex + 1) % total), [navigate, displayIndex, total]);
@@ -220,35 +223,35 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
 
   const isExiting = phase === "exiting";
 
-  // Ghost card styles — CSS transition only fires during exiting phase
+  // Transition is only live during the exit phase so ghost cards animate upward.
+  // During idle, "none" means the snap-back after a swap is invisible.
   const ghostTransition = isExiting
-    ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s ease, filter 0.42s ease"
+    ? `transform ${EXIT_MS}ms cubic-bezier(0.22, 1, 0.36, 1), opacity ${EXIT_MS}ms ease`
     : "none";
 
-  const ghost1Style = {
+  // Ghost 1 (middle): during exit it rises to the front card's position and
+  // its z-index flips above the exiting front card so we see it emerge.
+  const ghost1Style: React.CSSProperties = {
     top: 0,
     bottom: PAD_BOTTOM,
-    left: 8,
-    right: 8,
-    // During exit: ghost1 rises to front position (translateY → 0, full opacity, no blur)
-    transform: isExiting ? "translateY(0px)" : `translateY(${PEEK_1}px)`,
-    opacity: isExiting ? 1 : 0.72,
-    filter: isExiting ? "blur(0px)" : "blur(0px)",
+    left: 0,
+    right: 0,
+    transform: isExiting ? "translateY(0px) scale(1)" : `translateY(${PEEK_1}px) scale(0.97)`,
+    opacity: isExiting ? 1 : 0.82,
     transition: ghostTransition,
-    zIndex: 2,
+    zIndex: isExiting ? 4 : 2, // rise above exiting front card
   };
 
-  const ghost2Style = {
+  // Ghost 2 (back): during exit it rises to the ghost-1 position.
+  const ghost2Style: React.CSSProperties = {
     top: 0,
     bottom: PAD_BOTTOM,
-    left: 16,
-    right: 16,
-    // During exit: ghost2 rises to ghost1 position
-    transform: isExiting ? `translateY(${PEEK_1}px)` : `translateY(${PEEK_2}px)`,
-    opacity: isExiting ? 0.72 : 0.44,
-    filter: isExiting ? "blur(0px)" : "blur(0.5px)",
+    left: 0,
+    right: 0,
+    transform: isExiting ? `translateY(${PEEK_1}px) scale(0.97)` : `translateY(${PEEK_2}px) scale(0.94)`,
+    opacity: isExiting ? 0.82 : 0.55,
     transition: ghostTransition,
-    zIndex: 1,
+    zIndex: isExiting ? 3 : 1,
   };
 
   const openLightbox = () => {
@@ -270,9 +273,9 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
         />
       )}
       <div>
-        {/* Stack — padding-bottom reserves space for ghost cards peeking below */}
+        {/* Stack — padding-bottom reserves space so ghost cards peeking below don't clip */}
         <div className="relative w-full" style={{ paddingBottom: `${PAD_BOTTOM}px` }}>
-          {/* Ghost card 2 — furthest */}
+          {/* Ghost card 2 — furthest back */}
           {showThird && (
             <div className="absolute overflow-hidden rounded-2xl" style={ghost2Style}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -288,14 +291,14 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             </div>
           )}
 
-          {/* Front card */}
+          {/* Front card — z-index drops to 0 during exit so ghost cards render on top of it */}
           <div
             key={animKey}
             className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl ${
               isExiting ? "is-exiting" : "process-card-enter"
             }`}
             style={{
-              zIndex: 3,
+              zIndex: isExiting ? 0 : 3,
               boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
               cursor: "zoom-in",
             }}
