@@ -84,6 +84,11 @@ function FlightThumbnail({
           <video
             ref={videoRef}
             src={project.videoUrl}
+            // Paints the captured frame from the video element itself, so a
+            // freshly mounted (still undecoded) video is never black. The
+            // overlay <img> below covers the same gap, but it has to decode
+            // first — this closes the frame or two before that happens.
+            poster={videoPoster}
             muted
             loop
             playsInline

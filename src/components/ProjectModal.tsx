@@ -21,6 +21,9 @@ interface ProjectModalProps {
   backdropVisible: boolean;
   videoPlaying: boolean;
   videoTime: number;
+  /** Frame captured from the card at click time; covers the hero video while
+   *  it seeks to the handoff position, which would otherwise render black. */
+  videoPoster?: string;
   onFlightTargetsReady: (targets: ModalTargets) => void;
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
@@ -417,6 +420,7 @@ export default function ProjectModal({
   backdropVisible,
   videoPlaying,
   videoTime,
+  videoPoster,
   onFlightTargetsReady,
   onRegisterMeasure,
 }: ProjectModalProps) {
@@ -598,6 +602,12 @@ export default function ProjectModal({
                   <video
                     ref={heroVideoRef}
                     src={project.videoUrl}
+                    // The flight hands off by seeking this video to the card's
+                    // playback position the instant it is revealed. A seeking
+                    // video has no frame to paint, so without a poster it
+                    // renders black for a beat — the flash at the end of the
+                    // card→modal transition.
+                    poster={videoPoster}
                     controls={sharedContentVisible}
                     autoPlay
                     loop
