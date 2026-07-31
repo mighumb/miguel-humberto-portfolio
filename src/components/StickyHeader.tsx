@@ -42,14 +42,10 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
-      {/* Low blur (5px) + subtle tint gradient. Lower blur = much softer
-          bottom edge without needing any mask or height overflow. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          backdropFilter: "blur(5px)",
-          WebkitBackdropFilter: "blur(5px)",
-          background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 70%)",
+          background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)",
         }}
         aria-hidden
       />
