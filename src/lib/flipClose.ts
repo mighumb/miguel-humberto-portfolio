@@ -115,9 +115,12 @@ export function runFlipClose({
     finished = true;
     flips.forEach((flip) => cleanupFlip(flip.el));
     shared.card.style.minHeight = "";
-    root.classList.remove("is-closing-flip");
     shared.visual.removeEventListener("transitionend", onTransitionEnd);
     window.clearTimeout(timeout);
+    // Do NOT remove is-closing-flip here — onComplete triggers setActiveProject(null)
+    // which is a batched React update. Removing the class synchronously would make
+    // the modal flash back visible before it unmounts. resetTransition defers the
+    // removal to requestAnimationFrame so React commits the unmount first.
     onComplete();
   };
 

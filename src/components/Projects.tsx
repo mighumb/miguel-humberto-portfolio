@@ -366,7 +366,14 @@ export default function Projects() {
   const resetTransition = useCallback(() => {
     flipCleanupRef.current?.();
     flipCleanupRef.current = null;
-    document.documentElement.classList.remove("is-closing-flip");
+    // Defer is-closing-flip removal by one rAF. setActiveProject(null) is a
+    // batched React update — React commits the modal unmount in a microtask.
+    // Removing the class synchronously here would make the modal re-appear for
+    // one render cycle (visibility:hidden lifted before the element is gone).
+    // After one rAF React has already committed, so the modal is gone first.
+    requestAnimationFrame(() => {
+      document.documentElement.classList.remove("is-closing-flip");
+    });
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
