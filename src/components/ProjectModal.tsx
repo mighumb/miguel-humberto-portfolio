@@ -369,7 +369,10 @@ function DeliverableVideo({ src }: { src: string }) {
     <div className="group relative overflow-hidden rounded-xl bg-bg-secondary">
       <video
         ref={videoRef}
-        src={src}
+        // #t=0.1 forces iOS Safari to seek and decode a frame at rest; without
+        // it, preload="metadata" leaves the video black until playback starts
+        // there (desktop browsers already paint the first frame on their own).
+        src={`${src}#t=0.1`}
         controls={playing}
         muted
         loop
