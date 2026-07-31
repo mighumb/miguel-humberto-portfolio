@@ -282,7 +282,7 @@ export default function ProjectModal({
         >
           <div
             className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
-            style={{ background: "var(--modal-bg)" }}
+            style={{ background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)" }}
           >
             <span className="text-xs tracking-widest text-text-secondary uppercase">
               {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
