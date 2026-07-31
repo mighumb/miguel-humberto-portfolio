@@ -258,26 +258,58 @@ html.modal-main-hidden .ambient-background {
   color: var(--text-primary);
 }
 
-@keyframes process-card-in {
-  from { opacity: 0; transform: translateY(36px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+/* Ghost cards — idle resting positions */
+.process-ghost-1 {
+  transform: translateY(8px) scale(0.97);
+  opacity: 0.85;
+}
+.process-ghost-2 {
+  transform: translateY(16px) scale(0.94);
+  opacity: 0.55;
 }
 
-/* Exit: falls down behind ghost cards. Transition declared here so it only
-   fires when the class is added, not on entry or reset. */
+/* Ghost cards rise when parent receives .process-stack-exiting.
+   Keyframe-driven so the browser always sees a defined from-state;
+   avoids the transition-race when both `transition` and values change
+   in the same React render. */
+@keyframes ghost-1-rise {
+  from { transform: translateY(8px) scale(0.97); opacity: 0.85; }
+  to   { transform: translateY(0) scale(1);      opacity: 1;    }
+}
+@keyframes ghost-2-rise {
+  from { transform: translateY(16px) scale(0.94); opacity: 0.55; }
+  to   { transform: translateY(8px)  scale(0.97); opacity: 0.85; }
+}
+.process-stack-exiting .process-ghost-1 {
+  animation: ghost-1-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.process-stack-exiting .process-ghost-2 {
+  animation: ghost-2-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Front card exit — slides down and fades while ghost cards rise through it */
+@keyframes process-card-exit {
+  0%   { opacity: 1; transform: translateY(0)    scale(1);    }
+  100% { opacity: 0; transform: translateY(64px) scale(0.91); }
+}
 .process-card.is-exiting {
-  opacity: 0 !important;
-  transform: translateY(88px) scale(0.88) !important;
-  transition: opacity 0.48s ease-in, transform 0.52s cubic-bezier(0.4, 0, 1, 1) !important;
+  animation: process-card-exit 0.65s cubic-bezier(0.4, 0, 0.8, 1) forwards !important;
+  transition: none !important;
 }
 
+/* Front card enter — rises from ghost-1 position */
+@keyframes process-card-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
 .process-card-enter {
-  animation: process-card-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: process-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .process-card.is-exiting { opacity: 0 !important; transform: none !important; transition: none !important; }
-  .process-card-enter { animation: none; }
+  .process-ghost-1, .process-ghost-2 { animation: none !important; }
+  .process-card.is-exiting  { animation: none !important; opacity: 0 !important; transition: none !important; }
+  .process-card-enter        { animation: none !important; }
 }
 
 @keyframes hero-arrow-shimmer {
