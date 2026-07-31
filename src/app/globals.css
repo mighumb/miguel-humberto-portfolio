@@ -258,73 +258,68 @@ html.modal-main-hidden .ambient-background {
   color: var(--text-primary);
 }
 
-/* Ghost cards — idle resting positions.
-   transition: CSS animations override transitions while running (spec §17.4.1),
-   so the keyframe rise fires normally. The transition only kicks in when the
-   animation is removed (snap-back after swap), making it a smooth 0.2s glide
-   rather than an instant 20px jump that would appear as a blink. */
+/* === Process stacked cards — shared 3D space ===
+   The wrapper holds perspective so all cards share the same vanishing point.
+   Ghost cards carry a slight rotateX to appear physically tilted back in the pile.
+   CSS animations suppress transitions on the same property while running (spec §17.4.1),
+   so the transition on .process-ghost-* only fires on snap-back (smooth return). */
+
 .process-ghost-1 {
-  transform: translateY(20px) scale(0.97);
-  transition: transform 0.2s ease;
-  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.10);
+  transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg);
+  transform-origin: bottom center;
+  transition: transform 0.22s ease;
+  box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
 }
 .process-ghost-2 {
-  transform: translateY(40px) scale(0.94);
-  transition: transform 0.2s ease;
-  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12);
+  transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg);
+  transform-origin: bottom center;
+  transition: transform 0.22s ease;
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.14);
 }
 
-/* Ghost cards rise when parent receives .process-stack-exiting */
+/* Ghost cards rise to their forward position when the stack is exiting */
 @keyframes ghost-1-rise {
-  from { transform: translateY(20px) scale(0.97); }
-  to   { transform: translateY(0)    scale(1);    }
+  from { transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg); }
+  to   { transform: perspective(700px) translateY(0)    scale(1)    rotateX(0deg); }
 }
 @keyframes ghost-2-rise {
-  from { transform: translateY(40px) scale(0.94); }
-  to   { transform: translateY(20px) scale(0.97); }
+  from { transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg); }
+  to   { transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg); }
 }
 .process-stack-exiting .process-ghost-1 {
-  animation: ghost-1-rise 0.68s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ghost-1-rise 0.46s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .process-stack-exiting .process-ghost-2 {
-  animation: ghost-2-rise 0.68s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ghost-2-rise 0.46s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Front card exit — true 3D: tilts back from its bottom edge and slides down.
-   No opacity fade: the card physically departs in perspective space. */
+/* Front card exit: pivots backward 90° from its bottom edge, like a physical card
+   being laid face-down into a pile. No opacity — pure 3D geometry. */
 @keyframes process-card-exit {
-  0% {
-    transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
-  }
-  100% {
-    transform: perspective(800px) rotateX(-20deg) translateY(72px) scale(0.86);
-  }
+  0%   { transform: perspective(700px) rotateX(0deg);   }
+  100% { transform: perspective(700px) rotateX(-90deg); }
 }
 .process-card.is-exiting {
   transform-origin: bottom center;
-  animation: process-card-exit 0.68s cubic-bezier(0.4, 0, 0.7, 1) forwards !important;
+  animation: process-card-exit 0.46s cubic-bezier(0.4, 0, 1, 1) forwards !important;
   transition: none !important;
 }
 
-/* Front card enter — rises from ghost-1 depth, starts fully transparent */
+/* Front card enter: rises from flat (face-down) to upright — reverse of exit.
+   Starts at -90° so the card "peels up" from the bottom of the pile. */
 @keyframes process-card-in {
-  from {
-    transform: perspective(800px) rotateX(8deg) translateY(20px) scale(0.97);
-    opacity: 0;
-  }
-  to {
-    transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
-    opacity: 1;
-  }
+  0%   { transform: perspective(700px) rotateX(-90deg); }
+  100% { transform: perspective(700px) rotateX(0deg);   }
 }
 .process-card-enter {
-  animation: process-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: bottom center;
+  animation: process-card-in 0.5s cubic-bezier(0, 0, 0.3, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .process-ghost-1, .process-ghost-2 { animation: none !important; }
-  .process-card.is-exiting  { animation: none !important; opacity: 0 !important; transition: none !important; }
-  .process-card-enter        { animation: none !important; }
+  .process-ghost-1, .process-ghost-2 { animation: none !important; transition: none !important; }
+  .process-card.is-exiting { animation: none !important; opacity: 0 !important; transition: none !important; }
+  .process-card-enter       { animation: none !important; }
 }
 
 @keyframes hero-arrow-shimmer {

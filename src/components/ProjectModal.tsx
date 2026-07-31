@@ -188,8 +188,8 @@ const PEEK_1 = 20;
 const PEEK_2 = 40;
 // Wrapper padding-bottom to contain the peeking ghost cards
 const PAD_BOTTOM = 52;
-// Duration of the exit animation in ms (must match CSS keyframe duration)
-const EXIT_MS = 680;
+// Must be slightly longer than the exit keyframe duration (460ms) to let it finish
+const EXIT_MS = 480;
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);
