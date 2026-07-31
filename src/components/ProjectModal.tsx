@@ -184,12 +184,12 @@ function ProcessLightbox({
 }
 
 // How many px each ghost card peeks below the card in front of it (idle state)
-const PEEK_1 = 8;
-const PEEK_2 = 16;
-// Wrapper padding-bottom to prevent ghost cards from clipping
-const PAD_BOTTOM = 24;
+const PEEK_1 = 20;
+const PEEK_2 = 40;
+// Wrapper padding-bottom to contain the peeking ghost cards
+const PAD_BOTTOM = 52;
 // Duration of the exit animation in ms (must match CSS keyframe duration)
-const EXIT_MS = 650;
+const EXIT_MS = 680;
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);

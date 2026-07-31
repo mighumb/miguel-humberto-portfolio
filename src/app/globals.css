@@ -258,49 +258,60 @@ html.modal-main-hidden .ambient-background {
   color: var(--text-primary);
 }
 
-/* Ghost cards — idle resting positions */
+/* Ghost cards — idle resting positions.
+   Box-shadow ensures they're visually distinct from the modal background
+   even when the image content is white or very light. */
 .process-ghost-1 {
-  transform: translateY(8px) scale(0.97);
-  opacity: 0.85;
+  transform: translateY(20px) scale(0.97);
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.10);
 }
 .process-ghost-2 {
-  transform: translateY(16px) scale(0.94);
-  opacity: 0.55;
+  transform: translateY(40px) scale(0.94);
+  box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12);
 }
 
-/* Ghost cards rise when parent receives .process-stack-exiting.
-   Keyframe-driven so the browser always sees a defined from-state;
-   avoids the transition-race when both `transition` and values change
-   in the same React render. */
+/* Ghost cards rise when parent receives .process-stack-exiting */
 @keyframes ghost-1-rise {
-  from { transform: translateY(8px) scale(0.97); opacity: 0.85; }
-  to   { transform: translateY(0) scale(1);      opacity: 1;    }
+  from { transform: translateY(20px) scale(0.97); }
+  to   { transform: translateY(0)    scale(1);    }
 }
 @keyframes ghost-2-rise {
-  from { transform: translateY(16px) scale(0.94); opacity: 0.55; }
-  to   { transform: translateY(8px)  scale(0.97); opacity: 0.85; }
+  from { transform: translateY(40px) scale(0.94); }
+  to   { transform: translateY(20px) scale(0.97); }
 }
 .process-stack-exiting .process-ghost-1 {
-  animation: ghost-1-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ghost-1-rise 0.68s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .process-stack-exiting .process-ghost-2 {
-  animation: ghost-2-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ghost-2-rise 0.68s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* Front card exit — slides down and fades while ghost cards rise through it */
+/* Front card exit — true 3D: tilts back from its bottom edge and slides down.
+   No opacity fade: the card physically departs in perspective space. */
 @keyframes process-card-exit {
-  0%   { opacity: 1; transform: translateY(0)    scale(1);    }
-  100% { opacity: 0; transform: translateY(64px) scale(0.91); }
+  0% {
+    transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
+  }
+  100% {
+    transform: perspective(800px) rotateX(-20deg) translateY(72px) scale(0.86);
+  }
 }
 .process-card.is-exiting {
-  animation: process-card-exit 0.65s cubic-bezier(0.4, 0, 0.8, 1) forwards !important;
+  transform-origin: bottom center;
+  animation: process-card-exit 0.68s cubic-bezier(0.4, 0, 0.7, 1) forwards !important;
   transition: none !important;
 }
 
-/* Front card enter — rises from ghost-1 position */
+/* Front card enter — rises from ghost-1 depth */
 @keyframes process-card-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+  from {
+    transform: perspective(800px) rotateX(8deg) translateY(20px) scale(0.97);
+    opacity: 0.6;
+  }
+  to {
+    transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 .process-card-enter {
   animation: process-card-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
