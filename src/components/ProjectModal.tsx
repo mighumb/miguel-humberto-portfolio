@@ -173,11 +173,12 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
     <>
       <div>
         {/* Stack wrapper — padding-bottom is the visible "pile" zone below the front card.
-            EVERY image is a permanently mounted card: navigation only changes each
-            card's slot and the <img> nodes never remount (no flash possible). Cards
-            deeper than VISIBLE_CARDS park at the deepest visible position with
-            opacity 0, exactly covered by the deepest visible card, and fade in at
-            the back as they enter the visible range. */}
+            Only cards within the visible range (slot <= deepestVisible) are ever
+            mounted — cards deeper than VISIBLE_CARDS are not rendered at all, so
+            there is no way to see more than VISIBLE_CARDS cards. The one exception
+            is the card currently in flight, which stays mounted for the duration
+            of its animation even after its natural resting slot falls outside the
+            visible range (so it can visibly tuck away before unmounting). */}
         <div
           className="relative w-full"
           style={{ paddingBottom: `${padBottom}px` }}
@@ -187,21 +188,21 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
           {images.map((file, imgIndex) => {
             const slot = (imgIndex - displayIndex + total) % total;
             const isFront = slot === 0;
-            const isHiddenDepth = slot > deepestVisible;
             const fly = flight && flight.imgIndex === imgIndex ? flight : null;
 
+            if (slot > deepestVisible && !fly) return null;
+
             let transform = slotTransform(Math.min(slot, deepestVisible));
-            let zIndex = isFront ? total + 2 : isHiddenDepth ? 0 : total - slot;
-            let opacity = isHiddenDepth ? 0 : 1;
+            let zIndex = isFront ? total + 2 : total - slot;
+            let opacity = 1;
             // Shadows are NOT transitioned: animating box-shadow forces a repaint
             // every frame and was the main source of jank. Transform + opacity
             // stay fully GPU-composited.
-            const boxShadow = isHiddenDepth ? undefined : slotShadow(slot);
+            const boxShadow = slotShadow(Math.min(slot, deepestVisible));
             let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity 400ms ease`;
 
             if (fly) {
               const dip = `perspective(700px) translateY(${dipY}px) scale(0.96) rotateX(-12deg)`;
-              opacity = 1;
               if (fly.phase === 1) {
                 // Act 1: slide out below the pile's bottom edge.
                 // next → in front of everything (we watch it leave from the top);
@@ -211,12 +212,13 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
                 transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1)`;
               } else {
                 // Act 2: rejoin the pile at the destination slot.
-                // next → tucks in underneath, parking exactly behind the deepest
-                //        visible card (which fully covers it);
+                // next → tucks in underneath and fades out (its resting slot is
+                //        beyond the visible range, so it unmounts right after);
                 // prev → sweeps up over the top and lands on the front slot.
                 transform = fly.dir === "next" ? slotTransform(deepestVisible) : slotTransform(0);
                 zIndex = fly.dir === "next" ? 0 : total + 5;
-                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1)`;
+                opacity = fly.dir === "next" ? 0 : 1;
+                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1), opacity ${FLIGHT_MS - PHASE1_MS}ms ease`;
               }
             } else if (isFront && hovered) {
               // Desktop hover: the front card lifts, inviting the click
@@ -239,7 +241,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             return (
               <div
                 key={imgIndex}
-                className={`process-pile-card overflow-hidden rounded-2xl${
+                className={`process-pile-card process-pile-card-mount overflow-hidden rounded-2xl${
                   isFront ? " relative aspect-video w-full" : ""
                 }`}
                 style={style}
@@ -264,8 +266,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             <button
               type="button"
               onClick={goPrev}
-              disabled={!!flight}
-              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
               aria-label="Image précédente"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -275,8 +276,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             <button
               type="button"
               onClick={goNext}
-              disabled={!!flight}
-              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
               aria-label="Image suivante"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
