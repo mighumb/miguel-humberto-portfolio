@@ -258,6 +258,20 @@ html.modal-main-hidden .ambient-background {
   color: var(--text-primary);
 }
 
+/* === Process stacked cards ===
+   Every image is a permanently-mounted card in one shared 3D pile; slot
+   positions, shadows and the two-act flight are all inline transitions
+   computed in ProjectModal.tsx. */
+.process-pile-card {
+  transform-origin: bottom center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .process-pile-card { transition: none !important; }
+}
+
 @keyframes hero-arrow-shimmer {
   0%, 68%, 100% { opacity: 1; }
   76% { opacity: 0.2; }

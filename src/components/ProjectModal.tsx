@@ -6,7 +6,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project, type Deliverable, projectCoverUrl } from "@/lib/projects";
+import { type Project, type Deliverable, projectAssetBase, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectModalProps {
@@ -87,6 +87,284 @@ function LinkedText({ text }: { text: string }) {
   }
 
   return <>{parts.length > 0 ? parts : text}</>;
+}
+
+function ProcessLightbox({
+  images,
+  assetBase,
+  startIndex,
+  onClose,
+}: {
+  images: string[];
+  assetBase: string;
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [index, setIndex] = useState(startIndex);
+  const total = images.length;
+
+  const goNext = useCallback(() => setIndex((i) => (i + 1) % total), [total]);
+  const goPrev = useCallback(() => setIndex((i) => (i - 1 + total) % total), [total]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+      if (e.key === "ArrowRight") { e.stopImmediatePropagation(); goNext(); }
+      if (e.key === "ArrowLeft") { e.stopImmediatePropagation(); goPrev(); }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
+  }, [onClose, goNext, goPrev]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-bg-primary/80 backdrop-blur-md" aria-hidden />
+
+      <div
+        className="relative z-[1] flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          key={index}
+          src={`${assetBase}/${images[index]}`}
+          alt=""
+          className="max-h-[88vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-4 top-4 z-[2] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+        aria-label="Fermer"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+          <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      <div className="absolute bottom-4 left-1/2 z-[2] -translate-x-1/2 rounded-full bg-bg-secondary/80 px-4 py-1.5 backdrop-blur-sm">
+        <span className="tabular-nums text-xs text-text-secondary">
+          {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+        </span>
+      </div>
+
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goPrev(); }}
+          className="absolute left-4 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+          aria-label="Image précédente"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M11 3L5 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goNext(); }}
+          className="absolute right-4 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+          aria-label="Image suivante"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M7 3l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+// Full flight duration for a card leaving/entering the front slot
+const FLIGHT_MS = 680;
+// Act 1 of the flight (slide out below the pile); act 2 is the remainder
+const PHASE1_MS = 320;
+// Easing shared by every card shifting one slot — the pile moves as one object
+const PILE_EASE = "cubic-bezier(0.45, 0.05, 0.2, 1)";
+
+// Vertical peek of each slot below slot 0. First cards step widely (their edge
+// must read as a full card), deeper cards compress like a fanned paper stack.
+function slotOffsetY(slot: number): number {
+  let y = 0;
+  for (let i = 1; i <= slot; i++) y += Math.max(5, 24 - (i - 1) * 3);
+  return y;
+}
+
+function slotTransform(slot: number): string {
+  const y = slotOffsetY(slot);
+  const scale = Math.max(0.85, 1 - slot * 0.011);
+  const rot = Math.min(8, slot * 1.2);
+  return `perspective(700px) translateY(${y}px) scale(${scale}) rotateX(${rot}deg)`;
+}
+
+function slotShadow(slot: number): string {
+  if (slot === 0) return "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)";
+  if (slot === 1) return "0 16px 40px -6px rgba(0,0,0,0.22), 0 4px 12px -2px rgba(0,0,0,0.12)";
+  return "0 10px 24px -4px rgba(0,0,0,0.14)";
+}
+
+interface FlightState {
+  imgIndex: number;
+  dir: "next" | "prev";
+  phase: 1 | 2;
+}
+
+function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
+  const [displayIndex, setDisplayIndex] = useState(0);
+  const [flight, setFlight] = useState<FlightState | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const isNavigatingRef = useRef(false);
+  const total = images.length;
+
+  // Deepest slot's peek defines the pile's footprint below the front card
+  const maxY = slotOffsetY(total - 1);
+  // The flight dips slightly past the pile's bottom edge
+  const dipY = maxY + 22;
+  const padBottom = dipY + 6;
+
+  const navigate = useCallback((dir: "next" | "prev") => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+    setDisplayIndex((current) => {
+      const newIndex = dir === "next" ? (current + 1) % total : (current - 1 + total) % total;
+      // next: the OLD front card flies under the pile.
+      // prev: the card coming from the BACK flies out and lands on top.
+      setFlight({ imgIndex: dir === "next" ? current : newIndex, dir, phase: 1 });
+      return newIndex;
+    });
+    setTimeout(() => {
+      setFlight((f) => (f ? { ...f, phase: 2 } : f));
+    }, PHASE1_MS);
+    setTimeout(() => {
+      setFlight(null);
+      isNavigatingRef.current = false;
+    }, FLIGHT_MS);
+  }, [total]);
+
+  const goNext = useCallback(() => navigate("next"), [navigate]);
+  const goPrev = useCallback(() => navigate("prev"), [navigate]);
+
+  const openLightbox = () => {
+    if (flight) return;
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      setLightboxOpen(true);
+    }
+  };
+
+  return (
+    <>
+      {lightboxOpen && (
+        <ProcessLightbox
+          images={images}
+          assetBase={assetBase}
+          startIndex={displayIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+      <div>
+        {/* Stack wrapper — padding-bottom is the visible "pile" zone below the front card.
+            EVERY image is a permanently mounted card: navigation only changes each
+            card's slot, so the whole pile visibly shifts one step per click and the
+            <img> nodes never remount (no flash possible). */}
+        <div className="relative w-full" style={{ paddingBottom: `${padBottom}px` }}>
+          {images.map((file, imgIndex) => {
+            const slot = (imgIndex - displayIndex + total) % total;
+            const isFront = slot === 0;
+            const fly = flight && flight.imgIndex === imgIndex ? flight : null;
+
+            let transform = slotTransform(slot);
+            let zIndex = isFront ? total + 2 : total - slot;
+            let boxShadow = slotShadow(slot);
+            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, box-shadow ${FLIGHT_MS}ms ${PILE_EASE}`;
+
+            if (fly) {
+              const dip = `perspective(700px) translateY(${dipY}px) scale(0.96) rotateX(-12deg)`;
+              if (fly.phase === 1) {
+                // Act 1: slide out below the pile's bottom edge.
+                // next → in front of everything (we watch it leave from the top);
+                // prev → beneath everything (it slips out from under the pile).
+                transform = dip;
+                zIndex = fly.dir === "next" ? total + 5 : 0;
+                boxShadow = slotShadow(fly.dir === "next" ? 0 : 2);
+                transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1), box-shadow ${PHASE1_MS}ms ease`;
+              } else {
+                // Act 2: rejoin the pile at the destination slot.
+                // next → tucks in underneath (below everything);
+                // prev → sweeps up over the top and lands on the front slot.
+                transform = fly.dir === "next" ? slotTransform(total - 1) : slotTransform(0);
+                zIndex = fly.dir === "next" ? 0 : total + 5;
+                boxShadow = slotShadow(fly.dir === "next" ? 2 : 0);
+                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.2, 0, 0.2, 1), box-shadow ${FLIGHT_MS - PHASE1_MS}ms ease`;
+              }
+            }
+
+            const style: React.CSSProperties = {
+              transform,
+              zIndex,
+              boxShadow,
+              transition,
+              ...(isFront
+                ? { cursor: "zoom-in" }
+                : { position: "absolute" as const, top: 0, bottom: padBottom, left: 0, right: 0 }),
+            };
+
+            return (
+              <div
+                key={imgIndex}
+                className={`process-pile-card overflow-hidden rounded-2xl${
+                  isFront ? " relative aspect-video w-full" : ""
+                }`}
+                style={style}
+                onClick={isFront && !flight ? openLightbox : undefined}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`${assetBase}/${file}`} alt="" className="h-full w-full object-cover" loading="lazy" />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Navigation */}
+        <div className="mt-6 flex items-center justify-between">
+          <span className="tabular-nums text-xs text-text-secondary">
+            {String(displayIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={!!flight}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
+              aria-label="Image précédente"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={!!flight}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
+              aria-label="Image suivante"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
 }
 
 function DeliverableVideo({ src }: { src: string }) {
@@ -471,7 +749,12 @@ export default function ProjectModal({
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.process}
               </h3>
-              {project.links.youtube ? (
+              {project.processImages ? (
+                <ProcessStackedCards
+                  images={project.processImages}
+                  assetBase={projectAssetBase(project)}
+                />
+              ) : project.links.youtube ? (
                 <div className="space-y-6">
                   {(() => {
                     const embedUrl = youtubeEmbedUrl(project.links.youtube);
