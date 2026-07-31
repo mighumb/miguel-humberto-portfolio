@@ -6,7 +6,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project, type Deliverable, projectCoverUrl } from "@/lib/projects";
+import { type Project, type Deliverable, projectAssetBase, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
 interface ProjectModalProps {
@@ -471,7 +471,20 @@ export default function ProjectModal({
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.process}
               </h3>
-              {project.links.youtube ? (
+              {project.processImages ? (
+                <div className="flex flex-col gap-4">
+                  {project.processImages.map((file, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={`${projectAssetBase(project)}/${file}`}
+                      alt=""
+                      className="w-full rounded-xl"
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              ) : project.links.youtube ? (
                 <div className="space-y-6">
                   {(() => {
                     const embedUrl = youtubeEmbedUrl(project.links.youtube);

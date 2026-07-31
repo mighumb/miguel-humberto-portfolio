@@ -35,6 +35,8 @@ export interface Project {
   deliverableCount: number;
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
   deliverables?: Deliverable[];
+  /** Filenames relative to the project folder shown in the Process section. */
+  processImages?: string[];
 }
 
 /** Public URL root for a project's local assets. */
@@ -176,6 +178,21 @@ export const projects: Project[] = [
     tools: ["Figma", "FigJam", "Notion"],
     links: { notion: "#" },
     deliverableCount: 8,
+    processImages: [
+      "process/deliverable-ekara-design-system-typography.png",
+      "process/deliverable-ekara-design-system-typography-color-palette-codes-and-accessibility-2.png",
+      "process/deliverable-ekara-design-system-typography-color-palette-codes-and-accessibility-3.png",
+      "process/deliverable-ekara-design-system-typography-color-palette-codes-and-accessibility-4.png",
+      "process/deliverable-ekara-design-system-color-principles.png",
+      "process/deliverable-ekara-design-system-tokens-colors.png",
+      "process/deliverable-ekara-design-system-alias-colors.png",
+      "process/deliverable-ekara-design-system-messages-complementary-colors.png",
+      "process/deliverable-ekara-design-system-tokens-shadow.png",
+      "process/deliverable-ekara-design-system-alias-elevation.png",
+      "process/deliverable-ekara-design-system-animations-table.png",
+      "process/deliverable-ekara-design-system-mapped-button.png",
+      "process/deliverable-ekara-design-system-mapped-chart.png",
+    ],
   },
   {
     id: "c02",
