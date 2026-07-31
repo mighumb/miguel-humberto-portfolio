@@ -15,6 +15,7 @@
   --border: #d1d1d6;
   --modal-bg: #f5f5f7;
   --header-bg: rgba(245, 245, 247, 0.72);
+  --header-bg-subtle: rgba(245, 245, 247, 0.55);
   --placeholder: #c7c7cc;
   --placeholder-dark: #aeaeb2;
   --hero-particle: #aeaeb2;
@@ -35,6 +36,7 @@
   --border: #1e222c;
   --modal-bg: #05060a;
   --header-bg: rgba(5, 6, 10, 0.72);
+  --header-bg-subtle: rgba(5, 6, 10, 0.65);
   --placeholder: #1e222c;
   --placeholder-dark: #2c313c;
   --hero-particle: #e8eaf0;
@@ -63,6 +65,10 @@ html {
   overflow-x: hidden;
   /* Fill the display including unsafe areas when viewport-fit=cover */
   background-color: var(--bg-primary);
+  /* Reserve scrollbar gutter space permanently so layout never shifts when
+     the scrollbar appears or disappears (e.g. on modal open/close).
+     On overlay-scrollbar platforms (macOS) this has no visual effect. */
+  scrollbar-gutter: stable;
 }
 
 html.scroll-snap,
@@ -214,9 +220,6 @@ html.modal-main-hidden .ambient-background {
   visibility: hidden;
 }
 
-html.modal-open .project-modal {
-  visibility: visible;
-}
 
 .manifesto-section::before {
   content: "";
@@ -390,44 +393,8 @@ html.modal-open .project-modal {
   top: 0;
   left: 0;
   right: 0;
-  padding-bottom: 0.5rem;
 }
 
-.site-sticky-header::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: calc(100% + 2.25rem);
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg-primary) 70%, transparent) 0%,
-    color-mix(in srgb, var(--bg-primary) 45%, transparent) 32%,
-    color-mix(in srgb, var(--bg-primary) 22%, transparent) 58%,
-    color-mix(in srgb, var(--bg-primary) 8%, transparent) 78%,
-    transparent 100%
-  );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  /* Soften the blur itself so it doesn't cut off as a hard line */
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 42%,
-    rgba(0, 0, 0, 0.65) 68%,
-    rgba(0, 0, 0, 0.25) 86%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 42%,
-    rgba(0, 0, 0, 0.65) 68%,
-    rgba(0, 0, 0, 0.25) 86%,
-    transparent 100%
-  );
-}
 
 @media (prefers-reduced-motion: reduce) {
   .site-sticky-header {

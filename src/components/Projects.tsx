@@ -144,6 +144,7 @@ export default function Projects() {
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const [flightVideoTime, setFlightVideoTime] = useState(0);
+  const [flightVideoPoster, setFlightVideoPoster] = useState<string | undefined>(undefined);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -340,8 +341,21 @@ export default function Projects() {
     } else {
       root.classList.remove("modal-main-hidden");
     }
+    // Remove is-closing-flip when reaching idle so it's cleared even if we
+    // skipped the "closing" phase (e.g. measureRef returned null).
+    if (phase === "idle") {
+      root.classList.remove("is-closing-flip");
+    }
 
-    return () => root.classList.remove("modal-main-hidden");
+    return () => {
+      root.classList.remove("modal-main-hidden");
+      // Remove is-closing-flip when leaving "closing". This cleanup runs
+      // after React's DOM mutations (modal already unmounted) but before
+      // paint — guaranteeing the class is gone before the next frame.
+      if (phase === "closing") {
+        root.classList.remove("is-closing-flip");
+      }
+    };
   }, [phase]);
 
   useLayoutEffect(() => {
@@ -365,7 +379,12 @@ export default function Projects() {
   const resetTransition = useCallback(() => {
     flipCleanupRef.current?.();
     flipCleanupRef.current = null;
-    document.documentElement.classList.remove("is-closing-flip");
+    // is-closing-flip is removed by the useLayoutEffect for [phase] when phase
+    // transitions from "closing" → "idle". That cleanup runs after React's DOM
+    // mutations (modal already unmounted) but before paint, which is the only
+    // safe window. A requestAnimationFrame here would fire BEFORE React commits
+    // (React uses MessageChannel, which runs after rAFs), briefly re-showing
+    // the modal header between the rAF and the commit.
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
@@ -445,6 +464,7 @@ export default function Projects() {
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
     setFlightVideoTime(freshOrigin.videoTime);
+    setFlightVideoPoster(freshOrigin.videoPoster);
     setSharedHiddenId(project.id);
     setSharedContentVisible(false);
     setPhase("opening");
@@ -497,6 +517,12 @@ export default function Projects() {
       return;
     }
 
+    // Hide the modal before measuring so neither the modal-header background
+    // nor a scroll-to-top flash is ever painted. getBoundingClientRect still
+    // returns correct layout positions with visibility:hidden.
+    document.documentElement.classList.remove("modal-main-hidden");
+    document.documentElement.classList.add("is-closing-flip");
+
     const modalTargets = measureRef.current?.();
     if (!modalTargets) {
       closeModal();
@@ -504,7 +530,6 @@ export default function Projects() {
     }
 
     closeTargetsRef.current = modalTargets;
-    document.documentElement.classList.add("is-closing-flip");
     setSharedContentVisible(false);
     setSharedHiddenId(null);
     setPhase("closing");
@@ -609,6 +634,7 @@ export default function Projects() {
           flight={flight}
           showVideo={flightShowVideo}
           videoTime={flightVideoTime}
+          videoPoster={flightVideoPoster}
           onLanding={handleFlightLanding}
         />
       )}

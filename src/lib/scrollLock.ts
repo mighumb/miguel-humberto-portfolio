@@ -48,14 +48,12 @@ export function lockScroll() {
       history.scrollRestoration = "manual";
     }
 
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
     const { style: bodyStyle } = document.body;
     const { style: htmlStyle } = document.documentElement;
 
-    if (scrollbarWidth > 0) {
-      bodyStyle.paddingRight = `${scrollbarWidth}px`;
-    }
-
+    // scrollbar-gutter: stable on html permanently reserves the scrollbar
+    // gutter, so no paddingRight compensation is needed — the gutter space
+    // is constant whether the scrollbar is visible or not.
     htmlStyle.overflow = "hidden";
     bodyStyle.overflow = "hidden";
     htmlStyle.overscrollBehavior = "none";
@@ -76,7 +74,6 @@ export function unlockScroll() {
   const { style: bodyStyle } = document.body;
   const { style: htmlStyle } = document.documentElement;
 
-  bodyStyle.paddingRight = "";
   htmlStyle.overflow = "";
   bodyStyle.overflow = "";
   htmlStyle.overscrollBehavior = "";

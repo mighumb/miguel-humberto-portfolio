@@ -18,6 +18,7 @@ interface ProjectSharedFlightProps {
   flight: FlightPair;
   showVideo: boolean;
   videoTime: number;
+  videoPoster?: string;
   onLanding: (handoffVideoTime?: number) => void;
 }
 
@@ -35,13 +36,16 @@ function FlightThumbnail({
   showVideo,
   frame,
   videoTime,
+  videoPoster,
 }: {
   project: Project;
   showVideo: boolean;
   frame: ElementRect;
   videoTime: number;
+  videoPoster?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
   const coverUrl = projectCoverUrl(project);
 
   useLayoutEffect(() => {
@@ -58,15 +62,27 @@ function FlightThumbnail({
       style={frameStyle(frame)}
     >
       {showVideo && project.hasVideo && project.videoUrl ? (
-        <video
-          ref={videoRef}
-          src={project.videoUrl}
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="h-full w-full object-cover"
-        />
+        <>
+          <video
+            ref={videoRef}
+            src={project.videoUrl}
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="h-full w-full object-cover"
+            onCanPlay={() => setVideoReady(true)}
+          />
+          {!videoReady && videoPoster && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={videoPoster}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              aria-hidden
+            />
+          )}
+        </>
       ) : coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={coverUrl} alt="" className="h-full w-full object-cover" />
@@ -157,6 +173,7 @@ export default function ProjectSharedFlight({
   flight,
   showVideo,
   videoTime,
+  videoPoster,
   onLanding,
 }: ProjectSharedFlightProps) {
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
@@ -239,6 +256,7 @@ export default function ProjectSharedFlight({
           showVideo={showVideo}
           frame={thumbFrame}
           videoTime={videoTime}
+          videoPoster={videoPoster}
         />
         <FlightTitle
           title={project.title[locale]}

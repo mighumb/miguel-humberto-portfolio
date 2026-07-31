@@ -42,8 +42,15 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-full"
+        style={{
+          background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)",
+        }}
+        aria-hidden
+      />
       <SiteNav
-        className="relative z-[1] pb-3 md:pb-4"
+        className="relative z-[1] pb-4 md:pb-5"
         onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       />
     </div>,
