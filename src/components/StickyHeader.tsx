@@ -42,24 +42,27 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
-      {/* Mask on wrapper, blur on child — mask+backdrop-filter on the same
-          element breaks backdrop-filter in Chrome; splitting them fixes it. */}
+      {/* Gradient blur: two layers (6px top → 2px bottom), no tint.
+          mask+backdrop-filter must be on separate elements in Chrome. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 0%, black 45%, transparent 80%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 45%, transparent 80%)",
         }}
         aria-hidden
       >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "var(--header-bg)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
-          }}
-        />
+        <div className="absolute inset-0" style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-full"
+        style={{
+          maskImage: "linear-gradient(to bottom, transparent 20%, black 50%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, transparent 20%, black 50%, transparent 100%)",
+        }}
+        aria-hidden
+      >
+        <div className="absolute inset-0" style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }} />
       </div>
       <SiteNav
         className="relative z-[1] pb-4 md:pb-5"
