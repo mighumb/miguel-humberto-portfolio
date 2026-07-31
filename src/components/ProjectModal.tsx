@@ -747,7 +747,7 @@ export default function ProjectModal({
 
             <section className="mt-16 pt-16">
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
-                {mt.process}
+                {project.processTitle?.[locale] ?? mt.process}
               </h3>
               {project.processImages ? (
                 <ProcessStackedCards
