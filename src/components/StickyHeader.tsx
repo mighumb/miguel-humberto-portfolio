@@ -45,13 +45,13 @@ export default function StickyHeader() {
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
         }}
         aria-hidden
       />
       <SiteNav
-        className="relative z-[1] pb-3 md:pb-4"
+        className="relative z-[1] pb-4 md:pb-5"
         onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       />
     </div>,
