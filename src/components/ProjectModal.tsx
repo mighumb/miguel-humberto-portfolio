@@ -183,66 +183,81 @@ function ProcessLightbox({
   );
 }
 
-// How many px each ghost card peeks below the card in front of it (idle state)
-const PEEK_1 = 20;
-const PEEK_2 = 40;
-// Wrapper padding-bottom: PEEK_2 + room for the exit dip (translateY 74px at 42%)
-const PAD_BOTTOM = 88;
-// Full choreography duration (matches the 0.64s CSS keyframes)
-const EXIT_MS = 640;
-// Mid-flight moment where the exiting card passes underneath the pile (~42% of EXIT_MS)
-const UNDER_MS = 280;
+// Full flight duration for a card leaving/entering the front slot
+const FLIGHT_MS = 680;
+// Act 1 of the flight (slide out below the pile); act 2 is the remainder
+const PHASE1_MS = 320;
+// Easing shared by every card shifting one slot — the pile moves as one object
+const PILE_EASE = "cubic-bezier(0.45, 0.05, 0.2, 1)";
+
+// Vertical peek of each slot below slot 0. First cards step widely (their edge
+// must read as a full card), deeper cards compress like a fanned paper stack.
+function slotOffsetY(slot: number): number {
+  let y = 0;
+  for (let i = 1; i <= slot; i++) y += Math.max(5, 24 - (i - 1) * 3);
+  return y;
+}
+
+function slotTransform(slot: number): string {
+  const y = slotOffsetY(slot);
+  const scale = Math.max(0.85, 1 - slot * 0.011);
+  const rot = Math.min(8, slot * 1.2);
+  return `perspective(700px) translateY(${y}px) scale(${scale}) rotateX(${rot}deg)`;
+}
+
+function slotShadow(slot: number): string {
+  if (slot === 0) return "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)";
+  if (slot === 1) return "0 16px 40px -6px rgba(0,0,0,0.22), 0 4px 12px -2px rgba(0,0,0,0.12)";
+  return "0 10px 24px -4px rgba(0,0,0,0.14)";
+}
+
+interface FlightState {
+  imgIndex: number;
+  dir: "next" | "prev";
+  phase: 1 | 2;
+}
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "exiting">("idle");
-  // During the exit, the departing card starts ABOVE the ghosts (its slide-down
-  // is fully visible), then drops below them mid-flight to tuck under the pile.
-  const [exitUnder, setExitUnder] = useState(false);
+  const [flight, setFlight] = useState<FlightState | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isNavigatingRef = useRef(false);
   const total = images.length;
 
-  const navigate = useCallback((newIndex: number) => {
+  // Deepest slot's peek defines the pile's footprint below the front card
+  const maxY = slotOffsetY(total - 1);
+  // The flight dips slightly past the pile's bottom edge
+  const dipY = maxY + 22;
+  const padBottom = dipY + 6;
+
+  const navigate = useCallback((dir: "next" | "prev") => {
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    setPhase("exiting");
-    setExitUnder(false);
-    // Act 2: the card passes below the ghosts as it swings back under the pile
-    const underTimer = setTimeout(() => setExitUnder(true), UNDER_MS);
+    setDisplayIndex((current) => {
+      const newIndex = dir === "next" ? (current + 1) % total : (current - 1 + total) % total;
+      // next: the OLD front card flies under the pile.
+      // prev: the card coming from the BACK flies out and lands on top.
+      setFlight({ imgIndex: dir === "next" ? current : newIndex, dir, phase: 1 });
+      return newIndex;
+    });
     setTimeout(() => {
-      clearTimeout(underTimer);
-      // Cards are keyed by image index, so this swap PROMOTES existing DOM nodes
-      // (ghost-1 becomes the front card, ghost-2 becomes ghost-1) instead of
-      // remounting them. Their <img> elements never repaint — no flash.
-      setDisplayIndex(newIndex);
-      setPhase("idle");
-      setExitUnder(false);
-      setTimeout(() => { isNavigatingRef.current = false; }, 60);
-    }, EXIT_MS);
-  }, []);
+      setFlight((f) => (f ? { ...f, phase: 2 } : f));
+    }, PHASE1_MS);
+    setTimeout(() => {
+      setFlight(null);
+      isNavigatingRef.current = false;
+    }, FLIGHT_MS);
+  }, [total]);
 
-  const goNext = useCallback(() => navigate((displayIndex + 1) % total), [navigate, displayIndex, total]);
-  const goPrev = useCallback(() => navigate((displayIndex - 1 + total) % total), [navigate, displayIndex, total]);
-
-  const isExiting = phase === "exiting";
+  const goNext = useCallback(() => navigate("next"), [navigate]);
+  const goPrev = useCallback(() => navigate("prev"), [navigate]);
 
   const openLightbox = () => {
-    if (isExiting) return;
+    if (flight) return;
     if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
       setLightboxOpen(true);
     }
   };
-
-  // Shared absolute positioning for ghost cards (same rect as the front card:
-  // bottom offset cancels the wrapper's padding-bottom)
-  const ghostPos: React.CSSProperties = { top: 0, bottom: PAD_BOTTOM, left: 0, right: 0 };
-
-  // The three visible pile slots. Cards are keyed by IMAGE index, not by slot:
-  // on swap, React keeps each DOM node and only its class/style changes
-  // (ghost-1's node is promoted to front, ghost-2's to ghost-1). The <img>
-  // elements are never remounted nor get a new src — nothing can flash.
-  const visibleOffsets = [2, 1, 0].filter((offset) => offset < total);
 
   return (
     <>
@@ -255,49 +270,63 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
         />
       )}
       <div>
-        {/* Stack wrapper — padding-bottom is the "peek zone" for ghost cards */}
-        <div
-          className={`relative w-full${isExiting ? " process-stack-exiting" : ""}`}
-          style={{ paddingBottom: `${PAD_BOTTOM}px` }}
-        >
-          {visibleOffsets.map((offset) => {
-            const imgIndex = (displayIndex + offset) % total;
-            const src = `${assetBase}/${images[imgIndex]}`;
+        {/* Stack wrapper — padding-bottom is the visible "pile" zone below the front card.
+            EVERY image is a permanently mounted card: navigation only changes each
+            card's slot, so the whole pile visibly shifts one step per click and the
+            <img> nodes never remount (no flash possible). */}
+        <div className="relative w-full" style={{ paddingBottom: `${padBottom}px` }}>
+          {images.map((file, imgIndex) => {
+            const slot = (imgIndex - displayIndex + total) % total;
+            const isFront = slot === 0;
+            const fly = flight && flight.imgIndex === imgIndex ? flight : null;
 
-            if (offset === 0) {
-              // Front card. During exit act 1 it stays ABOVE the ghosts (z 5) so
-              // its slide-down is fully visible; at mid-flight it drops below
-              // them (z 0) and tucks in behind the pile.
-              return (
-                <div
-                  key={imgIndex}
-                  className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl${
-                    isExiting ? " is-exiting" : ""
-                  }`}
-                  style={{
-                    zIndex: isExiting ? (exitUnder ? 0 : 5) : 3,
-                    boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
-                    cursor: "zoom-in",
-                  }}
-                  onClick={openLightbox}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
-                </div>
-              );
+            let transform = slotTransform(slot);
+            let zIndex = isFront ? total + 2 : total - slot;
+            let boxShadow = slotShadow(slot);
+            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, box-shadow ${FLIGHT_MS}ms ${PILE_EASE}`;
+
+            if (fly) {
+              const dip = `perspective(700px) translateY(${dipY}px) scale(0.96) rotateX(-12deg)`;
+              if (fly.phase === 1) {
+                // Act 1: slide out below the pile's bottom edge.
+                // next → in front of everything (we watch it leave from the top);
+                // prev → beneath everything (it slips out from under the pile).
+                transform = dip;
+                zIndex = fly.dir === "next" ? total + 5 : 0;
+                boxShadow = slotShadow(fly.dir === "next" ? 0 : 2);
+                transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1), box-shadow ${PHASE1_MS}ms ease`;
+              } else {
+                // Act 2: rejoin the pile at the destination slot.
+                // next → tucks in underneath (below everything);
+                // prev → sweeps up over the top and lands on the front slot.
+                transform = fly.dir === "next" ? slotTransform(total - 1) : slotTransform(0);
+                zIndex = fly.dir === "next" ? 0 : total + 5;
+                boxShadow = slotShadow(fly.dir === "next" ? 2 : 0);
+                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.2, 0, 0.2, 1), box-shadow ${FLIGHT_MS - PHASE1_MS}ms ease`;
+              }
             }
 
-            // Ghost cards. The back one (offset 2) fades in when its node first
-            // mounts — it's the only genuinely new image entering the pile.
-            const isBack = offset === 2;
+            const style: React.CSSProperties = {
+              transform,
+              zIndex,
+              boxShadow,
+              transition,
+              ...(isFront
+                ? { cursor: "zoom-in" }
+                : { position: "absolute" as const, top: 0, bottom: padBottom, left: 0, right: 0 }),
+            };
+
             return (
               <div
                 key={imgIndex}
-                className={`${isBack ? "process-ghost-2 process-ghost-enter" : "process-ghost-1"} absolute overflow-hidden rounded-2xl`}
-                style={{ ...ghostPos, zIndex: isBack ? 1 : 2 }}
+                className={`process-pile-card overflow-hidden rounded-2xl${
+                  isFront ? " relative aspect-video w-full" : ""
+                }`}
+                style={style}
+                onClick={isFront && !flight ? openLightbox : undefined}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <img src={`${assetBase}/${file}`} alt="" className="h-full w-full object-cover" loading="lazy" />
               </div>
             );
           })}
@@ -312,7 +341,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             <button
               type="button"
               onClick={goPrev}
-              disabled={isExiting}
+              disabled={!!flight}
               className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
               aria-label="Image précédente"
             >
@@ -323,7 +352,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             <button
               type="button"
               onClick={goNext}
-              disabled={isExiting}
+              disabled={!!flight}
               className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
               aria-label="Image suivante"
             >

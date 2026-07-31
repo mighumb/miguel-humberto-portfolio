@@ -258,82 +258,18 @@ html.modal-main-hidden .ambient-background {
   color: var(--text-primary);
 }
 
-/* === Process stacked cards — physical card-cycle choreography ===
-   Every animation's END state matches exactly the idle state that follows the
-   index swap. The swap is therefore pixel-continuous (no enter animation, no
-   blink): the exiting card ends parked precisely behind the new back ghost,
-   ghost-1 ends at the front slot, ghost-2 ends at the ghost-1 slot.
-   All three pieces share one duration + easing so the pile moves as one object. */
-
-.process-ghost-1 {
-  transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg);
+/* === Process stacked cards ===
+   Every image is a permanently-mounted card in one shared 3D pile; slot
+   positions, shadows and the two-act flight are all inline transitions
+   computed in ProjectModal.tsx. */
+.process-pile-card {
   transform-origin: bottom center;
-  box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
-}
-.process-ghost-2 {
-  transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg);
-  transform-origin: bottom center;
-  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.14);
-}
-
-/* Ghost cards advance one slot while the stack is exiting.
-   Box-shadows are part of the keyframes so each card lands with the exact
-   shadow of the slot it arrives at — the swap changes nothing visually. */
-@keyframes ghost-1-rise {
-  from {
-    transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg);
-    box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
-  }
-  to {
-    transform: perspective(700px) translateY(0) scale(1) rotateX(0deg);
-    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.28), 0 8px 24px -4px rgba(0, 0, 0, 0.12);
-  }
-}
-@keyframes ghost-2-rise {
-  from {
-    transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg);
-    box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.14);
-  }
-  to {
-    transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg);
-    box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
-  }
-}
-.process-stack-exiting .process-ghost-1 {
-  animation: ghost-1-rise 0.64s cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
-}
-.process-stack-exiting .process-ghost-2 {
-  animation: ghost-2-rise 0.64s cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
-}
-
-/* Front card exit — two visible acts:
-   Act 1 (0→42%, still on top via JS z-index): slides DOWN out of the pile,
-   protruding clearly below the bottom edge while tilting back.
-   Act 2 (after the mid-flight z-drop): slides back up slightly and settles
-   exactly on the ghost-2 idle transform, tucked behind the pile. */
-@keyframes process-card-exit {
-  0%   { transform: perspective(700px) translateY(0)    scale(1)    rotateX(0deg);   }
-  42%  { transform: perspective(700px) translateY(74px) scale(0.96) rotateX(-12deg); }
-  100% { transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg);   }
-}
-.process-card.is-exiting {
-  transform-origin: bottom center;
-  animation: process-card-exit 0.64s cubic-bezier(0.45, 0.05, 0.2, 1) forwards !important;
-  transition: none !important;
-}
-
-/* New back ghost fades in at the rear after each swap (keyed remount) */
-@keyframes process-ghost-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.process-ghost-enter {
-  animation: process-ghost-in 0.4s ease forwards;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .process-ghost-1, .process-ghost-2, .process-ghost-enter { animation: none !important; }
-  .process-card.is-exiting { animation: none !important; opacity: 0 !important; transition: none !important; }
+  .process-pile-card { transition: none !important; }
 }
 
 @keyframes hero-arrow-shimmer {
