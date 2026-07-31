@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -89,96 +89,225 @@ function LinkedText({ text }: { text: string }) {
   return <>{parts.length > 0 ? parts : text}</>;
 }
 
-function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [animKey, setAnimKey] = useState(0);
+function ProcessLightbox({
+  images,
+  assetBase,
+  startIndex,
+  onClose,
+}: {
+  images: string[];
+  assetBase: string;
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [index, setIndex] = useState(startIndex);
   const total = images.length;
 
+  const goNext = useCallback(() => setIndex((i) => (i + 1) % total), [total]);
+  const goPrev = useCallback(() => setIndex((i) => (i - 1 + total) % total), [total]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
+      if (e.key === "ArrowRight") { e.stopImmediatePropagation(); goNext(); }
+      if (e.key === "ArrowLeft") { e.stopImmediatePropagation(); goPrev(); }
+    };
+    window.addEventListener("keydown", handler, { capture: true });
+    return () => window.removeEventListener("keydown", handler, { capture: true });
+  }, [onClose, goNext, goPrev]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div className="absolute inset-0 bg-bg-primary/80 backdrop-blur-md" aria-hidden />
+
+      <div
+        className="relative z-[1] flex items-center justify-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          key={index}
+          src={`${assetBase}/${images[index]}`}
+          alt=""
+          className="max-h-[88vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-4 top-4 z-[2] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+        aria-label="Fermer"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+          <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      <div className="absolute bottom-4 left-1/2 z-[2] -translate-x-1/2 rounded-full bg-bg-secondary/80 px-4 py-1.5 backdrop-blur-sm">
+        <span className="tabular-nums text-xs text-text-secondary">
+          {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+        </span>
+      </div>
+
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goPrev(); }}
+          className="absolute left-4 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+          aria-label="Image précédente"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M11 3L5 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      {total > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); goNext(); }}
+          className="absolute right-4 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
+          aria-label="Image suivante"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M7 3l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
+  const [displayIndex, setDisplayIndex] = useState(0);
+  const [isExiting, setIsExiting] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const isNavigatingRef = useRef(false);
+  const total = images.length;
   const showSecond = total > 1;
   const showThird = total > 2;
 
-  const goNext = () => {
-    setCurrentIndex((i) => (i + 1) % total);
-    setAnimKey((k) => k + 1);
-  };
-  const goPrev = () => {
-    setCurrentIndex((i) => (i - 1 + total) % total);
-    setAnimKey((k) => k + 1);
-  };
+  const navigate = useCallback((newIndex: number) => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+    setIsExiting(true);
+    setTimeout(() => {
+      setDisplayIndex(newIndex);
+      setAnimKey((k) => k + 1);
+      setIsExiting(false);
+      setTimeout(() => { isNavigatingRef.current = false; }, 50);
+    }, 220);
+  }, []);
 
-  const handleKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowRight") { e.stopPropagation(); goNext(); }
-    if (e.key === "ArrowLeft") { e.stopPropagation(); goPrev(); }
-  };
+  const goNext = useCallback(() => navigate((displayIndex + 1) % total), [navigate, displayIndex, total]);
+  const goPrev = useCallback(() => navigate((displayIndex - 1 + total) % total), [navigate, displayIndex, total]);
 
   const imgSrc = (offset: number) =>
-    `${assetBase}/${images[(currentIndex + offset) % total]}`;
+    `${assetBase}/${images[(displayIndex + offset) % total]}`;
 
   return (
-    <div onKeyDown={handleKeyDown}>
-      <div
-        className="relative"
-        style={{ paddingBottom: showThird ? "22px" : showSecond ? "11px" : "0" }}
-      >
-        {showThird && (
-          <div
-            className="absolute bottom-0 left-6 right-6 top-0 overflow-hidden rounded-2xl"
-            style={{ filter: "blur(2.5px)", opacity: 0.35, zIndex: 1 }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imgSrc(2)} alt="" className="h-full w-full object-cover" loading="lazy" />
-          </div>
-        )}
-        {showSecond && (
-          <div
-            className="absolute bottom-0 left-3 right-3 top-0 overflow-hidden rounded-2xl"
-            style={{ filter: "blur(1px)", opacity: 0.6, zIndex: 2 }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imgSrc(1)} alt="" className="h-full w-full object-cover" loading="lazy" />
-          </div>
-        )}
-        <div
-          key={animKey}
-          className="process-card-enter relative z-[3] overflow-hidden rounded-2xl"
-          style={{
-            boxShadow:
-              "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imgSrc(0)} alt="" className="w-full" loading="lazy" />
-        </div>
-      </div>
+    <>
+      {lightboxOpen && (
+        <ProcessLightbox
+          images={images}
+          assetBase={assetBase}
+          startIndex={displayIndex}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+      <div>
+        {/* Stack — padding-bottom reserves space for ghost cards peeking below */}
+        <div className="relative w-full" style={{ paddingBottom: "32px" }}>
+          {/* Ghost card 2 — furthest, most blurred */}
+          {showThird && (
+            <div
+              className="absolute overflow-hidden rounded-2xl"
+              style={{
+                top: 0, bottom: 32, left: 20, right: 20,
+                transform: "translateY(28px)",
+                filter: "blur(2px)",
+                opacity: 0.35,
+                zIndex: 1,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imgSrc(2)} alt="" className="h-full w-full object-cover" loading="lazy" />
+            </div>
+          )}
 
-      <div className="mt-6 flex items-center justify-between">
-        <span className="tabular-nums text-xs text-text-secondary">
-          {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-        </span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={goPrev}
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
-            aria-label="Image précédente"
+          {/* Ghost card 1 — middle */}
+          {showSecond && (
+            <div
+              className="absolute overflow-hidden rounded-2xl"
+              style={{
+                top: 0, bottom: 32, left: 10, right: 10,
+                transform: "translateY(14px)",
+                filter: "blur(1px)",
+                opacity: 0.6,
+                zIndex: 2,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imgSrc(1)} alt="" className="h-full w-full object-cover" loading="lazy" />
+            </div>
+          )}
+
+          {/* Front card */}
+          <div
+            key={animKey}
+            className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl ${
+              isExiting ? "is-exiting" : "process-card-enter"
+            }`}
+            style={{
+              zIndex: 3,
+              boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
+              cursor: "zoom-in",
+            }}
+            onClick={() => { if (!isExiting) setLightboxOpen(true); }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={goNext}
-            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
-            aria-label="Image suivante"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imgSrc(0)} alt="" className="h-full w-full object-cover" loading="lazy" />
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <div className="mt-6 flex items-center justify-between">
+          <span className="tabular-nums text-xs text-text-secondary">
+            {String(displayIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={isExiting}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
+              aria-label="Image précédente"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={isExiting}
+              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary disabled:opacity-40"
+              aria-label="Image suivante"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

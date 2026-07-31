@@ -259,24 +259,27 @@ html.modal-main-hidden .ambient-background {
 }
 
 @keyframes process-card-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.process-card {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.process-card.is-exiting {
+  opacity: 0 !important;
+  transform: translateY(20px) !important;
 }
 
 .process-card-enter {
-  animation: process-card-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: process-card-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .process-card-enter {
-    animation: none;
-  }
+  .process-card { transition: none; }
+  .process-card.is-exiting { opacity: 0 !important; transform: none !important; }
+  .process-card-enter { animation: none; }
 }
 
 @keyframes hero-arrow-shimmer {
