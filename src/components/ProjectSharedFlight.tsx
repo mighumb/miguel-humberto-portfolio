@@ -51,7 +51,25 @@ function FlightThumbnail({
   useLayoutEffect(() => {
     const video = videoRef.current;
     if (!video || !showVideo) return;
+    setVideoReady(false);
+
+    // Reveal the live video only once it's actually showing the synced frame —
+    // NOT on "canplay" alone. "canplay" can fire before our currentTime seek
+    // (in syncVideoPlayback) has settled, which would swap the poster for a
+    // frame-0 flash that then jumps to the correct time a moment later —
+    // a visible flicker right at the card→hero handoff.
+    if (videoTime > 0 && Number.isFinite(videoTime)) {
+      const onSeeked = () => setVideoReady(true);
+      video.addEventListener("seeked", onSeeked, { once: true });
+      syncVideoPlayback(video, videoTime);
+      return () => video.removeEventListener("seeked", onSeeked);
+    }
+
+    // No seek needed — the first decoded frame is already correct.
+    const onCanPlay = () => setVideoReady(true);
+    video.addEventListener("canplay", onCanPlay, { once: true });
     syncVideoPlayback(video, videoTime);
+    return () => video.removeEventListener("canplay", onCanPlay);
   }, [showVideo, videoTime, project.videoUrl]);
 
   return (
@@ -71,7 +89,6 @@ function FlightThumbnail({
             playsInline
             preload="auto"
             className="h-full w-full object-cover"
-            onCanPlay={() => setVideoReady(true)}
           />
           {!videoReady && videoPoster && (
             // eslint-disable-next-line @next/next/no-img-element
