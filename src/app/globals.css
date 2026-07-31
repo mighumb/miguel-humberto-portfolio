@@ -63,6 +63,10 @@ html {
   overflow-x: hidden;
   /* Fill the display including unsafe areas when viewport-fit=cover */
   background-color: var(--bg-primary);
+  /* Reserve scrollbar gutter space permanently so layout never shifts when
+     the scrollbar appears or disappears (e.g. on modal open/close).
+     On overlay-scrollbar platforms (macOS) this has no visual effect. */
+  scrollbar-gutter: stable;
 }
 
 html.scroll-snap,
