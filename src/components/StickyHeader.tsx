@@ -45,8 +45,9 @@ export default function StickyHeader() {
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
+          background: "var(--header-bg)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
         }}
         aria-hidden
       />
