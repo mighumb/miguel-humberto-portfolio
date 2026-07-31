@@ -15,7 +15,7 @@
   --border: #d1d1d6;
   --modal-bg: #f5f5f7;
   --header-bg: rgba(245, 245, 247, 0.72);
-  --header-bg-subtle: rgba(245, 245, 247, 0.20);
+  --header-bg-subtle: rgba(245, 245, 247, 0.55);
   --placeholder: #c7c7cc;
   --placeholder-dark: #aeaeb2;
   --hero-particle: #aeaeb2;
@@ -36,7 +36,7 @@
   --border: #1e222c;
   --modal-bg: #05060a;
   --header-bg: rgba(5, 6, 10, 0.72);
-  --header-bg-subtle: rgba(5, 6, 10, 0.20);
+  --header-bg-subtle: rgba(5, 6, 10, 0.65);
   --placeholder: #1e222c;
   --placeholder-dark: #2c313c;
   --hero-particle: #e8eaf0;
