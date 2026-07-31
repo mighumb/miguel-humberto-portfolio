@@ -42,17 +42,25 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
+      {/* Mask on wrapper, blur on child — mask+backdrop-filter on the same
+          element breaks backdrop-filter in Chrome; splitting them fixes it. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          background: "var(--header-bg)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
           maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
         }}
         aria-hidden
-      />
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "var(--header-bg)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+          }}
+        />
+      </div>
       <SiteNav
         className="relative z-[1] pb-4 md:pb-5"
         onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
