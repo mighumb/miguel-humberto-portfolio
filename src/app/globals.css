@@ -259,17 +259,29 @@ html.modal-main-hidden .ambient-background {
 }
 
 /* === Process stacked cards ===
-   Every image is a permanently-mounted card in one shared 3D pile; slot
-   positions, shadows and the two-act flight are all inline transitions
-   computed in ProjectModal.tsx. */
+   Only cards within the visible depth are ever mounted (see ProjectModal.tsx);
+   slot positions, shadows and the two-act flight are inline transitions. */
 .process-pile-card {
   transform-origin: bottom center;
   will-change: transform;
   backface-visibility: hidden;
 }
 
+/* Plays once when a card first mounts (e.g. a new card entering the back of
+   the visible pile). Because this class never changes between re-renders of
+   the same DOM node, the animation does not replay on ordinary updates —
+   only a fresh mount triggers it. Kept short so a card mounting into a
+   flight (prev direction) is fully opaque before it emerges from the pile. */
+@keyframes process-pile-card-fade-in {
+  from { opacity: 0; }
+}
+.process-pile-card-mount {
+  animation: process-pile-card-fade-in 0.28s ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .process-pile-card { transition: none !important; }
+  .process-pile-card-mount { animation: none !important; }
 }
 
 @keyframes hero-arrow-shimmer {

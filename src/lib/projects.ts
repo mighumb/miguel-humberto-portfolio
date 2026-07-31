@@ -37,6 +37,8 @@ export interface Project {
   deliverables?: Deliverable[];
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
+  /** Overrides the "Process" section heading for this project. */
+  processTitle?: { en: string; fr: string };
 }
 
 /** Public URL root for a project's local assets. */
@@ -178,6 +180,7 @@ export const projects: Project[] = [
     tools: ["Figma", "FigJam", "Notion"],
     links: { notion: "#" },
     deliverableCount: 8,
+    processTitle: { en: "Brand system", fr: "Brand system" },
     processImages: [
       "process/deliverable-ekara-design-system-tokens-colors.png",
       "process/deliverable-ekara-design-system-tokens-shadow.png",
