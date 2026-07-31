@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
+import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -87,6 +87,99 @@ function LinkedText({ text }: { text: string }) {
   }
 
   return <>{parts.length > 0 ? parts : text}</>;
+}
+
+function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [animKey, setAnimKey] = useState(0);
+  const total = images.length;
+
+  const showSecond = total > 1;
+  const showThird = total > 2;
+
+  const goNext = () => {
+    setCurrentIndex((i) => (i + 1) % total);
+    setAnimKey((k) => k + 1);
+  };
+  const goPrev = () => {
+    setCurrentIndex((i) => (i - 1 + total) % total);
+    setAnimKey((k) => k + 1);
+  };
+
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowRight") { e.stopPropagation(); goNext(); }
+    if (e.key === "ArrowLeft") { e.stopPropagation(); goPrev(); }
+  };
+
+  const imgSrc = (offset: number) =>
+    `${assetBase}/${images[(currentIndex + offset) % total]}`;
+
+  return (
+    <div onKeyDown={handleKeyDown}>
+      <div
+        className="relative"
+        style={{ paddingBottom: showThird ? "22px" : showSecond ? "11px" : "0" }}
+      >
+        {showThird && (
+          <div
+            className="absolute bottom-0 left-6 right-6 top-0 overflow-hidden rounded-2xl"
+            style={{ filter: "blur(2.5px)", opacity: 0.35, zIndex: 1 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imgSrc(2)} alt="" className="h-full w-full object-cover" loading="lazy" />
+          </div>
+        )}
+        {showSecond && (
+          <div
+            className="absolute bottom-0 left-3 right-3 top-0 overflow-hidden rounded-2xl"
+            style={{ filter: "blur(1px)", opacity: 0.6, zIndex: 2 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imgSrc(1)} alt="" className="h-full w-full object-cover" loading="lazy" />
+          </div>
+        )}
+        <div
+          key={animKey}
+          className="process-card-enter relative z-[3] overflow-hidden rounded-2xl"
+          style={{
+            boxShadow:
+              "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imgSrc(0)} alt="" className="w-full" loading="lazy" />
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-center justify-between">
+        <span className="tabular-nums text-xs text-text-secondary">
+          {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={goPrev}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+            aria-label="Image précédente"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-bg-secondary text-text-secondary transition-colors hover:bg-bg-tertiary hover:text-text-primary"
+            aria-label="Image suivante"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DeliverableVideo({ src }: { src: string }) {
@@ -472,18 +565,10 @@ export default function ProjectModal({
                 {mt.process}
               </h3>
               {project.processImages ? (
-                <div className="flex flex-col gap-4">
-                  {project.processImages.map((file, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={`${projectAssetBase(project)}/${file}`}
-                      alt=""
-                      className="w-full rounded-xl"
-                      loading="lazy"
-                    />
-                  ))}
-                </div>
+                <ProcessStackedCards
+                  images={project.processImages}
+                  assetBase={projectAssetBase(project)}
+                />
               ) : project.links.youtube ? (
                 <div className="space-y-6">
                   {(() => {
