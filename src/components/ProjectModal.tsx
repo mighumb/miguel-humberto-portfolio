@@ -194,8 +194,8 @@ export default function ProjectModal({
     if (!hero || !title || !year || !tags) return null;
 
     // Snap to top so the hero is at its natural viewport position for the FLIP.
-    // The modal hides (visibility:hidden) synchronously after this call returns,
-    // so the scroll reset is never painted as a visible frame.
+    // The caller (requestClose) hides the modal before calling this, so the
+    // scroll reset is never painted as a visible frame.
     if (modal && modal.scrollTop !== 0) {
       modal.scrollTop = 0;
     }

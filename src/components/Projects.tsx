@@ -499,6 +499,12 @@ export default function Projects() {
       return;
     }
 
+    // Hide the modal before measuring so neither the modal-header background
+    // nor a scroll-to-top flash is ever painted. getBoundingClientRect still
+    // returns correct layout positions with visibility:hidden.
+    document.documentElement.classList.remove("modal-main-hidden");
+    document.documentElement.classList.add("is-closing-flip");
+
     const modalTargets = measureRef.current?.();
     if (!modalTargets) {
       closeModal();
@@ -506,12 +512,6 @@ export default function Projects() {
     }
 
     closeTargetsRef.current = modalTargets;
-    // Remove modal-main-hidden synchronously alongside is-closing-flip so both
-    // class changes land in the same browser paint. Without this, the modal
-    // disappears one render cycle before <main> reappears, causing the page
-    // background (dark) to flash as a band at the header level.
-    document.documentElement.classList.remove("modal-main-hidden");
-    document.documentElement.classList.add("is-closing-flip");
     setSharedContentVisible(false);
     setSharedHiddenId(null);
     setPhase("closing");
