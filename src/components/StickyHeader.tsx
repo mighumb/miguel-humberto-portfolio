@@ -42,24 +42,18 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
-      {/* Blur layer: mask-image on parent kills backdrop-filter (stacking
-          context prevents sampling page content). Plain div with no mask
-          so blur actually works. The fade-out is handled by the gradient
-          overlay below, not by masking the blur itself. */}
+      {/* Blur: no background, no mask — both break backdrop-filter in Chrome.
+          Tint is a separate gradient layer so it fades naturally without
+          any hard edge. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
-        style={{
-          background: "var(--header-bg-subtle)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-        }}
+        style={{ backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
         aria-hidden
       />
-      {/* Gradient overlay that fades the bottom edge into the page bg */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          background: "linear-gradient(to bottom, transparent 50%, var(--bg-primary) 100%)",
+          background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)",
         }}
         aria-hidden
       />
