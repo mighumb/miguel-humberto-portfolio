@@ -89,28 +89,36 @@ function LinkedText({ text }: { text: string }) {
   return <>{parts.length > 0 ? parts : text}</>;
 }
 
-// Number of cards visibly stacked; deeper cards sit hidden exactly behind the pile
+// Number of cards visibly stacked; deeper cards are not rendered
 const VISIBLE_CARDS = 6;
 // Full flight duration for a card leaving/entering the front slot
 const FLIGHT_MS = 680;
-// Act 1 of the flight (slide out below the pile); act 2 is the remainder
+// Act 1 of the "next" flight (slide out below the pile); act 2 is the remainder
 const PHASE1_MS = 320;
 // Easing shared by every card shifting one slot — the pile moves as one object
 const PILE_EASE = "cubic-bezier(0.45, 0.05, 0.2, 1)";
+// Real 3D depth between pile slots. Cards live in ONE shared perspective space
+// (preserve-3d on the wrapper): occlusion is resolved per-fragment by depth,
+// so a card in flight is covered progressively as it slides between layers —
+// never the all-at-once pop a z-index flip produces.
+const Z_STEP = 45;
+const PERSPECTIVE = 1600;
 
 // Vertical peek of each slot below slot 0. First cards step widely (their edge
 // must read as a full card), deeper cards compress like a fanned paper stack.
 function slotOffsetY(slot: number): number {
   let y = 0;
-  for (let i = 1; i <= slot; i++) y += Math.max(5, 24 - (i - 1) * 3);
+  for (let i = 1; i <= slot; i++) y += Math.max(6, 30 - (i - 1) * 3);
   return y;
 }
 
-function slotTransform(slot: number): string {
-  const y = slotOffsetY(slot);
-  const scale = Math.max(0.85, 1 - slot * 0.011);
-  const rot = Math.min(8, slot * 1.2);
-  return `perspective(700px) translateY(${y}px) scale(${scale}) rotateX(${rot}deg)`;
+// deepest caps the Y/tilt so slots beyond the visible range park exactly
+// behind the deepest visible card (only their Z keeps growing).
+function slotTransform(slot: number, deepest: number): string {
+  const v = Math.min(slot, deepest);
+  const y = slotOffsetY(v);
+  const rot = Math.min(8, v * 1.2);
+  return `translate3d(0, ${y}px, ${-Z_STEP * slot}px) rotateX(${rot}deg)`;
 }
 
 function slotShadow(slot: number): string {
@@ -122,7 +130,11 @@ function slotShadow(slot: number): string {
 interface FlightState {
   imgIndex: number;
   dir: "next" | "prev";
-  phase: 1 | 2;
+  // next: 1 = slide out below (in front), 2 = tuck deep into the stack.
+  // prev: 0 = parked deep (mount frame, no transition), 1 = slide out below
+  //       (still deep), 2 = swing toward the viewer while below the pile,
+  //       3 = sweep up onto the front slot.
+  phase: 0 | 1 | 2 | 3;
 }
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
@@ -133,12 +145,12 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   const isNavigatingRef = useRef(false);
   const total = images.length;
 
-  // Deepest VISIBLE slot; cards beyond it stack invisibly at this same position
+  // Deepest VISIBLE slot; deeper cards are not rendered at all
   const deepestVisible = Math.min(total, VISIBLE_CARDS) - 1;
   const maxY = slotOffsetY(deepestVisible);
-  // The flight dips slightly past the pile's bottom edge
-  const dipY = maxY + 22;
-  const padBottom = dipY + 6;
+  // The flight dips past the pile's bottom edge before changing depth
+  const dipY = maxY + 34;
+  const padBottom = dipY + 14;
 
   const navigate = useCallback((dir: "next" | "prev") => {
     if (isNavigatingRef.current) return;
@@ -146,13 +158,27 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
     setDisplayIndex((current) => {
       const newIndex = dir === "next" ? (current + 1) % total : (current - 1 + total) % total;
       // next: the OLD front card flies under the pile.
-      // prev: the card coming from the BACK flies out and lands on top.
-      setFlight({ imgIndex: dir === "next" ? current : newIndex, dir, phase: 1 });
+      // prev: the card coming from the BACK flies out and lands on top. It
+      // mounts this render, so it starts at phase 0 (parked deep, no
+      // transition) and only moves on the next frame.
+      setFlight({
+        imgIndex: dir === "next" ? current : newIndex,
+        dir,
+        phase: dir === "next" ? 1 : 0,
+      });
       return newIndex;
     });
-    setTimeout(() => {
-      setFlight((f) => (f ? { ...f, phase: 2 } : f));
-    }, PHASE1_MS);
+    if (dir === "next") {
+      setTimeout(() => setFlight((f) => (f ? { ...f, phase: 2 } : f)), PHASE1_MS);
+    } else {
+      // Double rAF: guarantee the parked phase-0 position is painted before
+      // the phase-1 transition target is set.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setFlight((f) => (f ? { ...f, phase: 1 } : f)));
+      });
+      setTimeout(() => setFlight((f) => (f ? { ...f, phase: 2 } : f)), 300);
+      setTimeout(() => setFlight((f) => (f ? { ...f, phase: 3 } : f)), 440);
+    }
     setTimeout(() => {
       setFlight(null);
       isNavigatingRef.current = false;
@@ -172,16 +198,19 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   return (
     <>
       <div>
-        {/* Stack wrapper — padding-bottom is the visible "pile" zone below the front card.
-            Only cards within the visible range (slot <= deepestVisible) are ever
-            mounted — cards deeper than VISIBLE_CARDS are not rendered at all, so
-            there is no way to see more than VISIBLE_CARDS cards. The one exception
-            is the card currently in flight, which stays mounted for the duration
-            of its animation even after its natural resting slot falls outside the
-            visible range (so it can visibly tuck away before unmounting). */}
+        {/* Stack wrapper — ONE shared 3D space (perspective + preserve-3d).
+            Card stacking comes from translateZ depth, resolved per-fragment by
+            the compositor: a card in flight is occluded progressively as it
+            passes between layers — no z-index, no binary front/back pop.
+            Only cards within the visible depth are mounted, plus the card in
+            flight and the one leaving the back range (kept for their exits). */}
         <div
           className="relative w-full"
-          style={{ paddingBottom: `${padBottom}px` }}
+          style={{
+            paddingBottom: `${padBottom}px`,
+            perspective: `${PERSPECTIVE}px`,
+            transformStyle: "preserve-3d",
+          }}
           onMouseEnter={handlePileEnter}
           onMouseLeave={() => setHovered(false)}
         >
@@ -189,46 +218,64 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             const slot = (imgIndex - displayIndex + total) % total;
             const isFront = slot === 0;
             const fly = flight && flight.imgIndex === imgIndex ? flight : null;
+            // During a flight, the card sliding beyond the visible range stays
+            // mounted just long enough to fade out behind the deepest card.
+            const isLeavingDepth = !fly && flight !== null && slot === deepestVisible + 1;
 
-            if (slot > deepestVisible && !fly) return null;
+            if (slot > deepestVisible && !fly && !isLeavingDepth) return null;
 
-            let transform = slotTransform(Math.min(slot, deepestVisible));
-            let zIndex = isFront ? total + 2 : total - slot;
-            let opacity = 1;
+            // Parked position: exactly behind the deepest visible card, one
+            // Z-step deeper — geometrically fully covered by it.
+            const parked = slotTransform(deepestVisible + 1, deepestVisible);
+
+            let transform = slotTransform(slot, deepestVisible);
+            let opacity = isLeavingDepth ? 0 : 1;
             // Shadows are NOT transitioned: animating box-shadow forces a repaint
-            // every frame and was the main source of jank. Transform + opacity
-            // stay fully GPU-composited.
+            // every frame. Transform + opacity stay fully GPU-composited.
             const boxShadow = slotShadow(Math.min(slot, deepestVisible));
             let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity 400ms ease`;
 
             if (fly) {
-              const dip = `perspective(700px) translateY(${dipY}px) scale(0.96) rotateX(-12deg)`;
-              if (fly.phase === 1) {
-                // Act 1: slide out below the pile's bottom edge.
-                // next → in front of everything (we watch it leave from the top);
-                // prev → beneath everything (it slips out from under the pile).
-                transform = dip;
-                zIndex = fly.dir === "next" ? total + 5 : 0;
-                transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1)`;
+              if (fly.dir === "next") {
+                if (fly.phase === 1) {
+                  // Slide out below the pile, floating slightly toward the viewer
+                  transform = `translate3d(0, ${dipY}px, ${Z_STEP}px) rotateX(-14deg)`;
+                  transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1)`;
+                } else {
+                  // Tuck: Y rises back to the pile while Z sinks through every
+                  // layer — the card visibly slides in between the stack's
+                  // edges, deeper and deeper, until it parks at the very back.
+                  transform = parked;
+                  transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1)`;
+                }
               } else {
-                // Act 2: rejoin the pile at the destination slot.
-                // next → tucks in underneath and fades out (its resting slot is
-                //        beyond the visible range, so it unmounts right after);
-                // prev → sweeps up over the top and lands on the front slot.
-                transform = fly.dir === "next" ? slotTransform(deepestVisible) : slotTransform(0);
-                zIndex = fly.dir === "next" ? 0 : total + 5;
-                opacity = fly.dir === "next" ? 0 : 1;
-                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1), opacity ${FLIGHT_MS - PHASE1_MS}ms ease`;
+                if (fly.phase === 0) {
+                  // Mount frame: parked deep, painted before any motion starts
+                  transform = parked;
+                  transition = "none";
+                } else if (fly.phase === 1) {
+                  // Slide out below the pile, still at full depth (it emerges
+                  // small and from underneath, like pulling the bottom card)
+                  transform = `translate3d(0, ${dipY}px, ${-Z_STEP * (deepestVisible + 1)}px) rotateX(-6deg)`;
+                  transition = "transform 300ms cubic-bezier(0.4, 0, 0.7, 1)";
+                } else if (fly.phase === 2) {
+                  // Below the pile (no overlap): swing toward the viewer
+                  transform = `translate3d(0, ${dipY + 4}px, ${Z_STEP}px) rotateX(-10deg)`;
+                  transition = "transform 140ms linear";
+                } else {
+                  // Sweep up over the pile onto the front slot
+                  transform = slotTransform(0, deepestVisible);
+                  transition = "transform 240ms cubic-bezier(0.16, 0.3, 0.24, 1)";
+                }
               }
             } else if (isFront && hovered) {
               // Desktop hover: the front card lifts, inviting the click
-              transform = "perspective(700px) translateY(-10px) scale(1) rotateX(0deg)";
+              transform = "translate3d(0, -10px, 0)";
               transition = "transform 280ms cubic-bezier(0.22, 1, 0.36, 1)";
             }
 
             const style: React.CSSProperties = {
               transform,
-              zIndex,
               opacity,
               boxShadow,
               transition,

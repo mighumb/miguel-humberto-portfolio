@@ -270,12 +270,13 @@ html.modal-main-hidden .ambient-background {
 /* Plays once when a card first mounts (e.g. a new card entering the back of
    the visible pile). Because this class never changes between re-renders of
    the same DOM node, the animation does not replay on ordinary updates —
-   only a fresh mount triggers it. */
+   only a fresh mount triggers it. Kept short so a card mounting into a
+   flight (prev direction) is fully opaque before it emerges from the pile. */
 @keyframes process-pile-card-fade-in {
   from { opacity: 0; }
 }
 .process-pile-card-mount {
-  animation: process-pile-card-fade-in 0.4s ease;
+  animation: process-pile-card-fade-in 0.28s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
