@@ -101,14 +101,14 @@ const PILE_EASE = "cubic-bezier(0.45, 0.05, 0.2, 1)";
 // (preserve-3d on the wrapper): occlusion is resolved per-fragment by depth,
 // so a card in flight is covered progressively as it slides between layers —
 // never the all-at-once pop a z-index flip produces.
-const Z_STEP = 45;
+const Z_STEP = 30;
 const PERSPECTIVE = 1600;
 
-// Vertical peek of each slot below slot 0. First cards step widely (their edge
-// must read as a full card), deeper cards compress like a fanned paper stack.
+// Vertical peek of each slot below slot 0 — tight steps, compressing further
+// toward the back like a squared-up deck of cards.
 function slotOffsetY(slot: number): number {
   let y = 0;
-  for (let i = 1; i <= slot; i++) y += Math.max(6, 30 - (i - 1) * 3);
+  for (let i = 1; i <= slot; i++) y += Math.max(3, 12 - (i - 1) * 2);
   return y;
 }
 
@@ -149,8 +149,8 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   const deepestVisible = Math.min(total, VISIBLE_CARDS) - 1;
   const maxY = slotOffsetY(deepestVisible);
   // The flight dips past the pile's bottom edge before changing depth
-  const dipY = maxY + 34;
-  const padBottom = dipY + 14;
+  const dipY = maxY + 40;
+  const padBottom = dipY + 12;
 
   const navigate = useCallback((dir: "next" | "prev") => {
     if (isNavigatingRef.current) return;
@@ -209,6 +209,10 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
           style={{
             paddingBottom: `${padBottom}px`,
             perspective: `${PERSPECTIVE}px`,
+            // Anchor the vanishing point at the pile's base: depth shrink pulls
+            // card tops up-and-in while bottom edges stay put, so the visible
+            // peek of each slot matches slotOffsetY regardless of card height.
+            perspectiveOrigin: "50% 100%",
             transformStyle: "preserve-3d",
           }}
           onMouseEnter={handlePileEnter}
@@ -221,7 +225,14 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             // During a flight, the card sliding beyond the visible range stays
             // mounted just long enough to fade out behind the deepest card.
             const isLeavingDepth = !fly && flight !== null && slot === deepestVisible + 1;
+            // During a "next" flight the flying card's edge is still visible
+            // below the pile; mounting the newly entering back card at the same
+            // time would show a 7th edge. It mounts (with its fade-in) only
+            // once the flight is over and the flying edge is gone.
+            const isEnteringDepth =
+              !fly && flight !== null && flight.dir === "next" && slot === deepestVisible;
 
+            if (isEnteringDepth) return null;
             if (slot > deepestVisible && !fly && !isLeavingDepth) return null;
 
             // Parked position: exactly behind the deepest visible card, one
