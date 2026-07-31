@@ -45,11 +45,8 @@ export default function StickyHeader() {
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          background: "linear-gradient(to bottom, var(--header-bg) 60%, transparent)",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
-          maskImage: "linear-gradient(to bottom, black 60%, transparent)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent)",
         }}
         aria-hidden
       />
