@@ -42,27 +42,25 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
-      {/* Gradient blur: two layers (6px top → 2px bottom), no tint.
-          mask+backdrop-filter must be on separate elements in Chrome. */}
+      {/* Subtle tint + blur fading at bottom. Tint at 20% opacity is the
+          minimum needed for the header to read on a uniform background —
+          pure blur-only is invisible when no varied content scrolls behind. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          maskImage: "linear-gradient(to bottom, black 0%, black 45%, transparent 80%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 45%, transparent 80%)",
+          maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
         }}
         aria-hidden
       >
-        <div className="absolute inset-0" style={{ backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }} />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-full"
-        style={{
-          maskImage: "linear-gradient(to bottom, transparent 20%, black 50%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, transparent 20%, black 50%, transparent 100%)",
-        }}
-        aria-hidden
-      >
-        <div className="absolute inset-0" style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "var(--header-bg-subtle)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        />
       </div>
       <SiteNav
         className="relative z-[1] pb-4 md:pb-5"
