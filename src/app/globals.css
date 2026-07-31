@@ -214,9 +214,6 @@ html.modal-main-hidden .ambient-background {
   visibility: hidden;
 }
 
-html.modal-open .project-modal {
-  visibility: visible;
-}
 
 .manifesto-section::before {
   content: "";
