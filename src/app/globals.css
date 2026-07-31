@@ -394,41 +394,6 @@ html.modal-main-hidden .ambient-background {
   padding-bottom: 0.5rem;
 }
 
-.site-sticky-header::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: calc(100% + 2.25rem);
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg-primary) 70%, transparent) 0%,
-    color-mix(in srgb, var(--bg-primary) 45%, transparent) 32%,
-    color-mix(in srgb, var(--bg-primary) 22%, transparent) 58%,
-    color-mix(in srgb, var(--bg-primary) 8%, transparent) 78%,
-    transparent 100%
-  );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  /* Soften the blur itself so it doesn't cut off as a hard line */
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 42%,
-    rgba(0, 0, 0, 0.65) 68%,
-    rgba(0, 0, 0, 0.25) 86%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 42%,
-    rgba(0, 0, 0, 0.65) 68%,
-    rgba(0, 0, 0, 0.25) 86%,
-    transparent 100%
-  );
-}
 
 @media (prefers-reduced-motion: reduce) {
   .site-sticky-header {
