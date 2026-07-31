@@ -89,100 +89,8 @@ function LinkedText({ text }: { text: string }) {
   return <>{parts.length > 0 ? parts : text}</>;
 }
 
-function ProcessLightbox({
-  images,
-  assetBase,
-  startIndex,
-  onClose,
-}: {
-  images: string[];
-  assetBase: string;
-  startIndex: number;
-  onClose: () => void;
-}) {
-  const [index, setIndex] = useState(startIndex);
-  const total = images.length;
-
-  const goNext = useCallback(() => setIndex((i) => (i + 1) % total), [total]);
-  const goPrev = useCallback(() => setIndex((i) => (i - 1 + total) % total), [total]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { e.stopImmediatePropagation(); onClose(); }
-      if (e.key === "ArrowRight") { e.stopImmediatePropagation(); goNext(); }
-      if (e.key === "ArrowLeft") { e.stopImmediatePropagation(); goPrev(); }
-    };
-    window.addEventListener("keydown", handler, { capture: true });
-    return () => window.removeEventListener("keydown", handler, { capture: true });
-  }, [onClose, goNext, goPrev]);
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-bg-primary/80 backdrop-blur-md" aria-hidden />
-
-      <div
-        className="relative z-[1] flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          key={index}
-          src={`${assetBase}/${images[index]}`}
-          alt=""
-          className="max-h-[88vh] max-w-[90vw] rounded-xl object-contain shadow-2xl"
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute right-4 top-4 z-[2] flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
-        aria-label="Fermer"
-      >
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-          <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-      </button>
-
-      <div className="absolute bottom-4 left-1/2 z-[2] -translate-x-1/2 rounded-full bg-bg-secondary/80 px-4 py-1.5 backdrop-blur-sm">
-        <span className="tabular-nums text-xs text-text-secondary">
-          {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-        </span>
-      </div>
-
-      {total > 1 && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); goPrev(); }}
-          className="absolute left-4 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
-          aria-label="Image précédente"
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            <path d="M11 3L5 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      )}
-
-      {total > 1 && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); goNext(); }}
-          className="absolute right-4 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
-          aria-label="Image suivante"
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            <path d="M7 3l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      )}
-    </div>,
-    document.body,
-  );
-}
-
+// Number of cards visibly stacked; deeper cards sit hidden exactly behind the pile
+const VISIBLE_CARDS = 6;
 // Full flight duration for a card leaving/entering the front slot
 const FLIGHT_MS = 680;
 // Act 1 of the flight (slide out below the pile); act 2 is the remainder
@@ -220,12 +128,14 @@ interface FlightState {
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);
   const [flight, setFlight] = useState<FlightState | null>(null);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  // Pointer is over the pile (fine-pointer devices only) — lifts the front card
+  const [hovered, setHovered] = useState(false);
   const isNavigatingRef = useRef(false);
   const total = images.length;
 
-  // Deepest slot's peek defines the pile's footprint below the front card
-  const maxY = slotOffsetY(total - 1);
+  // Deepest VISIBLE slot; cards beyond it stack invisibly at this same position
+  const deepestVisible = Math.min(total, VISIBLE_CARDS) - 1;
+  const maxY = slotOffsetY(deepestVisible);
   // The flight dips slightly past the pile's bottom edge
   const dipY = maxY + 22;
   const padBottom = dipY + 6;
@@ -252,67 +162,77 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   const goNext = useCallback(() => navigate("next"), [navigate]);
   const goPrev = useCallback(() => navigate("prev"), [navigate]);
 
-  const openLightbox = () => {
-    if (flight) return;
+  const handlePileEnter = () => {
+    // Lift affordance only on fine-pointer devices (touch would get a stuck hover)
     if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      setLightboxOpen(true);
+      setHovered(true);
     }
   };
 
   return (
     <>
-      {lightboxOpen && (
-        <ProcessLightbox
-          images={images}
-          assetBase={assetBase}
-          startIndex={displayIndex}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
       <div>
         {/* Stack wrapper — padding-bottom is the visible "pile" zone below the front card.
             EVERY image is a permanently mounted card: navigation only changes each
-            card's slot, so the whole pile visibly shifts one step per click and the
-            <img> nodes never remount (no flash possible). */}
-        <div className="relative w-full" style={{ paddingBottom: `${padBottom}px` }}>
+            card's slot and the <img> nodes never remount (no flash possible). Cards
+            deeper than VISIBLE_CARDS park at the deepest visible position with
+            opacity 0, exactly covered by the deepest visible card, and fade in at
+            the back as they enter the visible range. */}
+        <div
+          className="relative w-full"
+          style={{ paddingBottom: `${padBottom}px` }}
+          onMouseEnter={handlePileEnter}
+          onMouseLeave={() => setHovered(false)}
+        >
           {images.map((file, imgIndex) => {
             const slot = (imgIndex - displayIndex + total) % total;
             const isFront = slot === 0;
+            const isHiddenDepth = slot > deepestVisible;
             const fly = flight && flight.imgIndex === imgIndex ? flight : null;
 
-            let transform = slotTransform(slot);
-            let zIndex = isFront ? total + 2 : total - slot;
-            let boxShadow = slotShadow(slot);
-            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, box-shadow ${FLIGHT_MS}ms ${PILE_EASE}`;
+            let transform = slotTransform(Math.min(slot, deepestVisible));
+            let zIndex = isFront ? total + 2 : isHiddenDepth ? 0 : total - slot;
+            let opacity = isHiddenDepth ? 0 : 1;
+            // Shadows are NOT transitioned: animating box-shadow forces a repaint
+            // every frame and was the main source of jank. Transform + opacity
+            // stay fully GPU-composited.
+            const boxShadow = isHiddenDepth ? undefined : slotShadow(slot);
+            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity 400ms ease`;
 
             if (fly) {
               const dip = `perspective(700px) translateY(${dipY}px) scale(0.96) rotateX(-12deg)`;
+              opacity = 1;
               if (fly.phase === 1) {
                 // Act 1: slide out below the pile's bottom edge.
                 // next → in front of everything (we watch it leave from the top);
                 // prev → beneath everything (it slips out from under the pile).
                 transform = dip;
                 zIndex = fly.dir === "next" ? total + 5 : 0;
-                boxShadow = slotShadow(fly.dir === "next" ? 0 : 2);
-                transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1), box-shadow ${PHASE1_MS}ms ease`;
+                transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1)`;
               } else {
                 // Act 2: rejoin the pile at the destination slot.
-                // next → tucks in underneath (below everything);
+                // next → tucks in underneath, parking exactly behind the deepest
+                //        visible card (which fully covers it);
                 // prev → sweeps up over the top and lands on the front slot.
-                transform = fly.dir === "next" ? slotTransform(total - 1) : slotTransform(0);
+                transform = fly.dir === "next" ? slotTransform(deepestVisible) : slotTransform(0);
                 zIndex = fly.dir === "next" ? 0 : total + 5;
-                boxShadow = slotShadow(fly.dir === "next" ? 2 : 0);
-                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.2, 0, 0.2, 1), box-shadow ${FLIGHT_MS - PHASE1_MS}ms ease`;
+                transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1)`;
               }
+            } else if (isFront && hovered) {
+              // Desktop hover: the front card lifts, inviting the click
+              transform = "perspective(700px) translateY(-10px) scale(1) rotateX(0deg)";
+              transition = "transform 280ms cubic-bezier(0.22, 1, 0.36, 1)";
             }
 
             const style: React.CSSProperties = {
               transform,
               zIndex,
+              opacity,
               boxShadow,
               transition,
+              background: "var(--bg-secondary)",
               ...(isFront
-                ? { cursor: "zoom-in" }
+                ? { cursor: "pointer" }
                 : { position: "absolute" as const, top: 0, bottom: padBottom, left: 0, right: 0 }),
             };
 
@@ -323,10 +243,13 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
                   isFront ? " relative aspect-video w-full" : ""
                 }`}
                 style={style}
-                onClick={isFront && !flight ? openLightbox : undefined}
+                onClick={isFront ? goNext : undefined}
+                role={isFront ? "button" : undefined}
+                aria-label={isFront ? "Image suivante" : undefined}
               >
+                {/* object-contain: images are never cropped — full screenshot visible */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${assetBase}/${file}`} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <img src={`${assetBase}/${file}`} alt="" className="h-full w-full object-contain" loading="lazy" />
               </div>
             );
           })}
