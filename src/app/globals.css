@@ -259,21 +259,21 @@ html.modal-main-hidden .ambient-background {
 }
 
 @keyframes process-card-in {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(36px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .process-card {
-  transition: opacity 0.22s ease, transform 0.22s ease;
+  transition: opacity 0.4s ease, transform 0.4s ease;
 }
 
 .process-card.is-exiting {
   opacity: 0 !important;
-  transform: translateY(20px) !important;
+  transform: translateY(36px) !important;
 }
 
 .process-card-enter {
-  animation: process-card-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: process-card-in 0.46s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

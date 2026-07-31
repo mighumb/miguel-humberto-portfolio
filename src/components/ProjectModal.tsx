@@ -183,9 +183,14 @@ function ProcessLightbox({
   );
 }
 
+// Peek amounts: ghost1 = 20px below front card, ghost2 = 40px below (20px visible below ghost1)
+const PEEK_1 = 20;
+const PEEK_2 = 40;
+const PAD_BOTTOM = 44; // wrapper padding-bottom to contain the overflow
+
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);
-  const [isExiting, setIsExiting] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "exiting">("idle");
   const [animKey, setAnimKey] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isNavigatingRef = useRef(false);
@@ -196,13 +201,15 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   const navigate = useCallback((newIndex: number) => {
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    setIsExiting(true);
+    // Phase 1: exit — ghost cards animate upward (CSS transitions fire here)
+    setPhase("exiting");
     setTimeout(() => {
+      // Phase 2: instant reset — swap index, kill transitions, snap ghosts back
       setDisplayIndex(newIndex);
       setAnimKey((k) => k + 1);
-      setIsExiting(false);
-      setTimeout(() => { isNavigatingRef.current = false; }, 50);
-    }, 220);
+      setPhase("idle");
+      setTimeout(() => { isNavigatingRef.current = false; }, 60);
+    }, 420);
   }, []);
 
   const goNext = useCallback(() => navigate((displayIndex + 1) % total), [navigate, displayIndex, total]);
@@ -210,6 +217,47 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
 
   const imgSrc = (offset: number) =>
     `${assetBase}/${images[(displayIndex + offset) % total]}`;
+
+  const isExiting = phase === "exiting";
+
+  // Ghost card styles — CSS transition only fires during exiting phase
+  const ghostTransition = isExiting
+    ? "transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.42s ease, filter 0.42s ease"
+    : "none";
+
+  const ghost1Style = {
+    top: 0,
+    bottom: PAD_BOTTOM,
+    left: 8,
+    right: 8,
+    // During exit: ghost1 rises to front position (translateY → 0, full opacity, no blur)
+    transform: isExiting ? "translateY(0px)" : `translateY(${PEEK_1}px)`,
+    opacity: isExiting ? 1 : 0.72,
+    filter: isExiting ? "blur(0px)" : "blur(0px)",
+    transition: ghostTransition,
+    zIndex: 2,
+  };
+
+  const ghost2Style = {
+    top: 0,
+    bottom: PAD_BOTTOM,
+    left: 16,
+    right: 16,
+    // During exit: ghost2 rises to ghost1 position
+    transform: isExiting ? `translateY(${PEEK_1}px)` : `translateY(${PEEK_2}px)`,
+    opacity: isExiting ? 0.72 : 0.44,
+    filter: isExiting ? "blur(0px)" : "blur(0.5px)",
+    transition: ghostTransition,
+    zIndex: 1,
+  };
+
+  const openLightbox = () => {
+    if (isExiting) return;
+    // Lightbox only on non-touch / desktop devices
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      setLightboxOpen(true);
+    }
+  };
 
   return (
     <>
@@ -223,19 +271,10 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
       )}
       <div>
         {/* Stack — padding-bottom reserves space for ghost cards peeking below */}
-        <div className="relative w-full" style={{ paddingBottom: "32px" }}>
-          {/* Ghost card 2 — furthest, most blurred */}
+        <div className="relative w-full" style={{ paddingBottom: `${PAD_BOTTOM}px` }}>
+          {/* Ghost card 2 — furthest */}
           {showThird && (
-            <div
-              className="absolute overflow-hidden rounded-2xl"
-              style={{
-                top: 0, bottom: 32, left: 20, right: 20,
-                transform: "translateY(28px)",
-                filter: "blur(2px)",
-                opacity: 0.35,
-                zIndex: 1,
-              }}
-            >
+            <div className="absolute overflow-hidden rounded-2xl" style={ghost2Style}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={imgSrc(2)} alt="" className="h-full w-full object-cover" loading="lazy" />
             </div>
@@ -243,16 +282,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
 
           {/* Ghost card 1 — middle */}
           {showSecond && (
-            <div
-              className="absolute overflow-hidden rounded-2xl"
-              style={{
-                top: 0, bottom: 32, left: 10, right: 10,
-                transform: "translateY(14px)",
-                filter: "blur(1px)",
-                opacity: 0.6,
-                zIndex: 2,
-              }}
-            >
+            <div className="absolute overflow-hidden rounded-2xl" style={ghost1Style}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={imgSrc(1)} alt="" className="h-full w-full object-cover" loading="lazy" />
             </div>
@@ -269,7 +299,7 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
               boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
               cursor: "zoom-in",
             }}
-            onClick={() => { if (!isExiting) setLightboxOpen(true); }}
+            onClick={openLightbox}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imgSrc(0)} alt="" className="h-full w-full object-cover" loading="lazy" />
