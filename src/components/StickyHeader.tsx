@@ -42,18 +42,25 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
-      {/* Blur: no background, no mask — both break backdrop-filter in Chrome.
-          Tint is a separate gradient layer so it fades naturally without
-          any hard edge. */}
+      {/* Blur extends ~48px below the nav so its hard bottom edge falls in
+          the zone where the tint is already transparent — the edge becomes
+          invisible. mask/parent-mask both break backdrop-filter in Chrome
+          so height overflow is the only way to hide the rectangle. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-full"
-        style={{ backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)" }}
+        className="pointer-events-none absolute inset-x-0 top-0"
+        style={{
+          height: "calc(100% + 48px)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+        }}
         aria-hidden
       />
+      {/* Tint fades to transparent at 65% of nav height — well before the
+          blur edge — so no coloured block is ever visible. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)",
+          background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 65%)",
         }}
         aria-hidden
       />
