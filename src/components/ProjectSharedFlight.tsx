@@ -48,9 +48,20 @@ function FlightThumbnail({
   const [videoReady, setVideoReady] = useState(false);
   const coverUrl = projectCoverUrl(project);
 
+  // Touch devices get a frozen flight: mounting a fresh <video> mid-transition
+  // means a decode race that mobile Safari loses more often than not (poster
+  // and overlay tricks included), flashing black during the ~0.6s flight.
+  // The frame captured at tap time is pixel-identical to what the card showed,
+  // and the modal hero takes over the actual playback at landing.
+  const [isTouch] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
+  );
+  const useLiveVideo =
+    showVideo && !!project.hasVideo && !!project.videoUrl && !(isTouch && videoPoster);
+
   useLayoutEffect(() => {
     const video = videoRef.current;
-    if (!video || !showVideo) return;
+    if (!video || !useLiveVideo) return;
     setVideoReady(false);
 
     // Reveal the live video only once it's actually showing the synced frame —
@@ -70,7 +81,7 @@ function FlightThumbnail({
     video.addEventListener("canplay", onCanPlay, { once: true });
     syncVideoPlayback(video, videoTime);
     return () => video.removeEventListener("canplay", onCanPlay);
-  }, [showVideo, videoTime, project.videoUrl]);
+  }, [useLiveVideo, videoTime, project.videoUrl]);
 
   return (
     <div
@@ -79,7 +90,7 @@ function FlightThumbnail({
       }`}
       style={frameStyle(frame)}
     >
-      {showVideo && project.hasVideo && project.videoUrl ? (
+      {useLiveVideo ? (
         <>
           <video
             ref={videoRef}
@@ -105,6 +116,10 @@ function FlightThumbnail({
             />
           )}
         </>
+      ) : showVideo && videoPoster ? (
+        // Frozen flight (touch): the captured tap-time frame, nothing to decode
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={videoPoster} alt="" className="h-full w-full object-cover" aria-hidden />
       ) : coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={coverUrl} alt="" className="h-full w-full object-cover" />

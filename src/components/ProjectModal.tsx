@@ -433,6 +433,13 @@ export default function ProjectModal({
   const yearRef = useRef<HTMLSpanElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+  // The captured card frame stays layered over the hero video until the video
+  // has actually PRESENTED a frame after the reveal. The `poster` attribute is
+  // not enough: an autoplaying video that is still seeking/decoding at reveal
+  // time paints black on mobile Safari, poster or not.
+  const [heroPosterVisible, setHeroPosterVisible] = useState(
+    () => videoPlaying && !!videoPoster,
+  );
 
   useScrollLock(true);
 
@@ -441,6 +448,36 @@ export default function ProjectModal({
     if (!video || !project.hasVideo || !videoPlaying) return;
     syncVideoPlayback(video, videoTime);
   }, [project.id, project.hasVideo, videoPlaying, videoTime]);
+
+  useEffect(() => {
+    // Once the modal content is revealed, drop the poster overlay as soon as
+    // the video presents its next frame (rVFC when available), with a timeout
+    // fallback so it can never get stuck.
+    if (!heroPosterVisible || !sharedContentVisible) return;
+    const video = heroVideoRef.current;
+    if (!video) {
+      setHeroPosterVisible(false);
+      return;
+    }
+    let cancelled = false;
+    const clear = () => {
+      if (!cancelled) setHeroPosterVisible(false);
+    };
+    const rvfcVideo = video as HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: () => void) => number;
+    };
+    if (typeof rvfcVideo.requestVideoFrameCallback === "function") {
+      rvfcVideo.requestVideoFrameCallback(clear);
+    } else {
+      video.addEventListener("timeupdate", clear, { once: true });
+    }
+    const timeout = window.setTimeout(clear, 900);
+    return () => {
+      cancelled = true;
+      video.removeEventListener("timeupdate", clear);
+      window.clearTimeout(timeout);
+    };
+  }, [heroPosterVisible, sharedContentVisible]);
 
   useEffect(() => {
     const video = heroVideoRef.current;
@@ -592,30 +629,43 @@ export default function ProjectModal({
             <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
-                className={`project-modal-hero aspect-video w-full overflow-hidden rounded-xl ${
+                className={`project-modal-hero relative aspect-video w-full overflow-hidden rounded-xl ${
                   coverUrl || (project.hasVideo && project.videoUrl)
                     ? "bg-bg-secondary"
                     : "project-placeholder-gradient"
                 } ${sharedHidden ? "is-shared-hidden" : ""}`}
               >
                 {project.hasVideo && project.videoUrl ? (
-                  <video
-                    ref={heroVideoRef}
-                    src={project.videoUrl}
-                    // The flight hands off by seeking this video to the card's
-                    // playback position the instant it is revealed. A seeking
-                    // video has no frame to paint, so without a poster it
-                    // renders black for a beat — the flash at the end of the
-                    // card→modal transition.
-                    poster={videoPoster}
-                    controls={sharedContentVisible}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload={videoPlaying ? "auto" : "metadata"}
-                    className="h-full w-full object-cover"
-                  />
+                  <>
+                    <video
+                      ref={heroVideoRef}
+                      src={project.videoUrl}
+                      // The flight hands off by seeking this video to the card's
+                      // playback position the instant it is revealed. A seeking
+                      // video has no frame to paint, so without a poster it
+                      // renders black for a beat — the flash at the end of the
+                      // card→modal transition.
+                      poster={videoPoster}
+                      controls={sharedContentVisible}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      preload={videoPlaying ? "auto" : "metadata"}
+                      className="h-full w-full object-cover"
+                    />
+                    {heroPosterVisible && videoPoster && (
+                      // Stays on top of the video until it presents a frame
+                      // after the reveal (see the heroPosterVisible effect).
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={videoPoster}
+                        alt=""
+                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                        aria-hidden
+                      />
+                    )}
+                  </>
                 ) : coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={coverUrl} alt="" className="h-full w-full object-cover" />
