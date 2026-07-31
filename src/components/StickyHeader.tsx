@@ -48,6 +48,8 @@ export default function StickyHeader() {
           background: "var(--header-bg)",
           backdropFilter: "blur(6px)",
           WebkitBackdropFilter: "blur(6px)",
+          maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
         }}
         aria-hidden
       />
