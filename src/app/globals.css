@@ -276,14 +276,28 @@ html.modal-main-hidden .ambient-background {
   box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.14);
 }
 
-/* Ghost cards advance one slot while the stack is exiting */
+/* Ghost cards advance one slot while the stack is exiting.
+   Box-shadows are part of the keyframes so each card lands with the exact
+   shadow of the slot it arrives at — the swap changes nothing visually. */
 @keyframes ghost-1-rise {
-  from { transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg); }
-  to   { transform: perspective(700px) translateY(0)    scale(1)    rotateX(0deg); }
+  from {
+    transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg);
+    box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
+  }
+  to {
+    transform: perspective(700px) translateY(0) scale(1) rotateX(0deg);
+    box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.28), 0 8px 24px -4px rgba(0, 0, 0, 0.12);
+  }
 }
 @keyframes ghost-2-rise {
-  from { transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg); }
-  to   { transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg); }
+  from {
+    transform: perspective(700px) translateY(40px) scale(0.94) rotateX(8deg);
+    box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.14);
+  }
+  to {
+    transform: perspective(700px) translateY(20px) scale(0.97) rotateX(4deg);
+    box-shadow: 0 16px 40px -6px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.12);
+  }
 }
 .process-stack-exiting .process-ghost-1 {
   animation: ghost-1-rise 0.64s cubic-bezier(0.45, 0.05, 0.2, 1) forwards;

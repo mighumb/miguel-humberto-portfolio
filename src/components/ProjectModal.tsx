@@ -199,12 +199,9 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   // During the exit, the departing card starts ABOVE the ghosts (its slide-down
   // is fully visible), then drops below them mid-flight to tuck under the pile.
   const [exitUnder, setExitUnder] = useState(false);
-  const [animKey, setAnimKey] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isNavigatingRef = useRef(false);
   const total = images.length;
-  const showSecond = total > 1;
-  const showThird = total > 2;
 
   const navigate = useCallback((newIndex: number) => {
     if (isNavigatingRef.current) return;
@@ -215,10 +212,10 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
     const underTimer = setTimeout(() => setExitUnder(true), UNDER_MS);
     setTimeout(() => {
       clearTimeout(underTimer);
-      // The animations' final frames match the post-swap idle layout exactly,
-      // so this swap is pixel-continuous — no enter animation needed.
+      // Cards are keyed by image index, so this swap PROMOTES existing DOM nodes
+      // (ghost-1 becomes the front card, ghost-2 becomes ghost-1) instead of
+      // remounting them. Their <img> elements never repaint — no flash.
       setDisplayIndex(newIndex);
-      setAnimKey((k) => k + 1);
       setPhase("idle");
       setExitUnder(false);
       setTimeout(() => { isNavigatingRef.current = false; }, 60);
@@ -227,9 +224,6 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
 
   const goNext = useCallback(() => navigate((displayIndex + 1) % total), [navigate, displayIndex, total]);
   const goPrev = useCallback(() => navigate((displayIndex - 1 + total) % total), [navigate, displayIndex, total]);
-
-  const imgSrc = (offset: number) =>
-    `${assetBase}/${images[(displayIndex + offset) % total]}`;
 
   const isExiting = phase === "exiting";
 
@@ -240,8 +234,15 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
     }
   };
 
-  // Shared absolute positioning for ghost cards (same height as front card)
+  // Shared absolute positioning for ghost cards (same rect as the front card:
+  // bottom offset cancels the wrapper's padding-bottom)
   const ghostPos: React.CSSProperties = { top: 0, bottom: PAD_BOTTOM, left: 0, right: 0 };
+
+  // The three visible pile slots. Cards are keyed by IMAGE index, not by slot:
+  // on swap, React keeps each DOM node and only its class/style changes
+  // (ghost-1's node is promoted to front, ghost-2's to ghost-1). The <img>
+  // elements are never remounted nor get a new src — nothing can flash.
+  const visibleOffsets = [2, 1, 0].filter((offset) => offset < total);
 
   return (
     <>
@@ -259,51 +260,47 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
           className={`relative w-full${isExiting ? " process-stack-exiting" : ""}`}
           style={{ paddingBottom: `${PAD_BOTTOM}px` }}
         >
-          {/* Ghost card 2 — furthest back. Keyed by image index: remounts on swap so
-              it lands instantly at its idle slot (no stray transition), with a fade-in
-              since its image is genuinely new to the pile. */}
-          {showThird && (
-            <div
-              key={`g2-${displayIndex}`}
-              className="process-ghost-2 process-ghost-enter absolute overflow-hidden rounded-2xl"
-              style={{ ...ghostPos, zIndex: 1 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imgSrc(2)} alt="" className="h-full w-full object-cover" loading="lazy" />
-            </div>
-          )}
+          {visibleOffsets.map((offset) => {
+            const imgIndex = (displayIndex + offset) % total;
+            const src = `${assetBase}/${images[imgIndex]}`;
 
-          {/* Ghost card 1 — middle, keyed by image index for a clean remount on swap */}
-          {showSecond && (
-            <div
-              key={`g1-${displayIndex}`}
-              className="process-ghost-1 absolute overflow-hidden rounded-2xl"
-              style={{ ...ghostPos, zIndex: 2 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imgSrc(1)} alt="" className="h-full w-full object-cover" loading="lazy" />
-            </div>
-          )}
+            if (offset === 0) {
+              // Front card. During exit act 1 it stays ABOVE the ghosts (z 5) so
+              // its slide-down is fully visible; at mid-flight it drops below
+              // them (z 0) and tucks in behind the pile.
+              return (
+                <div
+                  key={imgIndex}
+                  className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl${
+                    isExiting ? " is-exiting" : ""
+                  }`}
+                  style={{
+                    zIndex: isExiting ? (exitUnder ? 0 : 5) : 3,
+                    boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
+                    cursor: "zoom-in",
+                  }}
+                  onClick={openLightbox}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                </div>
+              );
+            }
 
-          {/* Front card. During exit act 1 it stays ABOVE the ghosts (z 5) so its
-              slide-down is fully visible; at mid-flight it drops below them (z 0)
-              and tucks in behind the pile. No enter animation: the swap layout is
-              pixel-identical to the animations' final frames. */}
-          <div
-            key={animKey}
-            className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl ${
-              isExiting ? "is-exiting" : ""
-            }`}
-            style={{
-              zIndex: isExiting ? (exitUnder ? 0 : 5) : 3,
-              boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
-              cursor: "zoom-in",
-            }}
-            onClick={openLightbox}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imgSrc(0)} alt="" className="h-full w-full object-cover" loading="lazy" />
-          </div>
+            // Ghost cards. The back one (offset 2) fades in when its node first
+            // mounts — it's the only genuinely new image entering the pile.
+            const isBack = offset === 2;
+            return (
+              <div
+                key={imgIndex}
+                className={`${isBack ? "process-ghost-2 process-ghost-enter" : "process-ghost-1"} absolute overflow-hidden rounded-2xl`}
+                style={{ ...ghostPos, zIndex: isBack ? 1 : 2 }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+              </div>
+            );
+          })}
         </div>
 
         {/* Navigation */}
