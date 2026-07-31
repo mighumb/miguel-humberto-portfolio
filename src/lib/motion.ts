@@ -80,7 +80,20 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
   const video = card.querySelector<HTMLVideoElement>(".work-card-media video");
 
   let videoPoster: string | undefined;
-  if (showVideo && video && video.videoWidth > 0 && video.videoHeight > 0) {
+  // readyState >= HAVE_CURRENT_DATA (2) guarantees a decoded, presentable
+  // frame at currentTime. videoWidth alone only proves metadata loaded: with
+  // no decoded frame, drawImage paints nothing and the transparent canvas is
+  // flattened to SOLID BLACK by the JPEG encoder — producing a pitch-black
+  // "poster" that every downstream overlay then faithfully displays as a
+  // black flash. Common on mobile: tap before the card video finished
+  // loading, or autoplay blocked by iOS Low Power Mode.
+  if (
+    showVideo &&
+    video &&
+    video.readyState >= 2 &&
+    video.videoWidth > 0 &&
+    video.videoHeight > 0
+  ) {
     try {
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
