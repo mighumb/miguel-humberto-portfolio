@@ -272,14 +272,15 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             </div>
           )}
 
-          {/* Front card */}
+          {/* Front card — z-index drops to 0 during exit so ghost cards (z-index 1/2)
+              visually overlay it as they rise, giving the "going under the pile" effect */}
           <div
             key={animKey}
             className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl ${
               isExiting ? "is-exiting" : "process-card-enter"
             }`}
             style={{
-              zIndex: 3,
+              zIndex: isExiting ? 0 : 3,
               boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
               cursor: "zoom-in",
             }}

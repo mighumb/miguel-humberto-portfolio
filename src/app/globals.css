@@ -259,14 +259,18 @@ html.modal-main-hidden .ambient-background {
 }
 
 /* Ghost cards — idle resting positions.
-   Box-shadow ensures they're visually distinct from the modal background
-   even when the image content is white or very light. */
+   transition: CSS animations override transitions while running (spec §17.4.1),
+   so the keyframe rise fires normally. The transition only kicks in when the
+   animation is removed (snap-back after swap), making it a smooth 0.2s glide
+   rather than an instant 20px jump that would appear as a blink. */
 .process-ghost-1 {
   transform: translateY(20px) scale(0.97);
+  transition: transform 0.2s ease;
   box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.18), 0 4px 12px -2px rgba(0, 0, 0, 0.10);
 }
 .process-ghost-2 {
   transform: translateY(40px) scale(0.94);
+  transition: transform 0.2s ease;
   box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.12);
 }
 
@@ -302,11 +306,11 @@ html.modal-main-hidden .ambient-background {
   transition: none !important;
 }
 
-/* Front card enter — rises from ghost-1 depth */
+/* Front card enter — rises from ghost-1 depth, starts fully transparent */
 @keyframes process-card-in {
   from {
     transform: perspective(800px) rotateX(8deg) translateY(20px) scale(0.97);
-    opacity: 0.6;
+    opacity: 0;
   }
   to {
     transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
