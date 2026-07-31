@@ -186,14 +186,19 @@ function ProcessLightbox({
 // How many px each ghost card peeks below the card in front of it (idle state)
 const PEEK_1 = 20;
 const PEEK_2 = 40;
-// Wrapper padding-bottom to contain the peeking ghost cards
-const PAD_BOTTOM = 52;
-// Must be slightly longer than the exit keyframe duration (460ms) to let it finish
-const EXIT_MS = 480;
+// Wrapper padding-bottom: PEEK_2 + room for the exit dip (translateY 74px at 42%)
+const PAD_BOTTOM = 88;
+// Full choreography duration (matches the 0.64s CSS keyframes)
+const EXIT_MS = 640;
+// Mid-flight moment where the exiting card passes underneath the pile (~42% of EXIT_MS)
+const UNDER_MS = 280;
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
   const [displayIndex, setDisplayIndex] = useState(0);
   const [phase, setPhase] = useState<"idle" | "exiting">("idle");
+  // During the exit, the departing card starts ABOVE the ghosts (its slide-down
+  // is fully visible), then drops below them mid-flight to tuck under the pile.
+  const [exitUnder, setExitUnder] = useState(false);
   const [animKey, setAnimKey] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const isNavigatingRef = useRef(false);
@@ -204,14 +209,18 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   const navigate = useCallback((newIndex: number) => {
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    // Adding .process-stack-exiting to wrapper triggers CSS keyframe animations
-    // on ghost cards and .is-exiting on the front card — all fire simultaneously
-    // from their defined `from` values, avoiding transition race conditions.
     setPhase("exiting");
+    setExitUnder(false);
+    // Act 2: the card passes below the ghosts as it swings back under the pile
+    const underTimer = setTimeout(() => setExitUnder(true), UNDER_MS);
     setTimeout(() => {
+      clearTimeout(underTimer);
+      // The animations' final frames match the post-swap idle layout exactly,
+      // so this swap is pixel-continuous — no enter animation needed.
       setDisplayIndex(newIndex);
       setAnimKey((k) => k + 1);
-      setPhase("idle"); // removes .process-stack-exiting → ghost cards snap back instantly
+      setPhase("idle");
+      setExitUnder(false);
       setTimeout(() => { isNavigatingRef.current = false; }, 60);
     }, EXIT_MS);
   }, []);
@@ -250,10 +259,13 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
           className={`relative w-full${isExiting ? " process-stack-exiting" : ""}`}
           style={{ paddingBottom: `${PAD_BOTTOM}px` }}
         >
-          {/* Ghost card 2 — furthest back */}
+          {/* Ghost card 2 — furthest back. Keyed by image index: remounts on swap so
+              it lands instantly at its idle slot (no stray transition), with a fade-in
+              since its image is genuinely new to the pile. */}
           {showThird && (
             <div
-              className="process-ghost-2 absolute overflow-hidden rounded-2xl"
+              key={`g2-${displayIndex}`}
+              className="process-ghost-2 process-ghost-enter absolute overflow-hidden rounded-2xl"
               style={{ ...ghostPos, zIndex: 1 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -261,9 +273,10 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             </div>
           )}
 
-          {/* Ghost card 1 — middle */}
+          {/* Ghost card 1 — middle, keyed by image index for a clean remount on swap */}
           {showSecond && (
             <div
+              key={`g1-${displayIndex}`}
               className="process-ghost-1 absolute overflow-hidden rounded-2xl"
               style={{ ...ghostPos, zIndex: 2 }}
             >
@@ -272,15 +285,17 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             </div>
           )}
 
-          {/* Front card — z-index drops to 0 during exit so ghost cards (z-index 1/2)
-              visually overlay it as they rise, giving the "going under the pile" effect */}
+          {/* Front card. During exit act 1 it stays ABOVE the ghosts (z 5) so its
+              slide-down is fully visible; at mid-flight it drops below them (z 0)
+              and tucks in behind the pile. No enter animation: the swap layout is
+              pixel-identical to the animations' final frames. */}
           <div
             key={animKey}
             className={`process-card relative aspect-video w-full overflow-hidden rounded-2xl ${
-              isExiting ? "is-exiting" : "process-card-enter"
+              isExiting ? "is-exiting" : ""
             }`}
             style={{
-              zIndex: isExiting ? 0 : 3,
+              zIndex: isExiting ? (exitUnder ? 0 : 5) : 3,
               boxShadow: "0 24px 64px -12px rgba(0,0,0,0.28), 0 8px 24px -4px rgba(0,0,0,0.12)",
               cursor: "zoom-in",
             }}
