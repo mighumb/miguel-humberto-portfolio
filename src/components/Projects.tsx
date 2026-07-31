@@ -341,8 +341,21 @@ export default function Projects() {
     } else {
       root.classList.remove("modal-main-hidden");
     }
+    // Remove is-closing-flip when reaching idle so it's cleared even if we
+    // skipped the "closing" phase (e.g. measureRef returned null).
+    if (phase === "idle") {
+      root.classList.remove("is-closing-flip");
+    }
 
-    return () => root.classList.remove("modal-main-hidden");
+    return () => {
+      root.classList.remove("modal-main-hidden");
+      // Remove is-closing-flip when leaving "closing". This cleanup runs
+      // after React's DOM mutations (modal already unmounted) but before
+      // paint — guaranteeing the class is gone before the next frame.
+      if (phase === "closing") {
+        root.classList.remove("is-closing-flip");
+      }
+    };
   }, [phase]);
 
   useLayoutEffect(() => {
@@ -366,14 +379,12 @@ export default function Projects() {
   const resetTransition = useCallback(() => {
     flipCleanupRef.current?.();
     flipCleanupRef.current = null;
-    // Defer is-closing-flip removal by one rAF. setActiveProject(null) is a
-    // batched React update — React commits the modal unmount in a microtask.
-    // Removing the class synchronously here would make the modal re-appear for
-    // one render cycle (visibility:hidden lifted before the element is gone).
-    // After one rAF React has already committed, so the modal is gone first.
-    requestAnimationFrame(() => {
-      document.documentElement.classList.remove("is-closing-flip");
-    });
+    // is-closing-flip is removed by the useLayoutEffect for [phase] when phase
+    // transitions from "closing" → "idle". That cleanup runs after React's DOM
+    // mutations (modal already unmounted) but before paint, which is the only
+    // safe window. A requestAnimationFrame here would fire BEFORE React commits
+    // (React uses MessageChannel, which runs after rAFs), briefly re-showing
+    // the modal header between the rAF and the commit.
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
