@@ -77,9 +77,14 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         const container = card.closest<HTMLElement>(".work-scroll");
         return container ? computeCardFocus(card, container) : FLAT_PERSPECTIVE;
       })(),
-      showVideo: isHovering && !!project.hasVideo,
+      // videoIsHero cards autoplay their video permanently (no thumbnail to
+      // fall back to), independent of hover — which never fires on touch.
+      // Without this, tapping such a card on mobile always reported
+      // showVideo:false, and the flight thumbnail fell through to the
+      // numbered placeholder since there's no cover/thumbnail image either.
+      showVideo: (isHovering || videoIsHero) && !!project.hasVideo,
       videoTime:
-        isHovering && project.hasVideo && videoRef.current
+        (isHovering || videoIsHero) && project.hasVideo && videoRef.current
           ? videoRef.current.currentTime
           : 0,
     });
