@@ -42,26 +42,27 @@ export default function StickyHeader() {
       }`}
       aria-hidden={!visible}
     >
-      {/* Subtle tint + blur fading at bottom. Tint at 20% opacity is the
-          minimum needed for the header to read on a uniform background —
-          pure blur-only is invisible when no varied content scrolls behind. */}
+      {/* Blur layer: mask-image on parent kills backdrop-filter (stacking
+          context prevents sampling page content). Plain div with no mask
+          so blur actually works. The fade-out is handled by the gradient
+          overlay below, not by masking the blur itself. */}
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-full"
         style={{
-          maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
+          background: "var(--header-bg-subtle)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
         }}
         aria-hidden
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "var(--header-bg-subtle)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
-          }}
-        />
-      </div>
+      />
+      {/* Gradient overlay that fades the bottom edge into the page bg */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-full"
+        style={{
+          background: "linear-gradient(to bottom, transparent 50%, var(--bg-primary) 100%)",
+        }}
+        aria-hidden
+      />
       <SiteNav
         className="relative z-[1] pb-4 md:pb-5"
         onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
