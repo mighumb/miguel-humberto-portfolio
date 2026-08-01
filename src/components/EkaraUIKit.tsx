@@ -312,6 +312,7 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 // 4 — SWITCH
 function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(3);
+  const [hov, setHov] = useState(false);
   const states = [
     { on: false, disabled: false },
     { on: true,  disabled: false },
@@ -321,11 +322,19 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 
   const trackBg = s.disabled ? tok.border : s.on ? tok.switchOnBg : tok.switchOffBg;
   const knobBg  = s.disabled ? tok.textMuted : s.on ? tok.primary : tok.textInv;
-  const knobLeft = s.on ? 28 : 4;
+  const knobLeft = s.disabled
+    ? (s.on ? 28 : 4)
+    : s.on
+      ? (hov ? 24 : 28)
+      : (hov ? 8  : 4);
 
   return (
     <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
-      <div style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}>
+      <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}
+      >
         <div
           style={{
             position: "relative",
