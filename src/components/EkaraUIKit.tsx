@@ -5,6 +5,8 @@ import { useState, useCallback } from "react";
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 
 const LIGHT = {
+  cellBg: "#ffffff",
+  cellBgHov: "#f7f7f7",
   text: "#292929",
   textSub: "#464646",
   textMuted: "#7c7c7c",
@@ -12,30 +14,28 @@ const LIGHT = {
   border: "#bdbdbd",
   borderDark: "#001719",
   primary: "#057b80",
-  primaryLight: "#effefd",
   error: "#d7312b",
   success: "#3a8732",
   warning: "#e7660f",
   tagNormal: "#656565",
-  divider: "rgba(0,0,0,0.07)",
-  hoverBg: "rgba(0,0,0,0.025)",
+  divider: "rgba(0,0,0,0.08)",
 };
 
 const DARK = {
+  cellBg: "#1a1a1a",
+  cellBgHov: "#212121",
   text: "#f0f0f0",
   textSub: "#c8c8c8",
-  textMuted: "#666666",
+  textMuted: "#606060",
   textInv: "#fefefe",
-  border: "#383838",
+  border: "#3a3a3a",
   borderDark: "#606060",
   primary: "#0ca4ab",
-  primaryLight: "#0c2e30",
   error: "#e85450",
   success: "#4aab42",
   warning: "#f07a20",
   tagNormal: "#888888",
-  divider: "rgba(255,255,255,0.07)",
-  hoverBg: "rgba(255,255,255,0.04)",
+  divider: "rgba(255,255,255,0.08)",
 };
 
 type Tok = typeof LIGHT;
@@ -47,7 +47,9 @@ function useVariant(count: number) {
   return [v, next] as const;
 }
 
-/* ─── Atom cell wrapper ───────────────────────────────────────────── */
+/* ─── Cell wrapper ────────────────────────────────────────────────── */
+
+type CellPos = { col: 0 | 1; row: 0 | 1 };
 
 function AtomCell({
   name,
@@ -55,51 +57,54 @@ function AtomCell({
   total,
   onClick,
   tok,
+  pos,
   children,
-  col,
-  row,
-  totalCols = 2,
-  totalRows = 2,
 }: {
   name: string;
   v: number;
   total: number;
   onClick: () => void;
   tok: Tok;
+  pos: CellPos;
   children: React.ReactNode;
-  col: number;
-  row: number;
-  totalCols?: number;
-  totalRows?: number;
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [hov, setHov] = useState(false);
+
+  const radius =
+    pos.col === 0 && pos.row === 0 ? "12px 0 0 0"
+    : pos.col === 1 && pos.row === 0 ? "0 12px 0 0"
+    : pos.col === 0 && pos.row === 1 ? "0 0 0 12px"
+    : "0 0 12px 0";
 
   return (
     <div
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
         minHeight: 260,
-        padding: "48px 40px 36px",
+        padding: "48px 40px 44px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         cursor: "pointer",
         userSelect: "none",
-        background: hovered ? tok.hoverBg : "transparent",
-        transition: "background 200ms ease",
-        borderRight: col < totalCols - 1 ? `1px solid ${tok.divider}` : "none",
-        borderBottom: row < totalRows - 1 ? `1px solid ${tok.divider}` : "none",
+        background: hov ? tok.cellBgHov : tok.cellBg,
+        transition: "background 180ms ease",
+        borderRadius: radius,
+        // Inner cross dividers only — no outer border
+        borderRight: pos.col === 0 ? `1px solid ${tok.divider}` : "none",
+        borderBottom: pos.row === 0 ? `1px solid ${tok.divider}` : "none",
       }}
     >
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+      {/* Component */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
         {children}
       </div>
 
-      {/* Label + dots */}
+      {/* Label + variant dots */}
       <div
         style={{
           position: "absolute",
@@ -123,7 +128,6 @@ function AtomCell({
         >
           {name}
         </span>
-
         {total > 1 && (
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
             {Array.from({ length: total }).map((_, i) => (
@@ -149,51 +153,72 @@ function AtomCell({
    ATOMS
 ═══════════════════════════════════════════════════════════════════ */
 
-function TagAtom({ tok, col, row }: { tok: Tok; col: number; row: number }) {
-  const [v, next] = useVariant(4);
+// 1 — BUTTON
+function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [v, next] = useVariant(3);
   const variants = [
-    { bg: tok.tagNormal, label: "Label", name: "Normal" },
-    { bg: tok.success,   label: "Label", name: "Succes" },
-    { bg: tok.warning,   label: "Label", name: "Warning" },
-    { bg: tok.error,     label: "Label", name: "Error" },
+    { label: "Primary", bg: tok.primary,      color: tok.textInv, border: tok.primary      },
+    { label: "Outline", bg: "transparent",    color: tok.primary, border: tok.primary      },
+    { label: "Ghost",   bg: "transparent",    color: tok.primary, border: "transparent"    },
   ];
   const cur = variants[v];
 
   return (
-    <AtomCell name="Tag" v={v} total={4} onClick={next} tok={tok} col={col} row={row}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-        <div
-          style={{
-            background: cur.bg,
-            color: tok.textInv,
-            fontFamily: OS,
-            fontWeight: 700,
-            fontSize: 14,
-            padding: "8px 20px",
-            borderRadius: 20,
-            letterSpacing: "0.01em",
-            transition: "background 240ms ease",
-          }}
-        >
-          {cur.label}
-        </div>
-        <span
-          style={{
-            fontSize: 12,
-            fontFamily: OS,
-            fontWeight: 600,
-            color: cur.bg,
-            transition: "color 240ms ease",
-          }}
-        >
-          {cur.name}
-        </span>
+    <AtomCell name="Button" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+      <div
+        style={{
+          background: cur.bg,
+          color: cur.color,
+          border: `1.5px solid ${cur.border}`,
+          fontFamily: OS,
+          fontWeight: 700,
+          fontSize: 14,
+          padding: "10px 28px",
+          borderRadius: 8,
+          letterSpacing: "0.01em",
+          transition: "background 220ms ease, color 220ms ease, border-color 220ms ease",
+        }}
+      >
+        {cur.label}
       </div>
     </AtomCell>
   );
 }
 
-function CheckboxAtom({ tok, col, row }: { tok: Tok; col: number; row: number }) {
+// 2 — TAG
+function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [v, next] = useVariant(4);
+  const variants = [
+    { bg: tok.tagNormal, label: "Normal"  },
+    { bg: tok.success,   label: "Succes"  },
+    { bg: tok.warning,   label: "Warning" },
+    { bg: tok.error,     label: "Error"   },
+  ];
+  const cur = variants[v];
+
+  return (
+    <AtomCell name="Tag" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+      <div
+        style={{
+          background: cur.bg,
+          color: tok.textInv,
+          fontFamily: OS,
+          fontWeight: 700,
+          fontSize: 14,
+          padding: "8px 20px",
+          borderRadius: 20,
+          letterSpacing: "0.01em",
+          transition: "background 240ms ease",
+        }}
+      >
+        {cur.label}
+      </div>
+    </AtomCell>
+  );
+}
+
+// 3 — CHECKBOX
+function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(4);
   const states = [
     { label: "Default",       checked: false, indet: false, disabled: false },
@@ -201,167 +226,93 @@ function CheckboxAtom({ tok, col, row }: { tok: Tok; col: number; row: number })
     { label: "Indeterminate", checked: false, indet: true,  disabled: false },
     { label: "Disabled",      checked: false, indet: false, disabled: true  },
   ];
+  const s = states[v];
+  const hasFill = s.checked || s.indet;
 
   return (
-    <AtomCell name="Checkbox" v={v} total={4} onClick={next} tok={tok} col={col} row={row}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-        {states.map((s, i) => {
-          const isActive = i === v;
-          const hasFill = s.checked || s.indet;
-          return (
-            <div
-              key={s.label}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                opacity: s.disabled ? 0.38 : isActive ? 1 : 0.35,
-                transition: "opacity 200ms ease",
-              }}
-            >
-              <div
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: 5,
-                  border: `1.5px solid ${hasFill ? tok.primary : tok.borderDark}`,
-                  background: hasFill ? tok.primary : "transparent",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                  outline: isActive && !s.disabled ? `2.5px solid ${tok.primary}40` : "none",
-                  outlineOffset: 2,
-                  transition: "background 150ms, border-color 150ms, outline 150ms",
-                }}
-              >
-                {s.checked && (
-                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
-                    <path d="M1 4.5l3.5 3.5 6-7" stroke="#fefefe" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-                {s.indet && (
-                  <svg width="9" height="2" viewBox="0 0 9 2" fill="none">
-                    <path d="M1 1h7" stroke="#fefefe" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                )}
-              </div>
-              <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
-                {s.label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </AtomCell>
-  );
-}
-
-function SwitchAtom({ tok, col, row }: { tok: Tok; col: number; row: number }) {
-  const [v, next] = useVariant(3);
-  const states = [
-    { on: false, disabled: false, label: "Off" },
-    { on: true,  disabled: false, label: "On" },
-    { on: false, disabled: true,  label: "Disabled" },
-  ];
-
-  return (
-    <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} col={col} row={row}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 24, alignItems: "flex-start" }}>
-        {states.map((s, i) => (
-          <div
-            key={s.label}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              opacity: s.disabled ? 0.38 : i === v ? 1 : 0.35,
-              transition: "opacity 200ms ease",
-            }}
-          >
-            {/* Track */}
-            <div
-              style={{
-                position: "relative",
-                width: 44,
-                height: 26,
-                borderRadius: 13,
-                background: s.on ? tok.primary : "transparent",
-                border: `1.5px solid ${s.on ? tok.primary : tok.border}`,
-                transition: "background 200ms, border-color 200ms",
-                flexShrink: 0,
-              }}
-            >
-              {/* Knob */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 3,
-                  left: s.on ? 20 : 3,
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  background: s.on ? "#fefefe" : tok.textMuted,
-                  transition: "left 200ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.18)",
-                }}
-              />
-            </div>
-            <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 600, color: tok.textSub }}>
-              {s.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </AtomCell>
-  );
-}
-
-function ButtonAtom({ tok, col, row }: { tok: Tok; col: number; row: number }) {
-  const [v, next] = useVariant(3);
-  const variants = [
-    {
-      label: "Primary",
-      style: { background: tok.primary, color: tok.textInv, border: `1.5px solid ${tok.primary}` },
-    },
-    {
-      label: "Outline",
-      style: { background: "transparent", color: tok.primary, border: `1.5px solid ${tok.primary}` },
-    },
-    {
-      label: "Ghost",
-      style: { background: "transparent", color: tok.primary, border: "1.5px solid transparent" },
-    },
-  ];
-  const cur = variants[v];
-
-  return (
-    <AtomCell name="Button" v={v} total={3} onClick={next} tok={tok} col={col} row={row}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+    <AtomCell name="Checkbox" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          opacity: s.disabled ? 0.38 : 1,
+          transition: "opacity 200ms ease",
+        }}
+      >
         <div
           style={{
-            ...cur.style,
-            fontFamily: OS,
-            fontWeight: 700,
-            fontSize: 14,
-            padding: "10px 28px",
-            borderRadius: 8,
-            letterSpacing: "0.01em",
-            transition: "background 220ms ease, color 220ms ease, border-color 220ms ease",
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            border: `1.5px solid ${hasFill ? tok.primary : tok.borderDark}`,
+            background: hasFill ? tok.primary : "transparent",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            outline: !s.disabled ? `2.5px solid ${tok.primary}30` : "none",
+            outlineOffset: 2,
+            transition: "background 150ms, border-color 150ms",
           }}
         >
-          {cur.label}
+          {s.checked && (
+            <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+              <path d="M1 5l4 4 6-8" stroke="#fefefe" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+          {s.indet && (
+            <svg width="10" height="2" viewBox="0 0 10 2" fill="none">
+              <path d="M1 1h8" stroke="#fefefe" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          )}
         </div>
-        <span
+        <span style={{ fontSize: 14, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
+          {s.label}
+        </span>
+      </div>
+    </AtomCell>
+  );
+}
+
+// 4 — SWITCH
+function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [v, next] = useVariant(3);
+  const states = [
+    { on: false, disabled: false },
+    { on: true,  disabled: false },
+    { on: false, disabled: true  },
+  ];
+  const s = states[v];
+
+  return (
+    <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+      <div style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}>
+        <div
           style={{
-            fontSize: 12,
-            fontFamily: OS,
-            fontWeight: 600,
-            color: tok.textMuted,
+            position: "relative",
+            width: 48,
+            height: 28,
+            borderRadius: 14,
+            background: s.on ? tok.primary : "transparent",
+            border: `1.5px solid ${s.on ? tok.primary : tok.border}`,
+            transition: "background 220ms ease, border-color 220ms ease",
           }}
         >
-          {cur.label} variant
-        </span>
+          <div
+            style={{
+              position: "absolute",
+              top: 4,
+              left: s.on ? 22 : 4,
+              width: 16,
+              height: 16,
+              borderRadius: "50%",
+              background: s.on ? "#fefefe" : tok.textMuted,
+              transition: "left 220ms cubic-bezier(0.4, 0, 0.2, 1), background 220ms ease",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+            }}
+          />
+        </div>
       </div>
     </AtomCell>
   );
@@ -377,13 +328,13 @@ export default function EkaraUIKit() {
 
   return (
     <div style={{ fontFamily: OS }}>
-      {/* Section header row */}
+      {/* Header */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginBottom: 32,
+          marginBottom: 28,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -406,7 +357,7 @@ export default function EkaraUIKit() {
         <button
           onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
           style={{
-            display: "flex",
+            display: "inline-flex",
             alignItems: "center",
             gap: 7,
             padding: "6px 14px",
@@ -419,20 +370,21 @@ export default function EkaraUIKit() {
             fontSize: 12,
             fontWeight: 600,
             transition: "border-color 200ms, color 200ms",
+            whiteSpace: "nowrap",
           }}
         >
           {theme === "light" ? (
             <>
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                <circle cx="7" cy="7" r="3" stroke="currentColor" strokeWidth="1.3" />
-                <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.6 2.6l1.05 1.05M10.35 10.35l1.05 1.05M2.6 11.4l1.05-1.05M10.35 3.65l1.05-1.05" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
               Light
             </>
           ) : (
             <>
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-                <path d="M12 8.4A5.4 5.4 0 015.6 2a5.4 5.4 0 100 10 5.4 5.4 0 006.4-3.6z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               Dark
             </>
@@ -440,20 +392,19 @@ export default function EkaraUIKit() {
         </button>
       </div>
 
-      {/* 2×2 grid — no background, just dividers */}
+      {/* 2×2 grid — white/dark cells, inner dividers only */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          border: `1px solid ${tok.divider}`,
-          borderRadius: 12,
           overflow: "hidden",
+          borderRadius: 12,
         }}
       >
-        <TagAtom      tok={tok} col={0} row={0} />
-        <CheckboxAtom tok={tok} col={1} row={0} />
-        <SwitchAtom   tok={tok} col={0} row={1} />
-        <ButtonAtom   tok={tok} col={1} row={1} />
+        <ButtonAtom   tok={tok} pos={{ col: 0, row: 0 }} />
+        <TagAtom      tok={tok} pos={{ col: 1, row: 0 }} />
+        <CheckboxAtom tok={tok} pos={{ col: 0, row: 1 }} />
+        <SwitchAtom   tok={tok} pos={{ col: 1, row: 1 }} />
       </div>
     </div>
   );
