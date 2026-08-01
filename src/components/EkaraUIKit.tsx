@@ -23,7 +23,7 @@ const LIGHT = {
   divider: "rgba(0,0,0,0.08)",
   switchOffBg: "#989898",
   switchOnBg: "#bfe4e5",
-  tagHoverFilter: "brightness(0.85)",
+  tagHoverBlend: "#000000",
 };
 
 const DARK = {
@@ -45,7 +45,7 @@ const DARK = {
   divider: "rgba(255,255,255,0.08)",
   switchOffBg: "#525252",
   switchOnBg: "#0c3d40",
-  tagHoverFilter: "brightness(1.2)",
+  tagHoverBlend: "#ffffff",
 };
 
 type Tok = typeof LIGHT;
@@ -226,7 +226,9 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         style={{
-          background: cur.bg,
+          background: hov
+            ? `color-mix(in srgb, ${cur.bg} 82%, ${tok.tagHoverBlend})`
+            : cur.bg,
           color: tok.textInv,
           fontFamily: OS,
           fontWeight: 700,
@@ -234,8 +236,7 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 20px",
           borderRadius: 20,
           letterSpacing: "0.01em",
-          filter: hov ? tok.tagHoverFilter : undefined,
-          transition: "filter 180ms ease",
+          transition: "background 180ms ease",
         }}
       >
         {cur.label}
