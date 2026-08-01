@@ -440,6 +440,19 @@ export default function ProjectModal({
   const [heroPosterVisible, setHeroPosterVisible] = useState(
     () => videoPlaying && !!videoPoster,
   );
+  // On touch devices, enabling `controls` at reveal makes iOS pop its native
+  // control chrome over the hero — big center pause button, skip buttons and
+  // a DARK SCRIM — which reads as a dark flash right at the end of the
+  // card→modal transition. Controls are instead enabled on the user's first
+  // tap on the video (which is also the gesture that shows them).
+  const [isTouch] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
+  );
+  const [touchControls, setTouchControls] = useState(false);
+
+  useEffect(() => {
+    setTouchControls(false);
+  }, [project.id]);
 
   useScrollLock(true);
 
@@ -650,7 +663,12 @@ export default function ProjectModal({
                       // renders black for a beat — the flash at the end of the
                       // card→modal transition.
                       poster={videoPoster}
-                      controls={sharedContentVisible}
+                      controls={isTouch ? touchControls : sharedContentVisible}
+                      onClick={
+                        isTouch && !touchControls
+                          ? () => setTouchControls(true)
+                          : undefined
+                      }
                       autoPlay
                       loop
                       muted
