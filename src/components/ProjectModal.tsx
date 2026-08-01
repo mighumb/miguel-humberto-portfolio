@@ -93,7 +93,7 @@ function LinkedText({ text }: { text: string }) {
 }
 
 // Number of cards visibly stacked; deeper cards are not rendered
-const VISIBLE_CARDS = 6;
+const VISIBLE_CARDS = 4;
 // Full flight duration for a card leaving/entering the front slot
 const FLIGHT_MS = 680;
 // Act 1 of the "next" flight (slide out below the pile); act 2 is the remainder
@@ -247,7 +247,12 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             // Shadows are NOT transitioned: animating box-shadow forces a repaint
             // every frame. Transform + opacity stay fully GPU-composited.
             const boxShadow = slotShadow(Math.min(slot, deepestVisible));
-            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity 400ms ease`;
+            // Leaving-depth fade must be FAST: the entering back card that would
+            // cover this edge only mounts at flight end, so any lingering here
+            // reads as an extra edge below the pile.
+            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity ${
+              isLeavingDepth ? 180 : 400
+            }ms ease`;
 
             if (fly) {
               if (fly.dir === "next") {
@@ -256,11 +261,16 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
                   transform = `translate3d(0, ${dipY}px, ${Z_STEP}px) rotateX(-14deg)`;
                   transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1)`;
                 } else {
-                  // Tuck: Y rises back to the pile while Z sinks through every
-                  // layer — the card visibly slides in between the stack's
-                  // edges, deeper and deeper, until it parks at the very back.
+                  // Tuck: Y rises back to the pile while Z sinks — and the card
+                  // FADES OUT as it slides under. Its resting spot's coverer
+                  // (the entering back card) only mounts at flight end, so
+                  // parking opaque would leave a visible extra edge below the
+                  // pile for the whole second half of the flight.
                   transform = parked;
-                  transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1)`;
+                  opacity = 0;
+                  transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1), opacity ${
+                    FLIGHT_MS - PHASE1_MS
+                  }ms ease-in`;
                 }
               } else {
                 if (fly.phase === 0) {
