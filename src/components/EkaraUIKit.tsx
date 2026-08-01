@@ -23,6 +23,7 @@ const LIGHT = {
   divider: "rgba(0,0,0,0.08)",
   switchOffBg: "#989898",
   switchOnBg: "#bfe4e5",
+  tagHoverFilter: "brightness(0.85)",
 };
 
 const DARK = {
@@ -44,6 +45,7 @@ const DARK = {
   divider: "rgba(255,255,255,0.08)",
   switchOffBg: "#525252",
   switchOnBg: "#0c3d40",
+  tagHoverFilter: "brightness(1.2)",
 };
 
 type Tok = typeof LIGHT;
@@ -232,8 +234,8 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 20px",
           borderRadius: 20,
           letterSpacing: "0.01em",
-          opacity: hov ? 0.82 : 1,
-          transition: "opacity 180ms ease",
+          filter: hov ? tok.tagHoverFilter : undefined,
+          transition: "filter 180ms ease",
         }}
       >
         {cur.label}
