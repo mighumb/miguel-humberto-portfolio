@@ -13,12 +13,16 @@ const LIGHT = {
   border: "#bdbdbd",
   borderDark: "#001719",
   primary: "#057b80",
+  primaryHover: "#0a6065",
   primaryLight: "#effefd",
+  primaryLightPressed: "#c7fffb",
   error: "#d7312b",
   success: "#3a8732",
   warning: "#e7660f",
   tagNormal: "#656565",
   divider: "rgba(0,0,0,0.08)",
+  switchOffBg: "#989898",
+  switchOnBg: "#bfe4e5",
 };
 
 const DARK = {
@@ -30,12 +34,16 @@ const DARK = {
   border: "#3a3a3a",
   borderDark: "#606060",
   primary: "#0ca4ab",
+  primaryHover: "#12c4cc",
   primaryLight: "#0c2e30",
+  primaryLightPressed: "#0a2426",
   error: "#e85450",
   success: "#4aab42",
   warning: "#f07a20",
   tagNormal: "#888888",
   divider: "rgba(255,255,255,0.08)",
+  switchOffBg: "#525252",
+  switchOnBg: "#0c3d40",
 };
 
 type Tok = typeof LIGHT;
@@ -152,16 +160,27 @@ function AtomCell({
 function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(3);
   const [hov, setHov] = useState(false);
-  const variants = [
-    { label: "Primary", bg: tok.primary,      color: tok.textInv, border: tok.primary      },
-    { label: "Outline", bg: "transparent",    color: tok.primary, border: tok.primary      },
-    { label: "Ghost",   bg: "transparent",    color: tok.primary, border: "transparent"    },
-  ];
-  const cur = variants[v];
 
-  const hovBg =
-    v === 0 ? `${tok.primary}cc`
-    : tok.primaryLight;
+  const styles = {
+    0: {
+      label: "Primary",
+      bg: hov ? tok.primaryHover : tok.primary,
+      color: tok.textInv,
+      border: hov ? tok.primaryHover : tok.primary,
+    },
+    1: {
+      label: "Outline",
+      bg: hov ? tok.primaryLight : "transparent",
+      color: hov ? tok.primaryHover : tok.primary,
+      border: hov ? tok.primaryHover : tok.primary,
+    },
+    2: {
+      label: "Ghost",
+      bg: hov ? tok.primaryLight : "transparent",
+      color: hov ? tok.primaryHover : tok.primary,
+      border: "transparent",
+    },
+  }[v as 0 | 1 | 2];
 
   return (
     <AtomCell name="Button" v={v} total={3} onClick={next} tok={tok} pos={pos}>
@@ -169,9 +188,9 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
         style={{
-          background: hov ? hovBg : cur.bg,
-          color: cur.color,
-          border: `1.5px solid ${cur.border}`,
+          background: styles.bg,
+          color: styles.color,
+          border: `1.5px solid ${styles.border}`,
           fontFamily: OS,
           fontWeight: 700,
           fontSize: 14,
@@ -181,7 +200,7 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           transition: "background 220ms ease, color 220ms ease, border-color 220ms ease",
         }}
       >
-        {cur.label}
+        {styles.label}
       </div>
     </AtomCell>
   );
@@ -259,7 +278,7 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
             width: 22,
             height: 22,
             borderRadius: 6,
-            border: `1.5px solid ${hasFill ? tok.primary : hov && !s.disabled ? tok.primary : tok.borderDark}`,
+            border: `1.5px solid ${hasFill ? tok.primary : tok.borderDark}`,
             background: boxBg,
             display: "flex",
             alignItems: "center",
@@ -270,12 +289,12 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
         >
           {s.checked && (
             <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
-              <path d="M1 5l4 4 6-8" stroke="#fefefe" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M1 5l4 4 6-8" stroke="#effefd" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
           {s.indet && (
             <svg width="10" height="2" viewBox="0 0 10 2" fill="none">
-              <path d="M1 1h8" stroke="#fefefe" strokeWidth="2" strokeLinecap="round" />
+              <path d="M1 1h8" stroke="#effefd" strokeWidth="2" strokeLinecap="round" />
             </svg>
           )}
         </div>
@@ -290,7 +309,6 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 // 4 — SWITCH
 function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(3);
-  const [hov, setHov] = useState(false);
   const states = [
     { on: false, disabled: false },
     { on: true,  disabled: false },
@@ -298,40 +316,34 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   ];
   const s = states[v];
 
-  const trackBg =
-    s.on
-      ? hov && !s.disabled ? `${tok.primary}cc` : tok.primary
-      : hov && !s.disabled ? tok.primaryLight : "transparent";
+  const trackBg = s.disabled ? tok.border : s.on ? tok.switchOnBg : tok.switchOffBg;
+  const knobBg  = s.disabled ? tok.textMuted : s.on ? tok.primary : tok.textInv;
+  const knobLeft = s.on ? 28 : 4;
 
   return (
     <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
-      <div
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}
-      >
+      <div style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}>
         <div
           style={{
             position: "relative",
             width: 48,
-            height: 28,
-            borderRadius: 14,
+            height: 26,
+            borderRadius: 13,
             background: trackBg,
-            border: `1.5px solid ${s.on ? tok.primary : hov && !s.disabled ? tok.primary : tok.border}`,
-            transition: "background 220ms ease, border-color 220ms ease",
+            transition: "background 220ms ease",
           }}
         >
           <div
             style={{
               position: "absolute",
-              top: 4,
-              left: s.on ? 22 : 4,
+              top: 5,
+              left: knobLeft,
               width: 16,
               height: 16,
               borderRadius: "50%",
-              background: s.on ? "#fefefe" : tok.textMuted,
+              background: knobBg,
               transition: "left 220ms cubic-bezier(0.4, 0, 0.2, 1), background 220ms ease",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
             }}
           />
         </div>
