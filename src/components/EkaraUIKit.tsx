@@ -6,7 +6,6 @@ import { useState, useCallback } from "react";
 
 const LIGHT = {
   cellBg: "#ffffff",
-  cellBgHov: "#f7f7f7",
   text: "#292929",
   textSub: "#464646",
   textMuted: "#7c7c7c",
@@ -14,6 +13,7 @@ const LIGHT = {
   border: "#bdbdbd",
   borderDark: "#001719",
   primary: "#057b80",
+  primaryLight: "#effefd",
   error: "#d7312b",
   success: "#3a8732",
   warning: "#e7660f",
@@ -23,7 +23,6 @@ const LIGHT = {
 
 const DARK = {
   cellBg: "#1a1a1a",
-  cellBgHov: "#212121",
   text: "#f0f0f0",
   textSub: "#c8c8c8",
   textMuted: "#606060",
@@ -31,6 +30,7 @@ const DARK = {
   border: "#3a3a3a",
   borderDark: "#606060",
   primary: "#0ca4ab",
+  primaryLight: "#0c2e30",
   error: "#e85450",
   success: "#4aab42",
   warning: "#f07a20",
@@ -68,8 +68,6 @@ function AtomCell({
   pos: CellPos;
   children: React.ReactNode;
 }) {
-  const [hov, setHov] = useState(false);
-
   const radius =
     pos.col === 0 && pos.row === 0 ? "12px 0 0 0"
     : pos.col === 1 && pos.row === 0 ? "0 12px 0 0"
@@ -79,8 +77,6 @@ function AtomCell({
   return (
     <div
       onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
       style={{
         position: "relative",
         minHeight: 260,
@@ -91,8 +87,7 @@ function AtomCell({
         justifyContent: "center",
         cursor: "pointer",
         userSelect: "none",
-        background: hov ? tok.cellBgHov : tok.cellBg,
-        transition: "background 180ms ease",
+        background: tok.cellBg,
         borderRadius: radius,
         // Inner cross dividers only — no outer border
         borderRight: pos.col === 0 ? `1px solid ${tok.divider}` : "none",
@@ -156,6 +151,7 @@ function AtomCell({
 // 1 — BUTTON
 function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(3);
+  const [hov, setHov] = useState(false);
   const variants = [
     { label: "Primary", bg: tok.primary,      color: tok.textInv, border: tok.primary      },
     { label: "Outline", bg: "transparent",    color: tok.primary, border: tok.primary      },
@@ -163,11 +159,17 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   ];
   const cur = variants[v];
 
+  const hovBg =
+    v === 0 ? `${tok.primary}cc`
+    : tok.primaryLight;
+
   return (
     <AtomCell name="Button" v={v} total={3} onClick={next} tok={tok} pos={pos}>
       <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         style={{
-          background: cur.bg,
+          background: hov ? hovBg : cur.bg,
           color: cur.color,
           border: `1.5px solid ${cur.border}`,
           fontFamily: OS,
@@ -188,6 +190,7 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 // 2 — TAG
 function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(4);
+  const [hov, setHov] = useState(false);
   const variants = [
     { bg: tok.tagNormal, label: "Normal"  },
     { bg: tok.success,   label: "Succes"  },
@@ -199,6 +202,8 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   return (
     <AtomCell name="Tag" v={v} total={4} onClick={next} tok={tok} pos={pos}>
       <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         style={{
           background: cur.bg,
           color: tok.textInv,
@@ -208,7 +213,8 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 20px",
           borderRadius: 20,
           letterSpacing: "0.01em",
-          transition: "background 240ms ease",
+          opacity: hov ? 0.82 : 1,
+          transition: "opacity 180ms ease",
         }}
       >
         {cur.label}
@@ -220,6 +226,7 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 // 3 — CHECKBOX
 function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(4);
+  const [hov, setHov] = useState(false);
   const states = [
     { label: "Default",       checked: false, indet: false, disabled: false },
     { label: "Checked",       checked: true,  indet: false, disabled: false },
@@ -229,9 +236,16 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const s = states[v];
   const hasFill = s.checked || s.indet;
 
+  const boxBg =
+    hasFill ? tok.primary
+    : hov && !s.disabled ? tok.primaryLight
+    : "transparent";
+
   return (
     <AtomCell name="Checkbox" v={v} total={4} onClick={next} tok={tok} pos={pos}>
       <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         style={{
           display: "flex",
           alignItems: "center",
@@ -245,14 +259,12 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
             width: 22,
             height: 22,
             borderRadius: 6,
-            border: `1.5px solid ${hasFill ? tok.primary : tok.borderDark}`,
-            background: hasFill ? tok.primary : "transparent",
+            border: `1.5px solid ${hasFill ? tok.primary : hov && !s.disabled ? tok.primary : tok.borderDark}`,
+            background: boxBg,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            outline: !s.disabled ? `2.5px solid ${tok.primary}30` : "none",
-            outlineOffset: 2,
             transition: "background 150ms, border-color 150ms",
           }}
         >
@@ -278,6 +290,7 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 // 4 — SWITCH
 function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(3);
+  const [hov, setHov] = useState(false);
   const states = [
     { on: false, disabled: false },
     { on: true,  disabled: false },
@@ -285,17 +298,26 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   ];
   const s = states[v];
 
+  const trackBg =
+    s.on
+      ? hov && !s.disabled ? `${tok.primary}cc` : tok.primary
+      : hov && !s.disabled ? tok.primaryLight : "transparent";
+
   return (
     <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
-      <div style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}>
+      <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}
+      >
         <div
           style={{
             position: "relative",
             width: 48,
             height: 28,
             borderRadius: 14,
-            background: s.on ? tok.primary : "transparent",
-            border: `1.5px solid ${s.on ? tok.primary : tok.border}`,
+            background: trackBg,
+            border: `1.5px solid ${s.on ? tok.primary : hov && !s.disabled ? tok.primary : tok.border}`,
             transition: "background 220ms ease, border-color 220ms ease",
           }}
         >
