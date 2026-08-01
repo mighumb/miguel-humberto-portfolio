@@ -80,12 +80,31 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
   const video = card.querySelector<HTMLVideoElement>(".work-card-media video");
 
   let videoPoster: string | undefined;
-  if (showVideo && video && video.videoWidth > 0 && video.videoHeight > 0) {
+  // readyState >= HAVE_CURRENT_DATA (2) guarantees a decoded, presentable
+  // frame at currentTime. videoWidth alone only proves metadata loaded: with
+  // no decoded frame, drawImage paints nothing and the transparent canvas is
+  // flattened to SOLID BLACK by the JPEG encoder — producing a pitch-black
+  // "poster" that every downstream overlay then faithfully displays as a
+  // black flash. Common on mobile: tap before the card video finished
+  // loading, or autoplay blocked by iOS Low Power Mode.
+  if (
+    showVideo &&
+    video &&
+    video.readyState >= 2 &&
+    video.videoWidth > 0 &&
+    video.videoHeight > 0
+  ) {
     try {
+      // Cap the capture resolution: encoding a full-res 1080p+ frame with
+      // toDataURL blocks the main thread for 100-300ms on phones — a visible
+      // hitch at the exact moment of the tap. The poster is only shown during
+      // the brief flight/seek windows; 960px wide is plenty.
+      const MAX_POSTER_WIDTH = 960;
+      const scale = Math.min(1, MAX_POSTER_WIDTH / video.videoWidth);
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext("2d")?.drawImage(video, 0, 0);
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
       videoPoster = canvas.toDataURL("image/jpeg", 0.8);
     } catch {
       // cross-origin or tainted canvas — skip poster capture

@@ -21,6 +21,9 @@ interface ProjectModalProps {
   backdropVisible: boolean;
   videoPlaying: boolean;
   videoTime: number;
+  /** Frame captured from the card at click time; covers the hero video while
+   *  it seeks to the handoff position, which would otherwise render black. */
+  videoPoster?: string;
   onFlightTargetsReady: (targets: ModalTargets) => void;
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
@@ -90,7 +93,7 @@ function LinkedText({ text }: { text: string }) {
 }
 
 // Number of cards visibly stacked; deeper cards are not rendered
-const VISIBLE_CARDS = 6;
+const VISIBLE_CARDS = 4;
 // Full flight duration for a card leaving/entering the front slot
 const FLIGHT_MS = 680;
 // Act 1 of the "next" flight (slide out below the pile); act 2 is the remainder
@@ -244,7 +247,12 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
             // Shadows are NOT transitioned: animating box-shadow forces a repaint
             // every frame. Transform + opacity stay fully GPU-composited.
             const boxShadow = slotShadow(Math.min(slot, deepestVisible));
-            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity 400ms ease`;
+            // Leaving-depth fade must be FAST: the entering back card that would
+            // cover this edge only mounts at flight end, so any lingering here
+            // reads as an extra edge below the pile.
+            let transition = `transform ${FLIGHT_MS}ms ${PILE_EASE}, opacity ${
+              isLeavingDepth ? 180 : 400
+            }ms ease`;
 
             if (fly) {
               if (fly.dir === "next") {
@@ -253,11 +261,16 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
                   transform = `translate3d(0, ${dipY}px, ${Z_STEP}px) rotateX(-14deg)`;
                   transition = `transform ${PHASE1_MS}ms cubic-bezier(0.4, 0, 0.7, 1)`;
                 } else {
-                  // Tuck: Y rises back to the pile while Z sinks through every
-                  // layer — the card visibly slides in between the stack's
-                  // edges, deeper and deeper, until it parks at the very back.
+                  // Tuck: Y rises back to the pile while Z sinks — and the card
+                  // FADES OUT as it slides under. Its resting spot's coverer
+                  // (the entering back card) only mounts at flight end, so
+                  // parking opaque would leave a visible extra edge below the
+                  // pile for the whole second half of the flight.
                   transform = parked;
-                  transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1)`;
+                  opacity = 0;
+                  transition = `transform ${FLIGHT_MS - PHASE1_MS}ms cubic-bezier(0.16, 0.3, 0.24, 1), opacity ${
+                    FLIGHT_MS - PHASE1_MS
+                  }ms ease-in`;
                 }
               } else {
                 if (fly.phase === 0) {
@@ -417,6 +430,7 @@ export default function ProjectModal({
   backdropVisible,
   videoPlaying,
   videoTime,
+  videoPoster,
   onFlightTargetsReady,
   onRegisterMeasure,
 }: ProjectModalProps) {
@@ -429,6 +443,26 @@ export default function ProjectModal({
   const yearRef = useRef<HTMLSpanElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+  // The captured card frame stays layered over the hero video until the video
+  // has actually PRESENTED a frame after the reveal. The `poster` attribute is
+  // not enough: an autoplaying video that is still seeking/decoding at reveal
+  // time paints black on mobile Safari, poster or not.
+  const [heroPosterVisible, setHeroPosterVisible] = useState(
+    () => videoPlaying && !!videoPoster,
+  );
+  // On touch devices, enabling `controls` at reveal makes iOS pop its native
+  // control chrome over the hero — big center pause button, skip buttons and
+  // a DARK SCRIM — which reads as a dark flash right at the end of the
+  // card→modal transition. Controls are instead enabled on the user's first
+  // tap on the video (which is also the gesture that shows them).
+  const [isTouch] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
+  );
+  const [touchControls, setTouchControls] = useState(false);
+
+  useEffect(() => {
+    setTouchControls(false);
+  }, [project.id]);
 
   useScrollLock(true);
 
@@ -439,9 +473,43 @@ export default function ProjectModal({
   }, [project.id, project.hasVideo, videoPlaying, videoTime]);
 
   useEffect(() => {
+    // Once the modal content is revealed, drop the poster overlay as soon as
+    // the video PRESENTS a frame (rVFC when available). Deliberately no
+    // timeout: on a slow mobile connection the video can take seconds to
+    // buffer, and force-dropping the overlay would reveal a black element.
+    // If playback never starts, keeping the frozen frame is strictly better
+    // than black.
+    if (!heroPosterVisible || !sharedContentVisible) return;
     const video = heroVideoRef.current;
-    if (!video || !project.hasVideo || !project.videoUrl || videoPlaying) return;
+    if (!video) {
+      setHeroPosterVisible(false);
+      return;
+    }
+    let cancelled = false;
+    const clear = () => {
+      if (!cancelled) setHeroPosterVisible(false);
+    };
+    const rvfcVideo = video as HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: () => void) => number;
+    };
+    if (typeof rvfcVideo.requestVideoFrameCallback === "function") {
+      rvfcVideo.requestVideoFrameCallback(clear);
+    } else {
+      video.addEventListener("timeupdate", clear, { once: true });
+    }
+    return () => {
+      cancelled = true;
+      video.removeEventListener("timeupdate", clear);
+    };
+  }, [heroPosterVisible, sharedContentVisible]);
+
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video || !project.hasVideo || !project.videoUrl) return;
     if (sharedContentVisible) {
+      // Also runs in the flight-handoff case (videoPlaying): iOS can reject
+      // the play() issued while the modal was still hidden, and nothing else
+      // would retry it. play() on an already-playing video is a no-op.
       video.play().catch(() => {});
     }
   }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);
@@ -588,24 +656,48 @@ export default function ProjectModal({
             <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
-                className={`project-modal-hero aspect-video w-full overflow-hidden rounded-xl ${
+                className={`project-modal-hero relative aspect-video w-full overflow-hidden rounded-xl ${
                   coverUrl || (project.hasVideo && project.videoUrl)
                     ? "bg-bg-secondary"
                     : "project-placeholder-gradient"
                 } ${sharedHidden ? "is-shared-hidden" : ""}`}
               >
                 {project.hasVideo && project.videoUrl ? (
-                  <video
-                    ref={heroVideoRef}
-                    src={project.videoUrl}
-                    controls={sharedContentVisible}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload={videoPlaying ? "auto" : "metadata"}
-                    className="h-full w-full object-cover"
-                  />
+                  <>
+                    <video
+                      ref={heroVideoRef}
+                      src={project.videoUrl}
+                      // The flight hands off by seeking this video to the card's
+                      // playback position the instant it is revealed. A seeking
+                      // video has no frame to paint, so without a poster it
+                      // renders black for a beat — the flash at the end of the
+                      // card→modal transition.
+                      poster={videoPoster}
+                      controls={isTouch ? touchControls : sharedContentVisible}
+                      onClick={
+                        isTouch && !touchControls
+                          ? () => setTouchControls(true)
+                          : undefined
+                      }
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      preload={videoPlaying ? "auto" : "metadata"}
+                      className="h-full w-full object-cover"
+                    />
+                    {heroPosterVisible && videoPoster && (
+                      // Stays on top of the video until it presents a frame
+                      // after the reveal (see the heroPosterVisible effect).
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={videoPoster}
+                        alt=""
+                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                        aria-hidden
+                      />
+                    )}
+                  </>
                 ) : coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={coverUrl} alt="" className="h-full w-full object-cover" />

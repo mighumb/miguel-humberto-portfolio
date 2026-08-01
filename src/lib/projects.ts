@@ -81,7 +81,9 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4",
+    // ?v=2 busts browser media caches (iOS keeps serving the old bytes for a
+    // previously-fetched URL); bump it whenever this file is replaced.
+    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=2",
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
     links: {
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",

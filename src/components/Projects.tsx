@@ -622,6 +622,7 @@ export default function Projects() {
           backdropVisible={phase === "opening" || phase === "open"}
           videoPlaying={flightShowVideo}
           videoTime={flightVideoTime}
+          videoPoster={flightVideoPoster}
           onFlightTargetsReady={handleFlightTargetsReady}
           onRegisterMeasure={registerMeasure}
         />

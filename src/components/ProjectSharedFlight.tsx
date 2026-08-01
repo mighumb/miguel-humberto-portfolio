@@ -48,11 +48,40 @@ function FlightThumbnail({
   const [videoReady, setVideoReady] = useState(false);
   const coverUrl = projectCoverUrl(project);
 
+  // Touch devices get a frozen flight: mounting a fresh <video> mid-transition
+  // means a decode race that mobile Safari loses more often than not (poster
+  // and overlay tricks included), flashing black during the ~0.6s flight.
+  // The frame captured at tap time is pixel-identical to what the card showed,
+  // and the modal hero takes over the actual playback at landing.
+  const [isTouch] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
+  );
+  const useLiveVideo =
+    showVideo && !!project.hasVideo && !!project.videoUrl && !(isTouch && videoPoster);
+
   useLayoutEffect(() => {
     const video = videoRef.current;
-    if (!video || !showVideo) return;
+    if (!video || !useLiveVideo) return;
+    setVideoReady(false);
+
+    // Reveal the live video only once it's actually showing the synced frame —
+    // NOT on "canplay" alone. "canplay" can fire before our currentTime seek
+    // (in syncVideoPlayback) has settled, which would swap the poster for a
+    // frame-0 flash that then jumps to the correct time a moment later —
+    // a visible flicker right at the card→hero handoff.
+    if (videoTime > 0 && Number.isFinite(videoTime)) {
+      const onSeeked = () => setVideoReady(true);
+      video.addEventListener("seeked", onSeeked, { once: true });
+      syncVideoPlayback(video, videoTime);
+      return () => video.removeEventListener("seeked", onSeeked);
+    }
+
+    // No seek needed — the first decoded frame is already correct.
+    const onCanPlay = () => setVideoReady(true);
+    video.addEventListener("canplay", onCanPlay, { once: true });
     syncVideoPlayback(video, videoTime);
-  }, [showVideo, videoTime, project.videoUrl]);
+    return () => video.removeEventListener("canplay", onCanPlay);
+  }, [useLiveVideo, videoTime, project.videoUrl]);
 
   return (
     <div
@@ -61,17 +90,21 @@ function FlightThumbnail({
       }`}
       style={frameStyle(frame)}
     >
-      {showVideo && project.hasVideo && project.videoUrl ? (
+      {useLiveVideo ? (
         <>
           <video
             ref={videoRef}
             src={project.videoUrl}
+            // Paints the captured frame from the video element itself, so a
+            // freshly mounted (still undecoded) video is never black. The
+            // overlay <img> below covers the same gap, but it has to decode
+            // first — this closes the frame or two before that happens.
+            poster={videoPoster}
             muted
             loop
             playsInline
             preload="auto"
             className="h-full w-full object-cover"
-            onCanPlay={() => setVideoReady(true)}
           />
           {!videoReady && videoPoster && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -83,6 +116,10 @@ function FlightThumbnail({
             />
           )}
         </>
+      ) : showVideo && videoPoster ? (
+        // Frozen flight (touch): the captured tap-time frame, nothing to decode
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={videoPoster} alt="" className="h-full w-full object-cover" aria-hidden />
       ) : coverUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={coverUrl} alt="" className="h-full w-full object-cover" />
