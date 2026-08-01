@@ -8,6 +8,7 @@ import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
 import { type Project, type Deliverable, projectAssetBase, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
+import EkaraUIKit from "@/components/EkaraUIKit";
 
 interface ProjectModalProps {
   project: Project;
@@ -870,6 +871,15 @@ export default function ProjectModal({
                 </div>
               )}
             </section>
+
+            {project.uiKit && (
+              <section className="mt-16 pt-16">
+                <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
+                  UI Kit
+                </h3>
+                <EkaraUIKit />
+              </section>
+            )}
 
             <section className="mt-16 pt-16">
               <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
