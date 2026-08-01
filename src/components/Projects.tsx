@@ -468,7 +468,7 @@ export default function Projects() {
     setSharedHiddenId(project.id);
     setSharedContentVisible(false);
     setPhase("opening");
-  }, [scrollRef]);
+  }, [scrollRef, projects]);
 
   const handleFlightTargetsReady = useCallback((targets: ModalTargets) => {
     if (phaseRef.current !== "opening") return;
