@@ -451,8 +451,11 @@ export default function ProjectModal({
 
   useEffect(() => {
     // Once the modal content is revealed, drop the poster overlay as soon as
-    // the video presents its next frame (rVFC when available), with a timeout
-    // fallback so it can never get stuck.
+    // the video PRESENTS a frame (rVFC when available). Deliberately no
+    // timeout: on a slow mobile connection the video can take seconds to
+    // buffer, and force-dropping the overlay would reveal a black element.
+    // If playback never starts, keeping the frozen frame is strictly better
+    // than black.
     if (!heroPosterVisible || !sharedContentVisible) return;
     const video = heroVideoRef.current;
     if (!video) {
@@ -471,18 +474,19 @@ export default function ProjectModal({
     } else {
       video.addEventListener("timeupdate", clear, { once: true });
     }
-    const timeout = window.setTimeout(clear, 900);
     return () => {
       cancelled = true;
       video.removeEventListener("timeupdate", clear);
-      window.clearTimeout(timeout);
     };
   }, [heroPosterVisible, sharedContentVisible]);
 
   useEffect(() => {
     const video = heroVideoRef.current;
-    if (!video || !project.hasVideo || !project.videoUrl || videoPlaying) return;
+    if (!video || !project.hasVideo || !project.videoUrl) return;
     if (sharedContentVisible) {
+      // Also runs in the flight-handoff case (videoPlaying): iOS can reject
+      // the play() issued while the modal was still hidden, and nothing else
+      // would retry it. play() on an already-playing video is a no-op.
       video.play().catch(() => {});
     }
   }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);

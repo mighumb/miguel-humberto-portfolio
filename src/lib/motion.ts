@@ -95,10 +95,16 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
     video.videoHeight > 0
   ) {
     try {
+      // Cap the capture resolution: encoding a full-res 1080p+ frame with
+      // toDataURL blocks the main thread for 100-300ms on phones — a visible
+      // hitch at the exact moment of the tap. The poster is only shown during
+      // the brief flight/seek windows; 960px wide is plenty.
+      const MAX_POSTER_WIDTH = 960;
+      const scale = Math.min(1, MAX_POSTER_WIDTH / video.videoWidth);
       const canvas = document.createElement("canvas");
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.getContext("2d")?.drawImage(video, 0, 0);
+      canvas.width = Math.round(video.videoWidth * scale);
+      canvas.height = Math.round(video.videoHeight * scale);
+      canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
       videoPoster = canvas.toDataURL("image/jpeg", 0.8);
     } catch {
       // cross-origin or tainted canvas — skip poster capture
