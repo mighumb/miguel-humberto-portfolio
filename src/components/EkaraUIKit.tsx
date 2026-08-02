@@ -947,116 +947,101 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
    ORGANISMS
 ═══════════════════════════════════════════════════════════════════ */
 
-// 9 — ACCORDION
-const ACCORDION_ITEMS = [
-  {
-    title: "Livraison & délais",
-    rows: [
-      { label: "Standard", value: "3-5 jours" },
-      { label: "Express", value: "24h" },
-    ],
-  },
-  {
-    title: "Paiement & facturation",
-    rows: [
-      { label: "Carte bancaire", value: "Accepté" },
-      { label: "Virement", value: "Accepté" },
-    ],
-  },
-  {
-    title: "Retours & garantie",
-    rows: [
-      { label: "Fenêtre de retour", value: "30 jours" },
-      { label: "Garantie", value: "2 ans" },
-    ],
-  },
-];
+// 9 — CARD LOGIN
+function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [v, next] = useVariant(2);
+  const hov = v === 1;
+  const [showPw, setShowPw] = useState(false);
 
-function AccordionOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [openIndex, setOpenIndex] = useState(0);
-  const [hovIndex, setHovIndex] = useState<number | null>(null);
+  const fieldStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    height: 40,
+    padding: "0 12px",
+    border: `1.25px solid ${tok.border}`,
+    borderRadius: 8,
+    background: tok.cellBg,
+  } as const;
 
   return (
-    <AtomCell name="Accordion" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
+    <AtomCell name="Card Login" v={v} total={2} onClick={next} tok={tok} pos={pos}>
       <div
         style={{
           width: "100%",
           maxWidth: 296,
           border: `1px solid ${tok.divider}`,
-          borderRadius: 8,
+          borderRadius: 12,
           background: tok.cellBg,
-          overflow: "hidden",
+          padding: 20,
         }}
       >
-        {ACCORDION_ITEMS.map((item, i) => {
-          const isOpen = i === openIndex;
-          return (
-            <div
-              key={item.title}
-              style={{ borderTop: i > 0 ? `1px solid ${tok.divider}` : "none" }}
-            >
-              <div
-                onMouseEnter={() => setHovIndex(i)}
-                onMouseLeave={() => setHovIndex(null)}
-                // Never collapse to zero open items — that's what was
-                // shrinking the cell and shifting the whole grid row.
-                onClick={(e) => { e.stopPropagation(); setOpenIndex(i); }}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  height: 44,
-                  padding: "0 16px",
-                  cursor: "pointer",
-                  background: hovIndex === i ? tok.menuHoverBg : "transparent",
-                  transition: "background 150ms",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontFamily: OS,
-                    fontWeight: 700,
-                    color: isOpen ? tok.primary : tok.text,
-                    transition: "color 150ms",
-                  }}
-                >
-                  {item.title}
-                </span>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
-                >
-                  <path
-                    d="M6 9l6 6 6-6"
-                    stroke={isOpen ? tok.primary : tok.textSub}
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
+        <div style={{ fontSize: 15, fontFamily: OS, fontWeight: 700, color: tok.text, marginBottom: 2 }}>
+          Connexion
+        </div>
+        <div style={{ fontSize: 12, fontFamily: OS, fontWeight: 400, color: tok.textMuted, marginBottom: 16 }}>
+          Accédez à votre espace
+        </div>
 
-              {isOpen && (
-                <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-                  {item.rows.map((row) => (
-                    <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 12, fontFamily: OS, fontWeight: 400, color: tok.textMuted }}>
-                        {row.label}
-                      </span>
-                      <span style={{ fontSize: 12, fontFamily: OS, fontWeight: 700, color: tok.textSub }}>
-                        {row.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
+        {/* Email */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 600, color: tok.textMuted, marginBottom: 4 }}>
+            Email
+          </div>
+          <div style={fieldStyle}>
+            <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub, flex: 1 }}>
+              jane.doe@ekara.io
+            </span>
+          </div>
+        </div>
+
+        {/* Password */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 600, color: tok.textMuted, marginBottom: 4 }}>
+            Mot de passe
+          </div>
+          <div style={fieldStyle}>
+            <span
+              style={{
+                fontSize: 13,
+                fontFamily: OS,
+                color: tok.textSub,
+                letterSpacing: showPw ? "normal" : "0.15em",
+                flex: 1,
+              }}
+            >
+              {showPw ? "MyP@ssw0rd" : "••••••••"}
+            </span>
+            <div
+              onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
+              style={{ flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              {showPw ? <EyeOpenIcon color={tok.textMuted} /> : <EyeClosedIcon color={tok.textMuted} />}
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <div style={{ textAlign: "right", marginBottom: 16 }}>
+          <span style={{ fontSize: 11, fontFamily: OS, fontWeight: 700, color: tok.primary }}>
+            Mot de passe oublié ?
+          </span>
+        </div>
+
+        <div
+          style={{
+            height: 40,
+            borderRadius: 8,
+            background: hov ? tok.primaryHover : tok.primary,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "background 200ms",
+          }}
+        >
+          <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 700, color: tok.textInv }}>
+            Se connecter
+          </span>
+        </div>
       </div>
     </AtomCell>
   );
@@ -1591,7 +1576,7 @@ export default function EkaraUIKit() {
             borderRadius: 12,
           }}
         >
-          <AccordionOrganism         tok={tok} pos={{ col: 0, row: 0 }} />
+          <CardLoginOrganism         tok={tok} pos={{ col: 0, row: 0 }} />
           <SelectInputFilterOrganism tok={tok} pos={{ col: 1, row: 0 }} />
           <DatePickerSimpleOrganism  tok={tok} pos={{ col: 0, row: 1 }} />
           <CardReplayOrganism        tok={tok} pos={{ col: 1, row: 1 }} />
