@@ -368,19 +368,59 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
    MOLECULES
 ═══════════════════════════════════════════════════════════════════ */
 
-// 5 — INPUT FIELD
+// 5 — INPUT FIELD (password)
+function LockIcon({ color }: { color: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M12 16.5H12.009M12 14.5L12 15.5" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4.26781 18.8447L5.13499 18.7279L5.13498 18.7279L4.26781 18.8447ZM7.55966 21.9009L7.51947 22.775H7.51949L7.55966 21.9009ZM16.4403 21.9009L16.4805 22.775H16.4805L16.4403 21.9009ZM19.7322 18.8447L18.865 18.7279L18.865 18.7279L19.7322 18.8447ZM19.7322 12.1553L18.865 12.2721L18.865 12.2721L19.7322 12.1553ZM16.4403 9.09909L16.4805 8.22501H16.4805L16.4403 9.09909ZM7.55966 9.09909L7.51948 8.22501H7.51947L7.55966 9.09909ZM4.26781 12.1553L5.13498 12.2721L5.13499 12.2721L4.26781 12.1553ZM6.625 9C6.625 9.48325 7.01675 9.875 7.5 9.875C7.98325 9.875 8.375 9.48325 8.375 9H7.5H6.625ZM15.625 9C15.625 9.48325 16.0168 9.875 16.5 9.875C16.9832 9.875 17.375 9.48325 17.375 9H16.5H15.625ZM4.26781 18.8447L3.40063 18.9615C3.67998 21.0363 5.399 22.6775 7.51947 22.775L7.55966 21.9009L7.59985 21.0268C6.35326 20.9695 5.3054 19.9937 5.13499 18.7279L4.26781 18.8447ZM7.55966 21.9009L7.51949 22.775C8.94986 22.8407 10.4023 22.875 12 22.875V22V21.125C10.4283 21.125 9.00268 21.0913 7.59983 21.0268L7.55966 21.9009ZM12 22V22.875C13.5977 22.875 15.0501 22.8407 16.4805 22.775L16.4403 21.9009L16.4001 21.0268C14.9973 21.0913 13.5717 21.125 12 21.125V22ZM16.4403 21.9009L16.4805 22.775C18.601 22.6775 20.32 21.0363 20.5994 18.9615L19.7322 18.8447L18.865 18.7279C18.6946 19.9937 17.6468 20.9695 16.4001 21.0268L16.4403 21.9009ZM19.7322 18.8447L20.5994 18.9615C20.7478 17.8594 20.875 16.6965 20.875 15.5H20H19.125C19.125 16.5787 19.0102 17.65 18.865 18.7279L19.7322 18.8447ZM20 15.5H20.875C20.875 14.3035 20.7478 13.1406 20.5994 12.0385L19.7322 12.1553L18.865 12.2721C19.0102 13.35 19.125 14.4213 19.125 15.5H20ZM19.7322 12.1553L20.5994 12.0385C20.32 9.96367 18.601 8.3225 16.4805 8.22501L16.4403 9.09909L16.4001 9.97317C17.6468 10.0305 18.6946 11.0063 18.865 12.2721L19.7322 12.1553ZM16.4403 9.09909L16.4805 8.22501C15.0501 8.15926 13.5977 8.125 12 8.125V9V9.875C13.5717 9.875 14.9973 9.90868 16.4001 9.97317L16.4403 9.09909ZM12 9V8.125C10.4023 8.125 8.94987 8.15926 7.51948 8.22501L7.55966 9.09909L7.59984 9.97317C9.00267 9.90868 10.4283 9.875 12 9.875V9ZM7.55966 9.09909L7.51947 8.22501C5.399 8.3225 3.67998 9.96367 3.40063 12.0385L4.26781 12.1553L5.13499 12.2721C5.3054 11.0063 6.35326 10.0305 7.59985 9.97317L7.55966 9.09909ZM4.26781 12.1553L3.40063 12.0385C3.25225 13.1406 3.125 14.3034 3.125 15.5H4H4.875C4.875 14.4214 4.98985 13.35 5.13498 12.2721L4.26781 12.1553ZM4 15.5H3.125C3.125 16.6966 3.25225 17.8594 3.40063 18.9615L4.26781 18.8447L5.13498 18.7279C4.98985 17.65 4.875 16.5786 4.875 15.5H4ZM7.5 9H8.375V6.5H7.5H6.625V9H7.5ZM7.5 6.5H8.375C8.375 4.49797 9.99797 2.875 12 2.875V2V1.125C9.03147 1.125 6.625 3.53147 6.625 6.5H7.5ZM12 2V2.875C14.002 2.875 15.625 4.49797 15.625 6.5H16.5H17.375C17.375 3.53147 14.9686 1.125 12 1.125V2ZM16.5 6.5H15.625V9H16.5H17.375V6.5H16.5Z" fill={color} />
+    </svg>
+  );
+}
+
+function EyeOpenIcon({ color }: { color: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M22 13C22 13 18 19 12 19C6 19 2 13 2 13" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+      <circle cx="12" cy="12.4998" r="2.5" stroke={color} strokeWidth="1.75" />
+      <path d="M22 13.0002C22 13.0002 18 7.00024 12 7.00024C6 7.00024 2 13.0002 2 13.0002" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M15 7.5L16.5 5" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 10L22 8" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 8L4 10" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 7.5L7.5 5" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function EyeClosedIcon({ color }: { color: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M22 8C22 8 18 14 12 14C6 14 2 8 2 8" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M15 13.5L16.5 16" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M20 11L22 13" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M2 13L4 11" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 13.5L7.5 16" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(6);
+  const [showPw, setShowPw] = useState(false);
+
   const states = [
-    { label: "Default",  active: false, filled: false, error: false, success: false, disabled: false, value: "",               helper: "" },
-    { label: "Active",   active: true,  filled: false, error: false, success: false, disabled: false, value: "",               helper: "" },
-    { label: "Filled",   active: false, filled: true,  error: false, success: false, disabled: false, value: "john@email.com", helper: "" },
-    { label: "Error",    active: false, filled: true,  error: true,  success: false, disabled: false, value: "john@email",     helper: "Invalid format" },
-    { label: "Success",  active: false, filled: true,  error: false, success: true,  disabled: false, value: "john@email.com", helper: "Verified" },
-    { label: "Disabled", active: false, filled: false, error: false, success: false, disabled: true,  value: "",               helper: "" },
+    { label: "Default",  active: false, filled: false, error: false, success: false, disabled: false, helper: "" },
+    { label: "Active",   active: true,  filled: false, error: false, success: false, disabled: false, helper: "" },
+    { label: "Filled",   active: false, filled: true,  error: false, success: false, disabled: false, helper: "" },
+    { label: "Error",    active: false, filled: true,  error: true,  success: false, disabled: false, helper: "Incorrect password" },
+    { label: "Success",  active: false, filled: true,  error: false, success: true,  disabled: false, helper: "Password accepted" },
+    { label: "Disabled", active: false, filled: false, error: false, success: false, disabled: true,  helper: "" },
   ];
   const s = states[v];
-  const floated = s.active || s.filled;
+  const floated    = s.active || s.filled;
+  const iconColor  = tok.textMuted;
+  // 12px left-pad + 20px lock + 8px gap = 40px
+  const labelLeft  = 40;
 
   const borderColor =
     s.error   ? tok.error   :
@@ -398,21 +438,29 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   return (
     <AtomCell name="Input Field" v={v} total={6} onClick={next} tok={tok} pos={pos}>
       <div style={{ width: "100%", maxWidth: 240, opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms" }}>
+        {/* Field container */}
         <div
           style={{
             position: "relative",
             height: 52,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "0 12px",
             border: `1.5px solid ${borderColor}`,
             borderRadius: 8,
             background: tok.cellBg,
             transition: "border-color 200ms",
           }}
         >
-          {/* Floating label */}
+          {/* Lock icon */}
+          <LockIcon color={iconColor} />
+
+          {/* Floating label (absolute over the field) */}
           <span
             style={{
               position: "absolute",
-              left: 12,
+              left: labelLeft,
               top: floated ? -10 : "50%",
               transform: floated ? "none" : "translateY(-50%)",
               fontSize: floated ? 11 : 14,
@@ -427,25 +475,23 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               zIndex: 1,
             }}
           >
-            Email
+            Password
           </span>
-          {/* Value text */}
-          {floated && (
+
+          {/* Value when floated */}
+          {floated ? (
             <span
               style={{
-                position: "absolute",
-                left: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
+                flex: 1,
                 fontSize: 14,
                 fontFamily: OS,
                 color: tok.textSub,
+                letterSpacing: showPw ? "normal" : "0.15em",
                 display: "flex",
                 alignItems: "center",
-                gap: 1,
               }}
             >
-              {s.value}
+              {showPw ? "MyP@ssw0rd" : "••••••••"}
               {s.active && (
                 <span
                   style={{
@@ -453,13 +499,28 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                     width: 1.5,
                     height: 16,
                     background: tok.primary,
+                    marginLeft: 2,
                     verticalAlign: "middle",
+                    letterSpacing: "normal",
                   }}
                 />
               )}
             </span>
+          ) : (
+            <div style={{ flex: 1 }} />
+          )}
+
+          {/* Eye toggle — only when field has content */}
+          {floated && (
+            <div
+              onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
+              style={{ flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              {showPw ? <EyeOpenIcon color={iconColor} /> : <EyeClosedIcon color={iconColor} />}
+            </div>
           )}
         </div>
+
         {/* Helper text */}
         {s.helper && (
           <div
@@ -486,7 +547,6 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const isOpen = v === 2;
 
   const triggerBorder = (isHov || isOpen) ? tok.primary : tok.border;
-  const triggerBg     = (isHov || isOpen) ? tok.primaryLight : "transparent";
   const items = ["Analytics", "Reports", "Dashboard"];
 
   return (
@@ -502,8 +562,8 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             padding: "0 12px",
             border: `1.5px solid ${triggerBorder}`,
             borderRadius: isOpen ? "8px 8px 0 0" : 8,
-            background: triggerBg,
-            transition: "border-color 200ms, background 200ms",
+            background: tok.cellBg,
+            transition: "border-color 200ms",
           }}
         >
           <span style={{ fontSize: 14, fontFamily: OS, color: tok.textSub }}>View</span>
@@ -550,7 +610,8 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                   padding: "11px 12px",
                   fontSize: 14,
                   fontFamily: OS,
-                  color: tok.textSub,
+                  color: i === 0 ? tok.primary : tok.textSub,
+                  background: i === 0 ? tok.primaryLight : "transparent",
                   borderTop: i > 0 ? `1px solid ${tok.divider}` : "none",
                 }}
               >
