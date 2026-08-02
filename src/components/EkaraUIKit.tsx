@@ -1170,10 +1170,18 @@ function dateValueRank(d: DateValue) {
   return d.monthCursor * 100 + d.day; // day ≤ 31, so this sorts correctly across months
 }
 
+function todayDateValue(): DateValue {
+  const now = new Date();
+  const monthCursor = (now.getFullYear() - MONTH_CURSOR_ORIGIN_YEAR) * 12 + now.getMonth();
+  return { monthCursor, day: now.getDate() };
+}
+
 function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [monthCursor, setMonthCursor] = useState(7); // August 2026
-  const [rangeStart, setRangeStart] = useState<DateValue | null>({ monthCursor: 7, day: 10 });
-  const [rangeEnd, setRangeEnd] = useState<DateValue | null>({ monthCursor: 7, day: 14 });
+  // Defaults to today, recomputed fresh on every mount so the picker never
+  // shows a stale "today" once the calendar date has actually moved on.
+  const [monthCursor, setMonthCursor] = useState(() => todayDateValue().monthCursor);
+  const [rangeStart, setRangeStart] = useState<DateValue | null>(() => todayDateValue());
+  const [rangeEnd, setRangeEnd] = useState<DateValue | null>(null);
 
   const year = MONTH_CURSOR_ORIGIN_YEAR + Math.floor(monthCursor / 12);
   const monthIdx = ((monthCursor % 12) + 12) % 12;
