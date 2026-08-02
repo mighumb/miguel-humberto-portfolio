@@ -1159,13 +1159,26 @@ const MONTHS = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
 
-function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [monthOffset, setMonthOffset] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(14);
+// Reference point: monthCursor 0 = January 2026. Tracking an absolute count
+// (instead of a month index modulo 12) lets navigation roll over years and
+// keeps every visited month independently selectable/range-able.
+const MONTH_CURSOR_ORIGIN_YEAR = 2026;
 
-  const monthIdx = ((7 + monthOffset) % 12 + 12) % 12;
-  const daysInMonth = new Date(2026, monthIdx + 1, 0).getDate();
-  const firstDayOffset = (new Date(2026, monthIdx, 1).getDay() + 6) % 7; // Monday-first
+type DateValue = { monthCursor: number; day: number };
+
+function dateValueRank(d: DateValue) {
+  return d.monthCursor * 100 + d.day; // day ≤ 31, so this sorts correctly across months
+}
+
+function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [monthCursor, setMonthCursor] = useState(7); // August 2026
+  const [rangeStart, setRangeStart] = useState<DateValue | null>({ monthCursor: 7, day: 10 });
+  const [rangeEnd, setRangeEnd] = useState<DateValue | null>({ monthCursor: 7, day: 14 });
+
+  const year = MONTH_CURSOR_ORIGIN_YEAR + Math.floor(monthCursor / 12);
+  const monthIdx = ((monthCursor % 12) + 12) % 12;
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+  const firstDayOffset = (new Date(year, monthIdx, 1).getDay() + 6) % 7; // Monday-first
 
   // Always pad to 6 full weeks so the grid height never changes between months.
   const cells: (number | null)[] = [
@@ -1173,6 +1186,27 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
   while (cells.length < 42) cells.push(null);
+
+  const pickDay = (day: number) => {
+    const clicked: DateValue = { monthCursor, day };
+    const clickedRank = dateValueRank(clicked);
+
+    if (!rangeStart || (rangeStart && rangeEnd)) {
+      // Nothing selected yet, or a full range already exists — start over.
+      setRangeStart(clicked);
+      setRangeEnd(null);
+      return;
+    }
+
+    // One endpoint already picked — close the range, earliest first.
+    const startRank = dateValueRank(rangeStart);
+    if (clickedRank < startRank) {
+      setRangeEnd(rangeStart);
+      setRangeStart(clicked);
+    } else {
+      setRangeEnd(clicked);
+    }
+  };
 
   return (
     <AtomCell name="Date Picker" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
@@ -1188,7 +1222,7 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
           <button
-            onClick={(e) => { e.stopPropagation(); setMonthOffset((m) => m - 1); }}
+            onClick={(e) => { e.stopPropagation(); setMonthCursor((m) => m - 1); }}
             style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 4, color: tok.textSub }}
             aria-label="Mois précédent"
           >
@@ -1197,10 +1231,10 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             </svg>
           </button>
           <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 700, color: tok.text }}>
-            {MONTHS[monthIdx]} 2026
+            {MONTHS[monthIdx]} {year}
           </span>
           <button
-            onClick={(e) => { e.stopPropagation(); setMonthOffset((m) => m + 1); }}
+            onClick={(e) => { e.stopPropagation(); setMonthCursor((m) => m + 1); }}
             style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 4, color: tok.textSub }}
             aria-label="Mois suivant"
           >
@@ -1223,27 +1257,37 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
           {cells.map((day, i) => {
-            const isSelected = day !== null && monthOffset === 0 && day === selectedDay;
+            if (day === null) return <div key={i} style={{ aspectRatio: "1" }} />;
+
+            const rank = dateValueRank({ monthCursor, day });
+            const startRank = rangeStart ? dateValueRank(rangeStart) : null;
+            const endRank = rangeEnd ? dateValueRank(rangeEnd) : null;
+            const isStart = startRank !== null && rank === startRank;
+            const isEnd = endRank !== null && rank === endRank;
+            const isEndpoint = isStart || isEnd;
+            const isInRange = startRank !== null && endRank !== null && rank > startRank && rank < endRank;
+
             return (
               <div
                 key={i}
-                onClick={(e) => { e.stopPropagation(); if (day !== null) setSelectedDay(day); }}
+                onClick={(e) => { e.stopPropagation(); pickDay(day); }}
                 style={{
+                  position: "relative",
                   aspectRatio: "1",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 12,
                   fontFamily: OS,
-                  fontWeight: isSelected ? 700 : 400,
-                  color: day === null ? "transparent" : isSelected ? tok.textInv : tok.textSub,
-                  background: isSelected ? tok.primary : "transparent",
-                  borderRadius: 6,
-                  cursor: day !== null ? "pointer" : "default",
+                  fontWeight: isEndpoint ? 700 : 400,
+                  color: isEndpoint ? tok.textInv : tok.textSub,
+                  background: isEndpoint ? tok.primary : isInRange ? tok.primaryLight : "transparent",
+                  borderRadius: isEndpoint ? 6 : 0,
+                  cursor: "pointer",
                   transition: "background 150ms, color 150ms",
                 }}
               >
-                {day ?? "·"}
+                {day}
               </div>
             );
           })}
