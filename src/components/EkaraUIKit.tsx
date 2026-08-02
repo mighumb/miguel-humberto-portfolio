@@ -1023,12 +1023,14 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             onClick={(e) => { e.stopPropagation(); setActiveField("email"); }}
             style={fieldStyle("email")}
           >
-            <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
-              jane.doe@ekara.io
+            <span style={{ display: "inline-flex", alignItems: "center" }}>
+              <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
+                jane.doe@ekara.io
+              </span>
+              {activeField === "email" && (
+                <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
+              )}
             </span>
-            {activeField === "email" && (
-              <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
-            )}
             <div style={{ flex: 1 }} />
           </div>
         </div>
@@ -1044,19 +1046,21 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             onClick={(e) => { e.stopPropagation(); setActiveField("password"); }}
             style={fieldStyle("password")}
           >
-            <span
-              style={{
-                fontSize: 13,
-                fontFamily: OS,
-                color: tok.textSub,
-                letterSpacing: showPw ? "normal" : "0.15em",
-              }}
-            >
-              {showPw ? "MyP@ssw0rd" : "••••••••"}
+            <span style={{ display: "inline-flex", alignItems: "center" }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontFamily: OS,
+                  color: tok.textSub,
+                  letterSpacing: showPw ? "normal" : "0.15em",
+                }}
+              >
+                {showPw ? "MyP@ssw0rd" : "••••••••"}
+              </span>
+              {activeField === "password" && (
+                <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
+              )}
             </span>
-            {activeField === "password" && (
-              <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
-            )}
             <div style={{ flex: 1 }} />
             <div
               onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
