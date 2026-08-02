@@ -998,7 +998,9 @@ function AccordionOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
               <div
                 onMouseEnter={() => setHovIndex(i)}
                 onMouseLeave={() => setHovIndex(null)}
-                onClick={(e) => { e.stopPropagation(); setOpenIndex(isOpen ? -1 : i); }}
+                // Never collapse to zero open items — that's what was
+                // shrinking the cell and shifting the whole grid row.
+                onClick={(e) => { e.stopPropagation(); setOpenIndex(i); }}
                 style={{
                   display: "flex",
                   alignItems: "center",
