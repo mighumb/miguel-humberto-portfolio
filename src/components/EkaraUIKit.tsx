@@ -337,6 +337,8 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
 }
 
 // 4 — SWITCH
+// Figma (node 5920:18688), size S: track 40×24, knob 28 — the knob is LARGER
+// than the track and overhangs it by 4px horizontally / 2px vertically.
 function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(3);
   const [hov, setHov] = useState(false);
@@ -347,45 +349,63 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   ];
   const s = states[v];
 
+  const TRACK_W = 40;
+  const TRACK_H = 24;
+  const KNOB    = 28;
+  const OFF_X   = -4;                        // overhangs the left edge
+  const ON_X    = TRACK_W - KNOB + 4;        // overhangs the right edge
+
   const trackBg = s.disabled ? tok.border : s.on ? tok.switchOnBg : tok.switchOffBg;
   const knobBg  = s.disabled ? tok.textMuted : s.on ? tok.primary : tok.textInv;
   const knobLeft = s.disabled
-    ? (s.on ? 28 : 4)
+    ? (s.on ? ON_X : OFF_X)
     : s.on
-      ? (hov ? 24 : 28)
-      : (hov ? 8  : 4);
+      ? (hov ? ON_X - 4 : ON_X)
+      : (hov ? OFF_X + 4 : OFF_X);
 
   return (
     <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
-        style={{ opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms ease" }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          paddingLeft: 4, // room for the knob's left overhang
+          opacity: s.disabled ? 0.38 : 1,
+          transition: "opacity 200ms ease",
+        }}
       >
         <div
           style={{
             position: "relative",
-            width: 48,
-            height: 26,
-            borderRadius: 13,
+            width: TRACK_W,
+            height: TRACK_H,
+            borderRadius: TRACK_H / 2,
             background: trackBg,
+            flexShrink: 0,
             transition: "background 220ms ease",
           }}
         >
           <div
             style={{
               position: "absolute",
-              top: 5,
+              top: (TRACK_H - KNOB) / 2,
               left: knobLeft,
-              width: 16,
-              height: 16,
+              width: KNOB,
+              height: KNOB,
               borderRadius: "50%",
               background: knobBg,
               transition: "left 220ms cubic-bezier(0.4, 0, 0.2, 1), background 220ms ease",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.25)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.16)",
             }}
           />
         </div>
+        {/* text/body-2 #464646, Open Sans SemiBold 14 */}
+        <span style={{ fontSize: 14, fontFamily: OS, fontWeight: 600, color: tok.menuText }}>
+          Label
+        </span>
       </div>
     </AtomCell>
   );
@@ -557,19 +577,28 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 }
 
 // 6 — SELECT
+const SELECT_ITEMS = ["None", "Placeholder text 1", "Placeholder text 2", "Placeholder text 3"];
+
 function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  // Closed (0) → Open (1): a single click opens it, like a real select.
-  const [v, next] = useVariant(2);
+  // A single click opens it, like a real select.
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(0);
   const [hov, setHov] = useState(false);
   const [itemHov, setItemHov] = useState<number | null>(null);
-  const isOpen = v === 1;
 
   // input/default #bdbdbd — input/hover #464646 — input/active #057b80
-  const triggerBorder = isOpen ? tok.primary : hov ? tok.inputHoverStroke : tok.border;
-  const items = ["Placeholder text", "Placeholder text", "Placeholder text"];
+  const triggerBorder = open ? tok.primary : hov ? tok.inputHoverStroke : tok.border;
 
   return (
-    <AtomCell name="Select" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
+    <AtomCell
+      name="Select"
+      v={open ? 1 : 0}
+      total={2}
+      onClick={() => setOpen((o) => !o)}
+      tok={tok}
+      pos={pos}
+      raised={open}
+    >
       <div style={{ width: "100%", maxWidth: 220, position: "relative" }}>
         {/* Trigger — radius stays 8px on all corners in every state */}
         <div
@@ -587,22 +616,32 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             transition: "border-color 200ms",
           }}
         >
-          <span style={{ fontSize: 14, fontFamily: OS, fontWeight: 400, color: tok.textMuted }}>
-            None
+          <span
+            style={{
+              fontSize: 14,
+              fontFamily: OS,
+              fontWeight: 400,
+              color: selected === 0 ? tok.textMuted : tok.textSub,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {SELECT_ITEMS[selected]}
           </span>
           <svg
             width="16"
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
+            style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
           >
             <path d="M6 9l6 6 6-6" stroke={tok.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
 
         {/* Dropdown — detached floating card: 4px gap, own 8px radius, shadow, no border, no dividers */}
-        {isOpen && (
+        {open && (
           <div
             style={{
               position: "absolute",
@@ -611,32 +650,49 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               right: 0,
               borderRadius: 8,
               background: tok.menuSurface,
-              padding: "8px 0",
+              padding: "6px 0",
               boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
               zIndex: 2,
             }}
           >
-            {items.map((item, i) => (
-              <div
-                key={i}
-                onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
-                onMouseLeave={() => setItemHov(null)}
-                style={{
-                  height: 40,
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "0 16px",
-                  fontSize: 14,
-                  fontFamily: OS,
-                  fontWeight: 600,
-                  color: tok.menuText,
-                  background: itemHov === i ? tok.menuHoverBg : "transparent",
-                  transition: "background 150ms",
-                }}
-              >
-                {item}
-              </div>
-            ))}
+            {SELECT_ITEMS.map((item, i) => {
+              const isActive = i === selected;
+              return (
+                <div
+                  key={i}
+                  onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
+                  onMouseLeave={() => setItemHov(null)}
+                  onClick={(e) => {
+                    // Pick the value without letting AtomCell toggle the panel back open.
+                    e.stopPropagation();
+                    setSelected(i);
+                    setOpen(false);
+                    setItemHov(null);
+                  }}
+                  style={{
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 16px",
+                    fontSize: 14,
+                    fontFamily: OS,
+                    fontWeight: 600,
+                    // item-menu/active: bg #effefd, text #057b80
+                    color: isActive ? tok.primary : tok.menuText,
+                    background:
+                      isActive ? tok.primaryLight
+                      : itemHov === i ? tok.menuHoverBg
+                      : "transparent",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    transition: "background 150ms, color 150ms",
+                  }}
+                >
+                  {item}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -794,10 +850,16 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 
   return (
     <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      {/* Fixed-size box: the panel is absolutely positioned inside it, so opening
+          the menu never changes the cell height and the grid stays put. */}
+      <div style={{ position: "relative", width: 168, height: 164 }}>
         {/* Trigger — no border, no box */}
         <div
           style={{
+            position: "absolute",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
             width: 36,
             height: 36,
             borderRadius: 8,
@@ -819,11 +881,13 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
         {isOpen && (
           <div
             style={{
-              marginTop: 8,
+              position: "absolute",
+              top: 44,
+              left: 0,
               width: 168,
               borderRadius: 8,
               background: tok.menuSurface,
-              padding: "8px 0",
+              padding: "6px 0",
               overflow: "hidden",
               boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
             }}
@@ -839,7 +903,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                     display: "flex",
                     alignItems: "center",
                     gap: 10,
-                    height: 40,
+                    height: 36,
                     padding: "0 16px",
                     fontSize: 14,
                     fontFamily: OS,
