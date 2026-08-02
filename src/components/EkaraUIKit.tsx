@@ -1023,12 +1023,13 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             onClick={(e) => { e.stopPropagation(); setActiveField("email"); }}
             style={fieldStyle("email")}
           >
-            <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub, flex: 1 }}>
+            <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
               jane.doe@ekara.io
             </span>
             {activeField === "email" && (
               <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
             )}
+            <div style={{ flex: 1 }} />
           </div>
         </div>
 
@@ -1049,7 +1050,6 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
                 fontFamily: OS,
                 color: tok.textSub,
                 letterSpacing: showPw ? "normal" : "0.15em",
-                flex: 1,
               }}
             >
               {showPw ? "MyP@ssw0rd" : "••••••••"}
@@ -1057,6 +1057,7 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             {activeField === "password" && (
               <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
             )}
+            <div style={{ flex: 1 }} />
             <div
               onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
               style={{ flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
