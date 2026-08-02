@@ -846,55 +846,64 @@ const KEBAB_ITEMS = [
 function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(2);
   const [itemHov, setItemHov] = useState<number | null>(null);
+  const [trigHov, setTrigHov] = useState(false);
   const isOpen = v === 1;
+  const dotColor = isOpen ? tok.primary : tok.text;
 
   return (
     <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
-      {/* Fixed-size box: the panel is absolutely positioned inside it, so opening
-          the menu never changes the cell height and the grid stays put. */}
-      <div style={{ position: "relative", width: 168, height: 164 }}>
-        {/* Trigger — no border, no box */}
+      {/* Anchor is only as tall as the trigger, so the cell never resizes.
+          The block inside is centred on the anchor, so opening the menu
+          slides the trigger up instead of pushing the grid around. */}
+      <div style={{ position: "relative", width: 140, height: 40 }}>
         <div
           style={{
             position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: 36,
-            height: 36,
-            borderRadius: 8,
+            top: "50%",
+            left: 0,
+            right: 0,
+            transform: "translateY(-50%)",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: isOpen ? tok.primaryLight : "transparent",
-            transition: "background 200ms",
+            flexDirection: "column",
+            alignItems: "flex-end", // Figma: items-end — card hangs left of the trigger
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="5"  r="1.5" fill={isOpen ? tok.primary : tok.textMuted} />
-            <circle cx="12" cy="12" r="1.5" fill={isOpen ? tok.primary : tok.textMuted} />
-            <circle cx="12" cy="19" r="1.5" fill={isOpen ? tok.primary : tok.textMuted} />
-          </svg>
-        </div>
-
-        {/* Menu panel — shadow only, no border, no dividers */}
-        {isOpen && (
+          {/* Trigger — 40×40 circular, 4px dots spread over 20px */}
           <div
+            onMouseEnter={() => setTrigHov(true)}
+            onMouseLeave={() => setTrigHov(false)}
             style={{
-              position: "absolute",
-              top: 44,
-              left: 0,
-              width: 168,
-              borderRadius: 8,
-              background: tok.menuSurface,
-              padding: "6px 0",
-              overflow: "hidden",
-              boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
+              width: 40,
+              height: 40,
+              borderRadius: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              background: isOpen || trigHov ? tok.primaryLight : "transparent",
+              transition: "background 200ms",
             }}
           >
-            {KEBAB_ITEMS.map((item, i) => {
-              const c = item.label === "Delete" ? tok.error : tok.menuText;
-              return (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="4"  r="2" fill={dotColor} />
+              <circle cx="12" cy="12" r="2" fill={dotColor} />
+              <circle cx="12" cy="20" r="2" fill={dotColor} />
+            </svg>
+          </div>
+
+          {/* Menu card — shadow only, no border, no dividers */}
+          {isOpen && (
+            <div
+              style={{
+                width: "100%",
+                borderRadius: 8,
+                background: tok.menuSurface,
+                padding: "10px 0",
+                overflow: "hidden",
+                boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
+              }}
+            >
+              {KEBAB_ITEMS.map((item, i) => (
                 <div
                   key={item.label}
                   onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
@@ -902,26 +911,26 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
-                    height: 36,
-                    padding: "0 16px",
+                    gap: 8,
+                    height: 44,
+                    padding: "0 20px 0 12px",
                     fontSize: 14,
                     fontFamily: OS,
                     fontWeight: 600,
-                    color: c,
+                    color: tok.menuText,
                     background: itemHov === i ? tok.menuHoverBg : "transparent",
                     transition: "background 150ms",
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                    {item.icon(c)}
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    {item.icon(tok.menuText)}
                   </svg>
                   {item.label}
                 </div>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </AtomCell>
   );
