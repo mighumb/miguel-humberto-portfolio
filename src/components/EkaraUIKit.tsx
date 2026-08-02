@@ -24,6 +24,19 @@ const LIGHT = {
   switchOffBg: "#989898",
   switchOnBg: "#bfe4e5",
   tagHoverBlend: "#000000",
+  // input/hover/stroke
+  inputHoverStroke: "#464646",
+  // item-menu tokens
+  menuText: "#464646",
+  menuHoverBg: "#f2f2f2",
+  menuSurface: "#fefefe",
+  // snackbar & alert — exact Figma tokens
+  snack: {
+    warning: { bg: "#fddcab", text: "#421808", icon: "#b45309" },
+    error:   { bg: "#fccecc", text: "#430e0c", icon: "#c0271f" },
+    success: { bg: "#cbebc7", text: "#0f260d", icon: "#2f7028" },
+    info:    { bg: "#c6def7", text: "#1e2b4d", icon: "#2058a8" },
+  },
 };
 
 const DARK = {
@@ -46,6 +59,16 @@ const DARK = {
   switchOffBg: "#525252",
   switchOnBg: "#0c3d40",
   tagHoverBlend: "#ffffff",
+  inputHoverStroke: "#c8c8c8",
+  menuText: "#c8c8c8",
+  menuHoverBg: "#2a2a2a",
+  menuSurface: "#242424",
+  snack: {
+    warning: { bg: "#3d2a12", text: "#fddcab", icon: "#f0a35c" },
+    error:   { bg: "#3d1d1c", text: "#fccecc", icon: "#ef7a75" },
+    success: { bg: "#1c3319", text: "#cbebc7", icon: "#7fc276" },
+    info:    { bg: "#1b2a3d", text: "#c6def7", icon: "#7aaef0" },
+  },
 };
 
 type Tok = typeof LIGHT;
@@ -68,6 +91,7 @@ function AtomCell({
   onClick,
   tok,
   pos,
+  raised,
   children,
 }: {
   name: string;
@@ -76,6 +100,8 @@ function AtomCell({
   onClick: () => void;
   tok: Tok;
   pos: CellPos;
+  /** Lifts the cell above its siblings so an open dropdown isn't painted over. */
+  raised?: boolean;
   children: React.ReactNode;
 }) {
   const radius =
@@ -89,6 +115,7 @@ function AtomCell({
       onClick={onClick}
       style={{
         position: "relative",
+        zIndex: raised ? 5 : undefined,
         minHeight: 260,
         padding: "48px 40px 44px",
         display: "flex",
@@ -425,7 +452,7 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
     s.error   ? tok.error   :
     s.success ? tok.success :
     s.active  ? tok.primary :
-    hov && !s.disabled ? tok.text :
+    hov && !s.disabled ? tok.inputHoverStroke :
     tok.border;
 
   const labelColor =
@@ -448,7 +475,7 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             alignItems: "center",
             gap: 8,
             padding: "0 12px",
-            border: `1.5px solid ${borderColor}`,
+            border: `1.25px solid ${borderColor}`,
             borderRadius: 8,
             background: tok.cellBg,
             transition: "border-color 200ms",
@@ -495,9 +522,9 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                 <span
                   style={{
                     display: "inline-block",
-                    width: 1.5,
+                    width: 1,
                     height: 16,
-                    background: tok.primary,
+                    background: tok.text,
                     marginLeft: 2,
                     verticalAlign: "middle",
                     letterSpacing: "normal",
@@ -531,18 +558,20 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 
 // 6 — SELECT
 function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  // 2 states: closed (0) → open (1)
+  // Closed (0) → Open (1): a single click opens it, like a real select.
   const [v, next] = useVariant(2);
   const [hov, setHov] = useState(false);
   const [itemHov, setItemHov] = useState<number | null>(null);
   const isOpen = v === 1;
 
-  const triggerBorder = isOpen ? tok.primary : hov ? tok.text : tok.border;
-  const items = ["Analytics", "Reports", "Dashboard"];
+  // input/default #bdbdbd — input/hover #464646 — input/active #057b80
+  const triggerBorder = isOpen ? tok.primary : hov ? tok.inputHoverStroke : tok.border;
+  const items = ["Placeholder text", "Placeholder text", "Placeholder text"];
 
   return (
-    <AtomCell name="Select" v={v} total={2} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Select" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
       <div style={{ width: "100%", maxWidth: 220, position: "relative" }}>
+        {/* Trigger — radius stays 8px on all corners in every state */}
         <div
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
@@ -552,13 +581,15 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             justifyContent: "space-between",
             height: 44,
             padding: "0 12px",
-            border: `1.5px solid ${triggerBorder}`,
-            borderRadius: isOpen ? "8px 8px 0 0" : 8,
+            border: `1.25px solid ${triggerBorder}`,
+            borderRadius: 8,
             background: tok.cellBg,
             transition: "border-color 200ms",
           }}
         >
-          <span style={{ fontSize: 14, fontFamily: OS, color: tok.textSub }}>View</span>
+          <span style={{ fontSize: 14, fontFamily: OS, fontWeight: 400, color: tok.textMuted }}>
+            None
+          </span>
           <svg
             width="16"
             height="16"
@@ -566,21 +597,22 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             fill="none"
             style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
           >
-            <path d="M6 9l6 6 6-6" stroke={tok.textSub} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M6 9l6 6 6-6" stroke={tok.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
+
+        {/* Dropdown — detached floating card: 4px gap, own 8px radius, shadow, no border, no dividers */}
         {isOpen && (
           <div
             style={{
               position: "absolute",
-              top: "100%",
+              top: "calc(100% + 4px)",
               left: 0,
               right: 0,
-              border: `1.5px solid ${tok.primary}`,
-              borderTop: "none",
-              borderRadius: "0 0 8px 8px",
-              background: tok.cellBg,
-              overflow: "hidden",
+              borderRadius: 8,
+              background: tok.menuSurface,
+              padding: "8px 0",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
               zIndex: 2,
             }}
           >
@@ -590,11 +622,15 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                 onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
                 onMouseLeave={() => setItemHov(null)}
                 style={{
-                  padding: "11px 12px",
+                  height: 40,
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 16px",
                   fontSize: 14,
                   fontFamily: OS,
-                  color: tok.textSub,
-                  background: itemHov === i ? tok.divider : "transparent",
+                  fontWeight: 600,
+                  color: tok.menuText,
+                  background: itemHov === i ? tok.menuHoverBg : "transparent",
                   transition: "background 150ms",
                 }}
               >
@@ -609,97 +645,106 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 }
 
 // 7 — SNACKBAR
-function SnackbarIcon({ type, color }: { type: string; color: string }) {
-  if (type === "Warning") return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+function SnackbarIcon({ type, color }: { type: "warning" | "error" | "success" | "info"; color: string }) {
+  if (type === "warning") return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path
         d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
-        stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
       />
-      <line x1="12" y1="9" x2="12" y2="13" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      <circle cx="12" cy="17" r="0.75" fill={color} />
+      <path d="M12 9.5v4" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="1" fill={color} />
     </svg>
   );
-  if (type === "Error") return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5" />
-      <path d="M15 9l-6 6M9 9l6 6" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+  if (type === "error") return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9.5" stroke={color} strokeWidth="1.75" />
+      <path d="M12 7v6" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
+      <circle cx="12" cy="16.5" r="1" fill={color} />
     </svg>
   );
-  if (type === "Success") return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5" />
-      <path d="M8 12l3 3 5-5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  if (type === "success") return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9.5" stroke={color} strokeWidth="1.75" />
+      <path d="M7.8 12.2l2.9 2.9 5.5-6" stroke={color} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke={color} strokeWidth="1.5" />
-      <circle cx="12" cy="8.5" r="0.75" fill={color} />
-      <line x1="12" y1="12" x2="12" y2="16" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9.5" stroke={color} strokeWidth="1.75" />
+      <circle cx="12" cy="7.8" r="1" fill={color} />
+      <path d="M12 11.5v5" stroke={color} strokeWidth="1.75" strokeLinecap="round" />
     </svg>
   );
 }
 
 const SNACKBAR_DEFS = [
-  { type: "Warning", message: "Check your connection", action: "Retry",   getAccent: (t: Tok) => t.warning },
-  { type: "Error",   message: "Something went wrong",  action: "Dismiss", getAccent: (t: Tok) => t.error   },
-  { type: "Success", message: "Changes saved",          action: "View",    getAccent: (t: Tok) => t.success  },
-  { type: "Info",    message: "New update available",   action: "Update",  getAccent: (t: Tok) => t.primary  },
+  { key: "warning" as const, label: "Warning" },
+  { key: "error"   as const, label: "Error"   },
+  { key: "success" as const, label: "Succes"  },
+  { key: "info"    as const, label: "Information" },
 ];
 
 function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(4);
-  const def    = SNACKBAR_DEFS[v];
-  const accent = def.getAccent(tok);
-  // No border — solid pastel background only
-  const bg     = `${accent}28`;
+  const def = SNACKBAR_DEFS[v];
+  const c   = tok.snack[def.key];
 
   return (
     <AtomCell name="Snackbar" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+      {/* Figma: pl-16 pr-12 py-8, gap 8, radius 8, no border */}
       <div
         style={{
           width: "100%",
-          maxWidth: 280,
+          maxWidth: 300,
           display: "flex",
           alignItems: "center",
-          gap: 10,
-          padding: "12px 14px",
+          gap: 8,
+          padding: "8px 12px 8px 16px",
           borderRadius: 8,
-          background: bg,
+          background: c.bg,
           transition: "background 200ms",
         }}
       >
-        <div style={{ flexShrink: 0 }}>
-          <SnackbarIcon type={def.type} color={accent} />
+        {/* Only the icon carries the type colour */}
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>
+          <SnackbarIcon type={def.key} color={c.icon} />
         </div>
+
+        {/* Message — Open Sans SemiBold 14, type text colour */}
         <span
           style={{
             flex: 1,
+            minWidth: 0,
             fontSize: 13,
             fontFamily: OS,
-            color: tok.text,
-            fontWeight: 400,
+            fontWeight: 600,
+            color: c.text,
+            lineHeight: 1.5,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
         >
-          {def.message}
+          Snackbar supporting text
         </span>
+
+        {/* Action — Open Sans Bold, same dark type text colour (never the icon colour) */}
         <span
           style={{
             fontSize: 12,
             fontFamily: OS,
             fontWeight: 700,
-            color: accent,
+            color: c.text,
             flexShrink: 0,
+            padding: "0 4px",
           }}
         >
-          {def.action}
+          Action
         </span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-          <path d="M18 6L6 18M6 6l12 12" stroke={accent} strokeWidth="1.5" strokeLinecap="round" />
+
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+          <path d="M18 6L6 18M6 6l12 12" stroke={c.text} strokeWidth="2" strokeLinecap="round" />
         </svg>
       </div>
     </AtomCell>
@@ -707,12 +752,48 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 }
 
 // 8 — KEBAB MENU
+const KEBAB_ITEMS = [
+  {
+    label: "Export",
+    icon: (c: string) => (
+      <path
+        d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
+        stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      />
+    ),
+  },
+  {
+    label: "Share",
+    icon: (c: string) => (
+      <>
+        <circle cx="18" cy="5"  r="3" stroke={c} strokeWidth="1.5" />
+        <circle cx="6"  cy="12" r="3" stroke={c} strokeWidth="1.5" />
+        <circle cx="18" cy="19" r="3" stroke={c} strokeWidth="1.5" />
+        <path d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49" stroke={c} strokeWidth="1.5" strokeLinecap="round" />
+      </>
+    ),
+  },
+  {
+    label: "Delete",
+    icon: (c: string) => (
+      <>
+        <polyline points="3 6 5 6 21 6" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"
+          stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+        />
+      </>
+    ),
+  },
+];
+
 function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(2);
+  const [itemHov, setItemHov] = useState<number | null>(null);
   const isOpen = v === 1;
 
   return (
-    <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         {/* Trigger — no border, no box */}
         <div
@@ -739,80 +820,42 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div
             style={{
               marginTop: 8,
-              width: 160,
+              width: 168,
               borderRadius: 8,
-              background: tok.cellBg,
+              background: tok.menuSurface,
+              padding: "8px 0",
               overflow: "hidden",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
             }}
           >
-            {/* Export */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "11px 14px",
-                fontSize: 13,
-                fontFamily: OS,
-                color: tok.textSub,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"
-                  stroke={tok.textSub} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                />
-              </svg>
-              Export
-            </div>
-            {/* Share */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "11px 14px",
-                fontSize: 13,
-                fontFamily: OS,
-                color: tok.textSub,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <circle cx="18" cy="5"  r="3" stroke={tok.textSub} strokeWidth="1.5" />
-                <circle cx="6"  cy="12" r="3" stroke={tok.textSub} strokeWidth="1.5" />
-                <circle cx="18" cy="19" r="3" stroke={tok.textSub} strokeWidth="1.5" />
-                <path
-                  d="M8.59 13.51l6.83 3.98M15.41 6.51L8.59 10.49"
-                  stroke={tok.textSub} strokeWidth="1.5" strokeLinecap="round"
-                />
-              </svg>
-              Share
-            </div>
-            {/* Delete */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "11px 14px",
-                fontSize: 13,
-                fontFamily: OS,
-                color: tok.error,
-              }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <polyline
-                  points="3 6 5 6 21 6"
-                  stroke={tok.error} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                />
-                <path
-                  d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"
-                  stroke={tok.error} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                />
-              </svg>
-              Delete
-            </div>
+            {KEBAB_ITEMS.map((item, i) => {
+              const c = item.label === "Delete" ? tok.error : tok.menuText;
+              return (
+                <div
+                  key={item.label}
+                  onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
+                  onMouseLeave={() => setItemHov(null)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    height: 40,
+                    padding: "0 16px",
+                    fontSize: 14,
+                    fontFamily: OS,
+                    fontWeight: 600,
+                    color: c,
+                    background: itemHov === i ? tok.menuHoverBg : "transparent",
+                    transition: "background 150ms",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                    {item.icon(c)}
+                  </svg>
+                  {item.label}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
