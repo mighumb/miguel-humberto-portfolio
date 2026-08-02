@@ -39,6 +39,8 @@ export interface Project {
   processImages?: string[];
   /** Overrides the "Process" section heading for this project. */
   processTitle?: { en: string; fr: string };
+  /** Shows the interactive Ekara UI Kit section in the modal. */
+  uiKit?: boolean;
 }
 
 /** Public URL root for a project's local assets. */
@@ -198,6 +200,7 @@ export const projects: Project[] = [
       "process/deliverable-ekara-design-system-typography-color-palette-codes-and-accessibility-3.png",
       "process/deliverable-ekara-design-system-typography-color-palette-codes-and-accessibility-4.png",
     ],
+    uiKit: true,
   },
   {
     id: "c02",
