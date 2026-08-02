@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 
@@ -461,6 +461,8 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(6);
   const [showPw, setShowPw] = useState(false);
   const [hov, setHov] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [value, setValue] = useState("");
 
   const states = [
     { label: "Default",  active: false, filled: false, error: false, success: false, disabled: false, helper: "" },
@@ -471,20 +473,30 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
     { label: "Disabled", active: false, filled: false, error: false, success: false, disabled: true,  helper: "" },
   ];
   const s = states[v];
-  const floated   = s.active || s.filled;
   const iconColor = tok.textMuted;
+
+  // Clicking the field explores the 6 documented states (unchanged). Each
+  // state seeds a canonical value so "Filled/Error/Success" don't look
+  // empty — from there the field is a real input: typing, selecting and
+  // repositioning the caret all work normally without jumping states.
+  useEffect(() => {
+    setValue(s.filled ? "MyP@ssw0rd" : "");
+    setFocused(false);
+  }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const floated = focused || value.length > 0 || s.active || s.filled;
 
   const borderColor =
     s.error   ? tok.error   :
     s.success ? tok.success :
-    s.active  ? tok.primary :
+    (focused || s.active) ? tok.primary :
     hov && !s.disabled ? tok.inputHoverStroke :
     tok.border;
 
   const labelColor =
     s.error   ? tok.error   :
     s.success ? tok.success :
-    s.active  ? tok.primary :
+    (focused || s.active) ? tok.primary :
     floated   ? tok.textSub :
     tok.textMuted;
 
@@ -533,36 +545,32 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             Password
           </span>
 
-          {floated ? (
-            <span
-              style={{
-                flex: 1,
-                fontSize: 14,
-                fontFamily: OS,
-                color: tok.textSub,
-                letterSpacing: showPw ? "normal" : "0.15em",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {showPw ? "MyP@ssw0rd" : "••••••••"}
-              {s.active && (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 1,
-                    height: 16,
-                    background: tok.text,
-                    marginLeft: 2,
-                    verticalAlign: "middle",
-                    letterSpacing: "normal",
-                  }}
-                />
-              )}
-            </span>
-          ) : (
-            <div style={{ flex: 1 }} />
-          )}
+          {/* Real input — clicks stop here so typing/selecting/repositioning
+              the caret never triggers the state cycle above. Clicking the
+              icon or the field's padding still cycles through the states. */}
+          <input
+            type={showPw ? "text" : "password"}
+            value={value}
+            disabled={s.disabled}
+            autoComplete="off"
+            onChange={(e) => setValue(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 14,
+              fontFamily: OS,
+              color: tok.textSub,
+              letterSpacing: showPw ? "normal" : "0.15em",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              padding: 0,
+              cursor: s.disabled ? "not-allowed" : "text",
+            }}
+          />
 
           {floated && (
             <div
@@ -967,14 +975,16 @@ type LoginField = "email" | "password";
 
 function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [showPw, setShowPw] = useState(false);
-  const [activeField, setActiveField] = useState<LoginField | null>(null);
+  const [email, setEmail] = useState("jane.doe@ekara.io");
+  const [password, setPassword] = useState("MyP@ssw0rd");
+  const [focusedField, setFocusedField] = useState<LoginField | null>(null);
   const [hovField, setHovField] = useState<LoginField | null>(null);
   const [btnHov, setBtnHov] = useState(false);
   const [btnPressed, setBtnPressed] = useState(false);
   const [linkHov, setLinkHov] = useState(false);
 
   const fieldBorder = (field: LoginField) =>
-    activeField === field ? tok.primary
+    focusedField === field ? tok.primary
     : hovField === field ? tok.inputHoverStroke
     : tok.border;
 
@@ -987,9 +997,21 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
     border: `1.25px solid ${fieldBorder(field)}`,
     borderRadius: 8,
     background: tok.cellBg,
-    cursor: "text",
     transition: "border-color 150ms",
   }) as const;
+
+  const inputStyle = {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 13,
+    fontFamily: OS,
+    color: tok.textSub,
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    padding: 0,
+    cursor: "text",
+  } as const;
 
   // The whole card is never itself clickable — every interaction lives on
   // the individual field/link/button, so the cell click cycle is off.
@@ -1020,18 +1042,17 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div
             onMouseEnter={() => setHovField("email")}
             onMouseLeave={() => setHovField(null)}
-            onClick={(e) => { e.stopPropagation(); setActiveField("email"); }}
             style={fieldStyle("email")}
           >
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
-              <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
-                jane.doe@ekara.io
-              </span>
-              {activeField === "email" && (
-                <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
-              )}
-            </span>
-            <div style={{ flex: 1 }} />
+            <input
+              type="email"
+              value={email}
+              autoComplete="off"
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setFocusedField("email")}
+              onBlur={() => setFocusedField(null)}
+              style={inputStyle}
+            />
           </div>
         </div>
 
@@ -1043,25 +1064,17 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div
             onMouseEnter={() => setHovField("password")}
             onMouseLeave={() => setHovField(null)}
-            onClick={(e) => { e.stopPropagation(); setActiveField("password"); }}
             style={fieldStyle("password")}
           >
-            <span style={{ display: "inline-flex", alignItems: "center" }}>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontFamily: OS,
-                  color: tok.textSub,
-                  letterSpacing: showPw ? "normal" : "0.15em",
-                }}
-              >
-                {showPw ? "MyP@ssw0rd" : "••••••••"}
-              </span>
-              {activeField === "password" && (
-                <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
-              )}
-            </span>
-            <div style={{ flex: 1 }} />
+            <input
+              type={showPw ? "text" : "password"}
+              value={password}
+              autoComplete="off"
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setFocusedField("password")}
+              onBlur={() => setFocusedField(null)}
+              style={{ ...inputStyle, letterSpacing: showPw ? "normal" : "0.15em" }}
+            />
             <div
               onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
               style={{ flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
