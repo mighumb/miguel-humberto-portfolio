@@ -407,6 +407,7 @@ function EyeClosedIcon({ color }: { color: string }) {
 function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(6);
   const [showPw, setShowPw] = useState(false);
+  const [hov, setHov] = useState(false);
 
   const states = [
     { label: "Default",  active: false, filled: false, error: false, success: false, disabled: false, helper: "" },
@@ -417,15 +418,14 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
     { label: "Disabled", active: false, filled: false, error: false, success: false, disabled: true,  helper: "" },
   ];
   const s = states[v];
-  const floated    = s.active || s.filled;
-  const iconColor  = tok.textMuted;
-  // 12px left-pad + 20px lock + 8px gap = 40px
-  const labelLeft  = 40;
+  const floated   = s.active || s.filled;
+  const iconColor = tok.textMuted;
 
   const borderColor =
     s.error   ? tok.error   :
     s.success ? tok.success :
     s.active  ? tok.primary :
+    hov && !s.disabled ? tok.text :
     tok.border;
 
   const labelColor =
@@ -438,8 +438,9 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   return (
     <AtomCell name="Input Field" v={v} total={6} onClick={next} tok={tok} pos={pos}>
       <div style={{ width: "100%", maxWidth: 240, opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms" }}>
-        {/* Field container */}
         <div
+          onMouseEnter={() => setHov(true)}
+          onMouseLeave={() => setHov(false)}
           style={{
             position: "relative",
             height: 52,
@@ -453,14 +454,13 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             transition: "border-color 200ms",
           }}
         >
-          {/* Lock icon */}
           <LockIcon color={iconColor} />
 
-          {/* Floating label (absolute over the field) */}
+          {/* Floating label — floats to left edge of field, not after icon */}
           <span
             style={{
               position: "absolute",
-              left: labelLeft,
+              left: floated ? 12 : 40,
               top: floated ? -10 : "50%",
               transform: floated ? "none" : "translateY(-50%)",
               fontSize: floated ? 11 : 14,
@@ -469,7 +469,7 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               color: labelColor,
               background: floated ? tok.cellBg : "transparent",
               padding: floated ? "0 4px" : 0,
-              transition: "top 180ms ease, font-size 180ms ease, color 180ms ease",
+              transition: "left 180ms ease, top 180ms ease, font-size 180ms ease, color 180ms ease",
               pointerEvents: "none",
               lineHeight: 1.2,
               zIndex: 1,
@@ -478,7 +478,6 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             Password
           </span>
 
-          {/* Value when floated */}
           {floated ? (
             <span
               style={{
@@ -510,7 +509,6 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             <div style={{ flex: 1 }} />
           )}
 
-          {/* Eye toggle — only when field has content */}
           {floated && (
             <div
               onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
@@ -521,17 +519,8 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           )}
         </div>
 
-        {/* Helper text */}
         {s.helper && (
-          <div
-            style={{
-              marginTop: 5,
-              fontSize: 11,
-              fontFamily: OS,
-              color: s.error ? tok.error : tok.success,
-              paddingLeft: 4,
-            }}
-          >
+          <div style={{ marginTop: 5, fontSize: 11, fontFamily: OS, color: s.error ? tok.error : tok.success, paddingLeft: 4 }}>
             {s.helper}
           </div>
         )}
@@ -542,18 +531,21 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 
 // 6 — SELECT
 function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [v, next] = useVariant(3);
-  const isHov  = v === 1;
-  const isOpen = v === 2;
+  // 2 states: closed (0) → open (1)
+  const [v, next] = useVariant(2);
+  const [hov, setHov] = useState(false);
+  const [itemHov, setItemHov] = useState<number | null>(null);
+  const isOpen = v === 1;
 
-  const triggerBorder = (isHov || isOpen) ? tok.primary : tok.border;
+  const triggerBorder = isOpen ? tok.primary : hov ? tok.text : tok.border;
   const items = ["Analytics", "Reports", "Dashboard"];
 
   return (
-    <AtomCell name="Select" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Select" v={v} total={2} onClick={next} tok={tok} pos={pos}>
       <div style={{ width: "100%", maxWidth: 220, position: "relative" }}>
-        {/* Trigger */}
         <div
+          onMouseEnter={() => setHov(true)}
+          onMouseLeave={() => setHov(false)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -572,22 +564,11 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             height="16"
             viewBox="0 0 24 24"
             fill="none"
-            style={{
-              transform: isOpen ? "rotate(180deg)" : "rotate(0)",
-              transition: "transform 200ms",
-              flexShrink: 0,
-            }}
+            style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
           >
-            <path
-              d="M6 9l6 6 6-6"
-              stroke={tok.primary}
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M6 9l6 6 6-6" stroke={tok.textSub} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        {/* Dropdown */}
         {isOpen && (
           <div
             style={{
@@ -606,13 +587,15 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             {items.map((item, i) => (
               <div
                 key={i}
+                onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
+                onMouseLeave={() => setItemHov(null)}
                 style={{
                   padding: "11px 12px",
                   fontSize: 14,
                   fontFamily: OS,
-                  color: i === 0 ? tok.primary : tok.textSub,
-                  background: i === 0 ? tok.primaryLight : "transparent",
-                  borderTop: i > 0 ? `1px solid ${tok.divider}` : "none",
+                  color: tok.textSub,
+                  background: itemHov === i ? tok.divider : "transparent",
+                  transition: "background 150ms",
                 }}
               >
                 {item}
@@ -669,7 +652,8 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(4);
   const def    = SNACKBAR_DEFS[v];
   const accent = def.getAccent(tok);
-  const bg     = `${accent}18`;
+  // No border — solid pastel background only
+  const bg     = `${accent}28`;
 
   return (
     <AtomCell name="Snackbar" v={v} total={4} onClick={next} tok={tok} pos={pos}>
@@ -682,9 +666,8 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           gap: 10,
           padding: "12px 14px",
           borderRadius: 8,
-          border: `1px solid ${accent}`,
           background: bg,
-          transition: "background 200ms, border-color 200ms",
+          transition: "background 200ms",
         }}
       >
         <div style={{ flexShrink: 0 }}>
@@ -731,7 +714,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   return (
     <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        {/* Trigger */}
+        {/* Trigger — no border, no box */}
         <div
           style={{
             width: 36,
@@ -741,8 +724,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             alignItems: "center",
             justifyContent: "center",
             background: isOpen ? tok.primaryLight : "transparent",
-            border: `1.5px solid ${isOpen ? tok.primary : tok.border}`,
-            transition: "background 200ms, border-color 200ms",
+            transition: "background 200ms",
           }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -752,17 +734,16 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           </svg>
         </div>
 
-        {/* Menu panel */}
+        {/* Menu panel — shadow only, no border, no dividers */}
         {isOpen && (
           <div
             style={{
               marginTop: 8,
               width: 160,
               borderRadius: 8,
-              border: `1px solid ${tok.border}`,
               background: tok.cellBg,
               overflow: "hidden",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
             }}
           >
             {/* Export */}
@@ -795,7 +776,6 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                 fontSize: 13,
                 fontFamily: OS,
                 color: tok.textSub,
-                borderTop: `1px solid ${tok.divider}`,
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -819,7 +799,6 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                 fontSize: 13,
                 fontFamily: OS,
                 color: tok.error,
-                borderTop: `1px solid ${tok.divider}`,
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
