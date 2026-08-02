@@ -947,80 +947,56 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
    ORGANISMS
 ═══════════════════════════════════════════════════════════════════ */
 
-// 9 — TABLE CELL
-const TABLE_CELL_STYLES = ["Text", "Tag", "Status", "Icon", "Gauge", "Button"] as const;
-
-function TableCellOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [v, next] = useVariant(TABLE_CELL_STYLES.length);
-  const style = TABLE_CELL_STYLES[v];
+// 9 — ACCORDION
+function AccordionOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [open, next] = useVariant(2);
+  const isOpen = open === 1;
+  const [hov, setHov] = useState(false);
 
   return (
-    <AtomCell name="Table Cell" v={v} total={TABLE_CELL_STYLES.length} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Accordion" v={open} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
       <div
         style={{
           width: "100%",
           maxWidth: 296,
-          height: 44,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
           border: `1px solid ${tok.divider}`,
-          borderRadius: 4,
+          borderRadius: 8,
           background: tok.cellBg,
+          overflow: "hidden",
         }}
       >
-        {style === "Text" && (
-          <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub }}>
-            Cell content
+        <div
+          onMouseEnter={() => setHov(true)}
+          onMouseLeave={() => setHov(false)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: 48,
+            padding: "0 16px",
+            background: hov ? tok.menuHoverBg : "transparent",
+            transition: "background 150ms",
+          }}
+        >
+          <span style={{ fontSize: 14, fontFamily: OS, fontWeight: 700, color: tok.text }}>
+            Section title
           </span>
-        )}
-        {style === "Tag" && (
-          <span
-            style={{
-              fontSize: 12,
-              fontFamily: OS,
-              fontWeight: 700,
-              color: tok.textInv,
-              background: tok.tagNormal,
-              padding: "4px 12px",
-              borderRadius: 20,
-            }}
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
           >
-            Label
-          </span>
-        )}
-        {style === "Status" && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 8, height: 8, borderRadius: 4, background: tok.success, flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 600, color: tok.textSub }}>Active</span>
-          </div>
-        )}
-        {style === "Icon" && (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M9 18l6-6-6-6" stroke={tok.primary} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M6 9l6 6 6-6" stroke={tok.textSub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        )}
-        {style === "Gauge" && (
-          <div style={{ width: "100%", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ flex: 1, height: 6, borderRadius: 3, background: tok.border, overflow: "hidden" }}>
-              <div style={{ width: "64%", height: "100%", borderRadius: 3, background: tok.primary }} />
-            </div>
-            <span style={{ fontSize: 11, fontFamily: OS, fontWeight: 700, color: tok.textMuted }}>64%</span>
-          </div>
-        )}
-        {style === "Button" && (
-          <div
-            style={{
-              fontSize: 12,
-              fontFamily: OS,
-              fontWeight: 700,
-              color: tok.primary,
-              border: `1.25px solid ${tok.primary}`,
-              padding: "4px 14px",
-              borderRadius: 6,
-            }}
-          >
-            Voir
+        </div>
+
+        {isOpen && (
+          <div style={{ padding: "0 16px 16px" }}>
+            <p style={{ margin: 0, fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub, lineHeight: 1.6 }}>
+              Contenu déplié de la section, révélé au clic sur l&apos;en-tête.
+            </p>
           </div>
         )}
       </div>
@@ -1191,11 +1167,12 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const daysInMonth = new Date(2026, monthIdx + 1, 0).getDate();
   const firstDayOffset = (new Date(2026, monthIdx, 1).getDay() + 6) % 7; // Monday-first
 
+  // Always pad to 6 full weeks so the grid height never changes between months.
   const cells: (number | null)[] = [
     ...Array(firstDayOffset).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  while (cells.length % 7 !== 0) cells.push(null);
+  while (cells.length < 42) cells.push(null);
 
   return (
     <AtomCell name="Date Picker" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
@@ -1504,7 +1481,7 @@ export default function EkaraUIKit() {
             borderRadius: 12,
           }}
         >
-          <TableCellOrganism         tok={tok} pos={{ col: 0, row: 0 }} />
+          <AccordionOrganism         tok={tok} pos={{ col: 0, row: 0 }} />
           <SelectInputFilterOrganism tok={tok} pos={{ col: 1, row: 0 }} />
           <DatePickerSimpleOrganism  tok={tok} pos={{ col: 0, row: 1 }} />
           <CardReplayOrganism        tok={tok} pos={{ col: 1, row: 1 }} />
