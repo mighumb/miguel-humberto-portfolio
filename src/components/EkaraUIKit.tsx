@@ -948,13 +948,36 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 ═══════════════════════════════════════════════════════════════════ */
 
 // 9 — ACCORDION
+const ACCORDION_ITEMS = [
+  {
+    title: "Livraison & délais",
+    rows: [
+      { label: "Standard", value: "3-5 jours" },
+      { label: "Express", value: "24h" },
+    ],
+  },
+  {
+    title: "Paiement & facturation",
+    rows: [
+      { label: "Carte bancaire", value: "Accepté" },
+      { label: "Virement", value: "Accepté" },
+    ],
+  },
+  {
+    title: "Retours & garantie",
+    rows: [
+      { label: "Fenêtre de retour", value: "30 jours" },
+      { label: "Garantie", value: "2 ans" },
+    ],
+  },
+];
+
 function AccordionOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [open, next] = useVariant(2);
-  const isOpen = open === 1;
-  const [hov, setHov] = useState(false);
+  const [openIndex, setOpenIndex] = useState(0);
+  const [hovIndex, setHovIndex] = useState<number | null>(null);
 
   return (
-    <AtomCell name="Accordion" v={open} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
+    <AtomCell name="Accordion" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
       <div
         style={{
           width: "100%",
@@ -965,40 +988,73 @@ function AccordionOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
           overflow: "hidden",
         }}
       >
-        <div
-          onMouseEnter={() => setHov(true)}
-          onMouseLeave={() => setHov(false)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            height: 48,
-            padding: "0 16px",
-            background: hov ? tok.menuHoverBg : "transparent",
-            transition: "background 150ms",
-          }}
-        >
-          <span style={{ fontSize: 14, fontFamily: OS, fontWeight: 700, color: tok.text }}>
-            Section title
-          </span>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
-          >
-            <path d="M6 9l6 6 6-6" stroke={tok.textSub} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
+        {ACCORDION_ITEMS.map((item, i) => {
+          const isOpen = i === openIndex;
+          return (
+            <div
+              key={item.title}
+              style={{ borderTop: i > 0 ? `1px solid ${tok.divider}` : "none" }}
+            >
+              <div
+                onMouseEnter={() => setHovIndex(i)}
+                onMouseLeave={() => setHovIndex(null)}
+                onClick={(e) => { e.stopPropagation(); setOpenIndex(isOpen ? -1 : i); }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  height: 44,
+                  padding: "0 16px",
+                  cursor: "pointer",
+                  background: hovIndex === i ? tok.menuHoverBg : "transparent",
+                  transition: "background 150ms",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontFamily: OS,
+                    fontWeight: 700,
+                    color: isOpen ? tok.primary : tok.text,
+                    transition: "color 150ms",
+                  }}
+                >
+                  {item.title}
+                </span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
+                >
+                  <path
+                    d="M6 9l6 6 6-6"
+                    stroke={isOpen ? tok.primary : tok.textSub}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
 
-        {isOpen && (
-          <div style={{ padding: "0 16px 16px" }}>
-            <p style={{ margin: 0, fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub, lineHeight: 1.6 }}>
-              Contenu déplié de la section, révélé au clic sur l&apos;en-tête.
-            </p>
-          </div>
-        )}
+              {isOpen && (
+                <div style={{ padding: "0 16px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                  {item.rows.map((row) => (
+                    <div key={row.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12, fontFamily: OS, fontWeight: 400, color: tok.textMuted }}>
+                        {row.label}
+                      </span>
+                      <span style={{ fontSize: 12, fontFamily: OS, fontWeight: 700, color: tok.textSub }}>
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </AtomCell>
   );
