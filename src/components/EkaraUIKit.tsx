@@ -88,7 +88,6 @@ function AtomCell({
   name,
   v,
   total,
-  onClick,
   tok,
   pos,
   raised,
@@ -97,7 +96,6 @@ function AtomCell({
   name: string;
   v: number;
   total: number;
-  onClick: () => void;
   tok: Tok;
   pos: CellPos;
   /** Lifts the cell above its siblings so an open dropdown isn't painted over. */
@@ -112,7 +110,6 @@ function AtomCell({
 
   return (
     <div
-      onClick={onClick}
       style={{
         position: "relative",
         zIndex: raised ? 5 : undefined,
@@ -122,7 +119,8 @@ function AtomCell({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        cursor: "pointer",
+        // No cursor/onClick here on purpose: this wrapper is inert padding
+        // and label chrome. Only the actual component inside is clickable.
         userSelect: "none",
         background: tok.cellBg,
         borderRadius: radius,
@@ -212,10 +210,11 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   }[v as 0 | 1 | 2];
 
   return (
-    <AtomCell name="Button" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Button" v={v} total={3} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           background: styles.bg,
           color: styles.color,
@@ -226,6 +225,7 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "10px 28px",
           borderRadius: 8,
           letterSpacing: "0.01em",
+          cursor: "pointer",
           transition: "background 220ms ease, color 220ms ease, border-color 220ms ease",
         }}
       >
@@ -248,10 +248,11 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const cur = variants[v];
 
   return (
-    <AtomCell name="Tag" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Tag" v={v} total={4} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           background: hov
             ? `color-mix(in srgb, ${cur.bg} 82%, ${tok.tagHoverBlend})`
@@ -263,6 +264,7 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 20px",
           borderRadius: 20,
           letterSpacing: "0.01em",
+          cursor: "pointer",
           transition: "background 180ms ease",
         }}
       >
@@ -291,14 +293,16 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
     : "transparent";
 
   return (
-    <AtomCell name="Checkbox" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Checkbox" v={v} total={4} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 14,
+          cursor: "pointer",
           opacity: s.disabled ? 0.38 : 1,
           transition: "opacity 200ms ease",
         }}
@@ -364,15 +368,17 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
       : (hov ? OFF_X + 4 : OFF_X);
 
   return (
-    <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Switch" v={v} total={3} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 8,
           paddingLeft: 4, // room for the knob's left overhang
+          cursor: "pointer",
           opacity: s.disabled ? 0.38 : 1,
           transition: "opacity 200ms ease",
         }}
@@ -483,11 +489,12 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
     tok.textMuted;
 
   return (
-    <AtomCell name="Input Field" v={v} total={6} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Input Field" v={v} total={6} tok={tok} pos={pos}>
       <div style={{ width: "100%", maxWidth: 240, opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms" }}>
         <div
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
+          onClick={next}
           style={{
             position: "relative",
             height: 52,
@@ -498,6 +505,7 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             border: `1.25px solid ${borderColor}`,
             borderRadius: 8,
             background: tok.cellBg,
+            cursor: "pointer",
             transition: "border-color 200ms",
           }}
         >
@@ -594,7 +602,6 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
       name="Select"
       v={open ? 1 : 0}
       total={2}
-      onClick={() => setOpen((o) => !o)}
       tok={tok}
       pos={pos}
       raised={open}
@@ -604,6 +611,7 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
         <div
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
+          onClick={() => setOpen((o) => !o)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -613,6 +621,7 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             border: `1.25px solid ${triggerBorder}`,
             borderRadius: 8,
             background: tok.cellBg,
+            cursor: "pointer",
             transition: "border-color 200ms",
           }}
         >
@@ -663,7 +672,6 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                   onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
                   onMouseLeave={() => setItemHov(null)}
                   onClick={(e) => {
-                    // Pick the value without letting AtomCell toggle the panel back open.
                     e.stopPropagation();
                     setSelected(i);
                     setOpen(false);
@@ -679,6 +687,7 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                     fontWeight: 600,
                     // item-menu/active: bg #effefd, text #057b80
                     color: isActive ? tok.primary : tok.menuText,
+                    cursor: "pointer",
                     background:
                       isActive ? tok.primaryLight
                       : itemHov === i ? tok.menuHoverBg
@@ -747,9 +756,10 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const c   = tok.snack[def.key];
 
   return (
-    <AtomCell name="Snackbar" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Snackbar" v={v} total={4} tok={tok} pos={pos}>
       {/* Figma: pl-16 pr-12 py-8, gap 8, radius 8, no border */}
       <div
+        onClick={next}
         style={{
           width: "100%",
           maxWidth: 300,
@@ -759,6 +769,7 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 12px 8px 16px",
           borderRadius: 8,
           background: c.bg,
+          cursor: "pointer",
           transition: "background 200ms",
         }}
       >
@@ -851,7 +862,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const dotColor = isOpen ? tok.primary : tok.text;
 
   return (
-    <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
+    <AtomCell name="Kebab Menu" v={v} total={2} tok={tok} pos={pos} raised={isOpen}>
       {/* Anchor is only as tall as the trigger, so the cell never resizes.
           The block inside is centred on the anchor, so opening the menu
           slides the trigger up instead of pushing the grid around. */}
@@ -872,6 +883,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div
             onMouseEnter={() => setTrigHov(true)}
             onMouseLeave={() => setTrigHov(false)}
+            onClick={next}
             style={{
               width: 40,
               height: 40,
@@ -880,6 +892,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
+              cursor: "pointer",
               // hover = grey, active/open = primary tint
               background:
                 isOpen   ? tok.primaryLight
@@ -914,6 +927,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                     key={item.label}
                     onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
                     onMouseLeave={() => setItemHov(null)}
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -924,6 +938,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                       fontFamily: OS,
                       fontWeight: 600,
                       color: c,
+                      cursor: "pointer",
                       background: itemHov === i ? tok.menuHoverBg : "transparent",
                       transition: "background 150ms",
                     }}
@@ -979,7 +994,7 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   // The whole card is never itself clickable — every interaction lives on
   // the individual field/link/button, so the cell click cycle is off.
   return (
-    <AtomCell name="Card Login" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
+    <AtomCell name="Card Login" v={0} total={1} tok={tok} pos={pos}>
       <div
         style={{
           width: "100%",
@@ -1114,7 +1129,6 @@ function SelectInputFilterOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
       name="Select Input Filter"
       v={open ? 1 : 0}
       total={2}
-      onClick={() => setOpen((o) => !o)}
       tok={tok}
       pos={pos}
       raised={open}
@@ -1124,6 +1138,7 @@ function SelectInputFilterOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
         <div
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
+          onClick={() => setOpen((o) => !o)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -1133,6 +1148,7 @@ function SelectInputFilterOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             border: `1.25px solid ${triggerBorder}`,
             borderRadius: 8,
             background: tok.cellBg,
+            cursor: "pointer",
             transition: "border-color 200ms",
           }}
         >
@@ -1211,6 +1227,7 @@ function SelectInputFilterOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
                   gap: 10,
                   height: 36,
                   padding: "0 16px",
+                  cursor: "pointer",
                   background: itemHov === i ? tok.menuHoverBg : "transparent",
                   transition: "background 150ms",
                 }}
@@ -1310,7 +1327,7 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   };
 
   return (
-    <AtomCell name="Date Picker" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
+    <AtomCell name="Date Picker" v={0} total={1} tok={tok} pos={pos}>
       <div
         style={{
           width: "100%",
@@ -1400,12 +1417,13 @@ function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
 
 // 12 — CARD REPLAY
 function CardReplayOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [v, next] = useVariant(2);
-  const hov = v === 1;
+  const [hov, setHov] = useState(false);
 
   return (
-    <AtomCell name="Card Replay" v={v} total={2} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Card Replay" v={0} total={1} tok={tok} pos={pos}>
       <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
         style={{
           width: "100%",
           maxWidth: 280,
@@ -1415,6 +1433,7 @@ function CardReplayOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
           border: `1px solid ${tok.divider}`,
           boxShadow: hov ? "0 8px 20px rgba(0,0,0,0.16)" : "0 1px 2px rgba(0,0,0,0.06)",
           transform: hov ? "translateY(-2px)" : "none",
+          cursor: "pointer",
           transition: "box-shadow 200ms, transform 200ms",
         }}
       >
