@@ -948,24 +948,38 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 ═══════════════════════════════════════════════════════════════════ */
 
 // 9 — CARD LOGIN
-function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
-  const [v, next] = useVariant(2);
-  const hov = v === 1;
-  const [showPw, setShowPw] = useState(false);
+type LoginField = "email" | "password";
 
-  const fieldStyle = {
+function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [showPw, setShowPw] = useState(false);
+  const [activeField, setActiveField] = useState<LoginField | null>(null);
+  const [hovField, setHovField] = useState<LoginField | null>(null);
+  const [btnHov, setBtnHov] = useState(false);
+  const [btnPressed, setBtnPressed] = useState(false);
+  const [linkHov, setLinkHov] = useState(false);
+
+  const fieldBorder = (field: LoginField) =>
+    activeField === field ? tok.primary
+    : hovField === field ? tok.inputHoverStroke
+    : tok.border;
+
+  const fieldStyle = (field: LoginField) => ({
     display: "flex",
     alignItems: "center",
     gap: 8,
     height: 40,
     padding: "0 12px",
-    border: `1.25px solid ${tok.border}`,
+    border: `1.25px solid ${fieldBorder(field)}`,
     borderRadius: 8,
     background: tok.cellBg,
-  } as const;
+    cursor: "text",
+    transition: "border-color 150ms",
+  }) as const;
 
+  // The whole card is never itself clickable — every interaction lives on
+  // the individual field/link/button, so the cell click cycle is off.
   return (
-    <AtomCell name="Card Login" v={v} total={2} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Card Login" v={0} total={1} onClick={() => {}} tok={tok} pos={pos}>
       <div
         style={{
           width: "100%",
@@ -988,10 +1002,18 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 600, color: tok.textMuted, marginBottom: 4 }}>
             Email
           </div>
-          <div style={fieldStyle}>
+          <div
+            onMouseEnter={() => setHovField("email")}
+            onMouseLeave={() => setHovField(null)}
+            onClick={(e) => { e.stopPropagation(); setActiveField("email"); }}
+            style={fieldStyle("email")}
+          >
             <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 400, color: tok.textSub, flex: 1 }}>
               jane.doe@ekara.io
             </span>
+            {activeField === "email" && (
+              <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
+            )}
           </div>
         </div>
 
@@ -1000,7 +1022,12 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 600, color: tok.textMuted, marginBottom: 4 }}>
             Mot de passe
           </div>
-          <div style={fieldStyle}>
+          <div
+            onMouseEnter={() => setHovField("password")}
+            onMouseLeave={() => setHovField(null)}
+            onClick={(e) => { e.stopPropagation(); setActiveField("password"); }}
+            style={fieldStyle("password")}
+          >
             <span
               style={{
                 fontSize: 13,
@@ -1012,6 +1039,9 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
             >
               {showPw ? "MyP@ssw0rd" : "••••••••"}
             </span>
+            {activeField === "password" && (
+              <span style={{ display: "inline-block", width: 1, height: 16, background: tok.text }} />
+            )}
             <div
               onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
               style={{ flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
@@ -1022,20 +1052,40 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
         </div>
 
         <div style={{ textAlign: "right", marginBottom: 16 }}>
-          <span style={{ fontSize: 11, fontFamily: OS, fontWeight: 700, color: tok.primary }}>
+          <span
+            onMouseEnter={() => setLinkHov(true)}
+            onMouseLeave={() => setLinkHov(false)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              fontSize: 11,
+              fontFamily: OS,
+              fontWeight: 700,
+              color: linkHov ? tok.primaryHover : tok.primary,
+              textDecoration: linkHov ? "underline" : "none",
+              cursor: "pointer",
+              transition: "color 150ms",
+            }}
+          >
             Mot de passe oublié ?
           </span>
         </div>
 
         <div
+          onMouseEnter={() => setBtnHov(true)}
+          onMouseLeave={() => { setBtnHov(false); setBtnPressed(false); }}
+          onMouseDown={() => setBtnPressed(true)}
+          onMouseUp={() => setBtnPressed(false)}
+          onClick={(e) => e.stopPropagation()}
           style={{
             height: 40,
             borderRadius: 8,
-            background: hov ? tok.primaryHover : tok.primary,
+            background: btnPressed ? tok.primaryHover : btnHov ? tok.primaryHover : tok.primary,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            transition: "background 200ms",
+            cursor: "pointer",
+            transform: btnPressed ? "scale(0.98)" : "scale(1)",
+            transition: "background 150ms, transform 100ms",
           }}
         >
           <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 700, color: tok.textInv }}>
