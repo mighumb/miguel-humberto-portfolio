@@ -865,7 +865,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             transform: "translateY(-50%)",
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-end", // Figma: items-end — card hangs left of the trigger
+            alignItems: "center", // centred in the showcase cell, trigger over the card
           }}
         >
           {/* Trigger — 40×40 circular, 4px dots spread over 20px */}
@@ -903,31 +903,34 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                 boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
               }}
             >
-              {KEBAB_ITEMS.map((item, i) => (
-                <div
-                  key={item.label}
-                  onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
-                  onMouseLeave={() => setItemHov(null)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    height: 44,
-                    padding: "0 20px 0 12px",
-                    fontSize: 14,
-                    fontFamily: OS,
-                    fontWeight: 600,
-                    color: tok.menuText,
-                    background: itemHov === i ? tok.menuHoverBg : "transparent",
-                    transition: "background 150ms",
-                  }}
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                    {item.icon(tok.menuText)}
-                  </svg>
-                  {item.label}
-                </div>
-              ))}
+              {KEBAB_ITEMS.map((item, i) => {
+                const c = item.label === "Delete" ? tok.error : tok.menuText;
+                return (
+                  <div
+                    key={item.label}
+                    onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
+                    onMouseLeave={() => setItemHov(null)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      height: 44,
+                      padding: "0 20px 0 12px",
+                      fontSize: 14,
+                      fontFamily: OS,
+                      fontWeight: 600,
+                      color: c,
+                      background: itemHov === i ? tok.menuHoverBg : "transparent",
+                      transition: "background 150ms",
+                    }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      {item.icon(c)}
+                    </svg>
+                    {item.label}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
