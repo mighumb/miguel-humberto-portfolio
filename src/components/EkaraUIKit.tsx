@@ -880,7 +880,11 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
-              background: isOpen || trigHov ? tok.primaryLight : "transparent",
+              // hover = grey, active/open = primary tint
+              background:
+                isOpen   ? tok.primaryLight
+                : trigHov ? tok.menuHoverBg
+                : "transparent",
               transition: "background 200ms",
             }}
           >
