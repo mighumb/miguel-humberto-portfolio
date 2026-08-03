@@ -1,6 +1,28 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useContext, createContext } from "react";
+
+/* ─── Responsive: below this width, every 2-column grid in the kit
+   collapses to a single column so components keep their real content
+   width instead of being clipped in a half-width cell. ───────────── */
+
+const MOBILE_BREAKPOINT = 768;
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return isMobile;
+}
+
+const MobileCtx = createContext(false);
 
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 
@@ -102,8 +124,16 @@ function AtomCell({
   raised?: boolean;
   children: React.ReactNode;
 }) {
-  const radius =
-    pos.col === 0 && pos.row === 0 ? "12px 0 0 0"
+  const isMobile = useContext(MobileCtx);
+  const isFirst = pos.col === 0 && pos.row === 0;
+  const isLast = pos.col === 1 && pos.row === 1;
+
+  // Below the mobile breakpoint the grid stacks into a single column (in
+  // the same 0,0 -> 1,0 -> 0,1 -> 1,1 reading order), so corners and
+  // dividers switch from a 2x2 cross to a simple top/bottom stack.
+  const radius = isMobile
+    ? isFirst ? "12px 12px 0 0" : isLast ? "0 0 12px 12px" : "0"
+    : pos.col === 0 && pos.row === 0 ? "12px 0 0 0"
     : pos.col === 1 && pos.row === 0 ? "0 12px 0 0"
     : pos.col === 0 && pos.row === 1 ? "0 0 0 12px"
     : "0 0 12px 0";
@@ -124,9 +154,10 @@ function AtomCell({
         userSelect: "none",
         background: tok.cellBg,
         borderRadius: radius,
-        // Inner cross dividers only — no outer border
-        borderRight: pos.col === 0 ? `1px solid ${tok.divider}` : "none",
-        borderBottom: pos.row === 0 ? `1px solid ${tok.divider}` : "none",
+        // Inner cross dividers (2-col) or a simple stack divider (mobile) —
+        // no outer border either way.
+        borderRight: !isMobile && pos.col === 0 ? `1px solid ${tok.divider}` : "none",
+        borderBottom: isMobile ? (isLast ? "none" : `1px solid ${tok.divider}`) : pos.row === 0 ? `1px solid ${tok.divider}` : "none",
       }}
     >
       {/* Component */}
@@ -1520,6 +1551,7 @@ function CardReplayOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
 export default function EkaraUIKit() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const tok = theme === "light" ? LIGHT : DARK;
+  const isMobile = useIsMobile();
 
   // Tracks whether the toggle has actually engaged its sticky position (as
   // opposed to just sitting in its normal spot) so its look only changes
@@ -1540,6 +1572,7 @@ export default function EkaraUIKit() {
   }, []);
 
   return (
+    <MobileCtx.Provider value={isMobile}>
     <div style={{ fontFamily: OS, position: "relative" }}>
       {/* Marks the toggle's resting position — once it scrolls past the
           modal's own header (72px), the observer above flips `stuck`. */}
@@ -1623,7 +1656,7 @@ export default function EkaraUIKit() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
           overflow: "hidden",
           borderRadius: 12,
         }}
@@ -1656,7 +1689,7 @@ export default function EkaraUIKit() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
             overflow: "hidden",
             borderRadius: 12,
           }}
@@ -1690,7 +1723,7 @@ export default function EkaraUIKit() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
             overflow: "hidden",
             borderRadius: 12,
           }}
@@ -1702,5 +1735,6 @@ export default function EkaraUIKit() {
         </div>
       </div>
     </div>
+    </MobileCtx.Provider>
   );
 }
