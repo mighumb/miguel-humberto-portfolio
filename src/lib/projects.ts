@@ -31,6 +31,7 @@ export interface Project {
     youtube?: string;
     instagram?: string;
     tiktok?: string;
+    figma?: string;
   };
   deliverableCount: number;
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
@@ -181,8 +182,8 @@ export const projects: Project[] = [
     type: "Craft",
     hasVideo: false,
     thumbnail: "thumbnail-ekara-design-system.png",
-    tools: ["Figma", "FigJam", "Notion"],
-    links: { notion: "#" },
+    tools: ["Figma"],
+    links: { figma: "https://www.figma.com/design/Fwn3pUkAQweQvuf2MVnqLH/0.-Design-system?node-id=3547-28514&t=VREC3uAjRDX57LBz-1" },
     deliverableCount: 8,
     processTitle: { en: "Brand system", fr: "Brand system" },
     processImages: [
