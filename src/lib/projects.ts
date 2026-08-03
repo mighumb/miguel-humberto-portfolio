@@ -114,7 +114,9 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: false,
     tools: ["Beeble", "Switch X", "Photoshop", "After Effects"],
-    links: {},
+    links: {
+      instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
+    },
     deliverableCount: 0,
   },
   {
