@@ -49,6 +49,7 @@ export const translations = {
       youtube: "YouTube",
       instagram: "Instagram",
       tiktok: "TikTok",
+      figma: "Figma File",
     },
     header: {
       contact: "Contact",
@@ -102,6 +103,7 @@ export const translations = {
       youtube: "YouTube",
       instagram: "Instagram",
       tiktok: "TikTok",
+      figma: "Fichier Figma",
     },
     header: {
       contact: "Contact",
