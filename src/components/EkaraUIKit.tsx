@@ -1522,7 +1522,53 @@ export default function EkaraUIKit() {
   const tok = theme === "light" ? LIGHT : DARK;
 
   return (
-    <div style={{ fontFamily: OS }}>
+    <div style={{ fontFamily: OS, position: "relative" }}>
+      {/* Theme toggle — a direct child of this (tall) wrapper so its sticky
+          range spans the whole kit (Atoms → Organisms), not just its own
+          row. Only the pill itself sticks — no full-width bar. */}
+      <div style={{ position: "sticky", top: 72, zIndex: 5, marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "6px 14px",
+              borderRadius: 20,
+              border: `1px solid ${tok.border}`,
+              background: tok.cellBg,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+              backdropFilter: "blur(8px)",
+              cursor: "pointer",
+              color: tok.textMuted,
+              fontFamily: OS,
+              fontSize: 12,
+              fontWeight: 600,
+              transition: "border-color 200ms, color 200ms",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {theme === "light" ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                Light
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Dark
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* ── Atoms ── */}
       <div
         style={{
@@ -1547,44 +1593,6 @@ export default function EkaraUIKit() {
           </span>
           <div style={{ width: 40, height: 1, background: `${tok.primary}40` }} />
         </div>
-
-        {/* Theme toggle */}
-        <button
-          onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            padding: "6px 14px",
-            borderRadius: 20,
-            border: `1px solid ${tok.border}`,
-            background: "transparent",
-            cursor: "pointer",
-            color: tok.textMuted,
-            fontFamily: OS,
-            fontSize: 12,
-            fontWeight: 600,
-            transition: "border-color 200ms, color 200ms",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {theme === "light" ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              Light
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Dark
-            </>
-          )}
-        </button>
       </div>
 
       {/* Atoms 2×2 grid */}
