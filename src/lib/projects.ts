@@ -120,7 +120,7 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4",
+    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=2",
     tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
     links: {
       instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
@@ -128,13 +128,13 @@ export const projects: Project[] = [
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
     processItems: [
-      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4" },
+      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4?v=2" },
       {
         type: "image",
         file: "process/process-magnific-big-flo-oli-colors-show.png",
         fullBleed: true,
       },
-      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4" },
+      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=2" },
     ],
   },
   {
