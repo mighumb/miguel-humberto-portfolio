@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 
@@ -1521,13 +1521,37 @@ export default function EkaraUIKit() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const tok = theme === "light" ? LIGHT : DARK;
 
+  // Tracks whether the toggle has actually engaged its sticky position (as
+  // opposed to just sitting in its normal spot) so its look only changes
+  // once scrolling has carried it there — never at rest, on load.
+  const [stuck, setStuck] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const scrollRoot = sentinel.closest<HTMLElement>(".project-modal-scroll");
+    const observer = new IntersectionObserver(
+      ([entry]) => setStuck(!entry.isIntersecting),
+      { root: scrollRoot ?? null, rootMargin: "-73px 0px 0px 0px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div style={{ fontFamily: OS, position: "relative" }}>
+      {/* Marks the toggle's resting position — once it scrolls past the
+          modal's own header (72px), the observer above flips `stuck`. */}
+      <div ref={sentinelRef} style={{ position: "absolute", top: 0, left: 0, width: 1, height: 1 }} aria-hidden />
+
       {/* Theme toggle — a direct child of this (tall) wrapper so its sticky
           range spans the whole kit (Atoms → Organisms), not just its own
-          row. Only the pill itself sticks — no full-width bar. */}
-      <div style={{ position: "sticky", top: 72, zIndex: 5, marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          row. The negative margin folds it back into the Atoms row below
+          so its rest-state position/look is pixel-identical to before;
+          only `stuck` (real scroll engagement) changes its appearance. */}
+      <div style={{ position: "sticky", top: 72, zIndex: 5, height: 32, marginBottom: -32 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: "100%" }}>
           <button
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
             style={{
@@ -1537,15 +1561,15 @@ export default function EkaraUIKit() {
               padding: "6px 14px",
               borderRadius: 20,
               border: `1px solid ${tok.border}`,
-              background: tok.cellBg,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-              backdropFilter: "blur(8px)",
+              background: stuck ? tok.cellBg : "transparent",
+              boxShadow: stuck ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+              backdropFilter: stuck ? "blur(8px)" : "none",
               cursor: "pointer",
               color: tok.textMuted,
               fontFamily: OS,
               fontSize: 12,
               fontWeight: 600,
-              transition: "border-color 200ms, color 200ms",
+              transition: "border-color 200ms, color 200ms, background 200ms, box-shadow 200ms",
               whiteSpace: "nowrap",
             }}
           >
