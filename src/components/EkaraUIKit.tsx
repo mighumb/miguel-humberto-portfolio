@@ -1,6 +1,28 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef, useContext, createContext } from "react";
+
+/* ─── Responsive: below this width, every 2-column grid in the kit
+   collapses to a single column so components keep their real content
+   width instead of being clipped in a half-width cell. ───────────── */
+
+const MOBILE_BREAKPOINT = 768;
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    setIsMobile(mql.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  return isMobile;
+}
+
+const MobileCtx = createContext(false);
 
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 
@@ -102,8 +124,16 @@ function AtomCell({
   raised?: boolean;
   children: React.ReactNode;
 }) {
-  const radius =
-    pos.col === 0 && pos.row === 0 ? "12px 0 0 0"
+  const isMobile = useContext(MobileCtx);
+  const isFirst = pos.col === 0 && pos.row === 0;
+  const isLast = pos.col === 1 && pos.row === 1;
+
+  // Below the mobile breakpoint the grid stacks into a single column (in
+  // the same 0,0 -> 1,0 -> 0,1 -> 1,1 reading order), so corners and
+  // dividers switch from a 2x2 cross to a simple top/bottom stack.
+  const radius = isMobile
+    ? isFirst ? "12px 12px 0 0" : isLast ? "0 0 12px 12px" : "0"
+    : pos.col === 0 && pos.row === 0 ? "12px 0 0 0"
     : pos.col === 1 && pos.row === 0 ? "0 12px 0 0"
     : pos.col === 0 && pos.row === 1 ? "0 0 0 12px"
     : "0 0 12px 0";
@@ -124,9 +154,10 @@ function AtomCell({
         userSelect: "none",
         background: tok.cellBg,
         borderRadius: radius,
-        // Inner cross dividers only — no outer border
-        borderRight: pos.col === 0 ? `1px solid ${tok.divider}` : "none",
-        borderBottom: pos.row === 0 ? `1px solid ${tok.divider}` : "none",
+        // Inner cross dividers (2-col) or a simple stack divider (mobile) —
+        // no outer border either way.
+        borderRight: !isMobile && pos.col === 0 ? `1px solid ${tok.divider}` : "none",
+        borderBottom: isMobile ? (isLast ? "none" : `1px solid ${tok.divider}`) : pos.row === 0 ? `1px solid ${tok.divider}` : "none",
       }}
     >
       {/* Component */}
@@ -458,6 +489,7 @@ function EyeClosedIcon({ color }: { color: string }) {
 }
 
 function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const isMobile = useContext(MobileCtx);
   const [v, next] = useVariant(6);
   const [showPw, setShowPw] = useState(false);
   const [hov, setHov] = useState(false);
@@ -560,7 +592,10 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             style={{
               flex: 1,
               minWidth: 0,
-              fontSize: 14,
+              // 16px on mobile stops Safari's auto-zoom-on-focus, which is
+              // what caused the page to lurch sideways when this field
+              // gained focus and the keyboard opened.
+              fontSize: isMobile ? 16 : 14,
               fontFamily: OS,
               color: tok.textSub,
               letterSpacing: showPw ? "normal" : "0.15em",
@@ -974,6 +1009,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 type LoginField = "email" | "password";
 
 function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const isMobile = useContext(MobileCtx);
   const [showPw, setShowPw] = useState(false);
   const [email, setEmail] = useState("jane.doe@ekara.io");
   const [password, setPassword] = useState("MyP@ssw0rd");
@@ -1003,7 +1039,10 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const inputStyle = {
     flex: 1,
     minWidth: 0,
-    fontSize: 13,
+    // 16px on mobile stops Safari's auto-zoom-on-focus (the cause of the
+    // page lurching sideways when a field gains focus and the keyboard
+    // opens).
+    fontSize: isMobile ? 16 : 13,
     fontFamily: OS,
     color: tok.textSub,
     background: "transparent",
@@ -1520,9 +1559,81 @@ function CardReplayOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
 export default function EkaraUIKit() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const tok = theme === "light" ? LIGHT : DARK;
+  const isMobile = useIsMobile();
+
+  // Tracks whether the toggle has actually engaged its sticky position (as
+  // opposed to just sitting in its normal spot) so its look only changes
+  // once scrolling has carried it there — never at rest, on load.
+  const [stuck, setStuck] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const scrollRoot = sentinel.closest<HTMLElement>(".project-modal-scroll");
+    const observer = new IntersectionObserver(
+      ([entry]) => setStuck(!entry.isIntersecting),
+      { root: scrollRoot ?? null, rootMargin: "-73px 0px 0px 0px", threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div style={{ fontFamily: OS }}>
+    <MobileCtx.Provider value={isMobile}>
+    <div style={{ fontFamily: OS, position: "relative" }}>
+      {/* Marks the toggle's resting position — once it scrolls past the
+          modal's own header (72px), the observer above flips `stuck`. */}
+      <div ref={sentinelRef} style={{ position: "absolute", top: 0, left: 0, width: 1, height: 1 }} aria-hidden />
+
+      {/* Theme toggle — a direct child of this (tall) wrapper so its sticky
+          range spans the whole kit (Atoms → Organisms), not just its own
+          row. The negative margin folds it back into the Atoms row below
+          so its rest-state position/look is pixel-identical to before;
+          only `stuck` (real scroll engagement) changes its appearance. */}
+      <div style={{ position: "sticky", top: 72, zIndex: 5, height: 32, marginBottom: -32 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: "100%" }}>
+          <button
+            onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "6px 14px",
+              borderRadius: 20,
+              border: `1px solid ${tok.border}`,
+              background: stuck ? tok.cellBg : "transparent",
+              boxShadow: stuck ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
+              backdropFilter: stuck ? "blur(8px)" : "none",
+              cursor: "pointer",
+              color: tok.textMuted,
+              fontFamily: OS,
+              fontSize: 12,
+              fontWeight: 600,
+              transition: "border-color 200ms, color 200ms, background 200ms, box-shadow 200ms",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {theme === "light" ? (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                Light
+              </>
+            ) : (
+              <>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+                  <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Dark
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* ── Atoms ── */}
       <div
         style={{
@@ -1547,51 +1658,13 @@ export default function EkaraUIKit() {
           </span>
           <div style={{ width: 40, height: 1, background: `${tok.primary}40` }} />
         </div>
-
-        {/* Theme toggle */}
-        <button
-          onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 7,
-            padding: "6px 14px",
-            borderRadius: 20,
-            border: `1px solid ${tok.border}`,
-            background: "transparent",
-            cursor: "pointer",
-            color: tok.textMuted,
-            fontFamily: OS,
-            fontSize: 12,
-            fontWeight: 600,
-            transition: "border-color 200ms, color 200ms",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {theme === "light" ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-              Light
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Dark
-            </>
-          )}
-        </button>
       </div>
 
       {/* Atoms 2×2 grid */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
           overflow: "hidden",
           borderRadius: 12,
         }}
@@ -1624,7 +1697,7 @@ export default function EkaraUIKit() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
             overflow: "hidden",
             borderRadius: 12,
           }}
@@ -1658,7 +1731,7 @@ export default function EkaraUIKit() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
             overflow: "hidden",
             borderRadius: 12,
           }}
@@ -1670,5 +1743,6 @@ export default function EkaraUIKit() {
         </div>
       </div>
     </div>
+    </MobileCtx.Provider>
   );
 }
