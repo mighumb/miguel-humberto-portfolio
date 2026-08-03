@@ -44,7 +44,7 @@ function ResourceLink({ href, children }: { href: string; children: ReactNode })
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-sm font-medium text-text-primary transition-colors hover:text-accent"
+      className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
     >
       {children}
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -78,7 +78,7 @@ function LinkedText({ text }: { text: string }) {
         href={match[2]}
         target="_blank"
         rel="noopener noreferrer"
-        className="font-medium text-text-primary underline underline-offset-2 transition-colors hover:text-accent"
+        className="font-medium text-text-primary underline decoration-1 underline-offset-2 transition-all hover:decoration-2"
       >
         {match[1]}
       </a>
