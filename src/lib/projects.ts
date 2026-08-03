@@ -5,6 +5,11 @@ export type Deliverable =
   | { type: "instagram"; url: string }
   | { type: "placeholder" };
 
+/** Vertical workflow media (not the Ekara stacked-card pile). */
+export type ProcessItem =
+  | { type: "loop"; file: string }
+  | { type: "image"; file: string; fullBleed?: boolean };
+
 export interface Project {
   id: string;
   /** Folder name under public/projects/{track}/ */
@@ -38,6 +43,8 @@ export interface Project {
   deliverables?: Deliverable[];
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
+  /** Vertical workflow items (loops / images). Takes priority over processImages. */
+  processItems?: ProcessItem[];
   /** Overrides the "Process" section heading for this project. */
   processTitle?: { en: string; fr: string };
   /** Shows the interactive Ekara UI Kit section in the modal. */
@@ -112,12 +119,23 @@ export const projects: Project[] = [
     tags: ["VFX", "Music", "Social", "Viral"],
     year: "2025",
     type: "Video",
-    hasVideo: false,
-    tools: ["Beeble", "Switch X", "Photoshop", "After Effects"],
+    hasVideo: true,
+    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4",
+    tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
     links: {
       instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
     },
     deliverableCount: 0,
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [
+      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4" },
+      {
+        type: "image",
+        file: "process/process-magnific-big-flo-oli-colors-show.png",
+        fullBleed: true,
+      },
+      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4" },
+    ],
   },
   {
     id: "03",

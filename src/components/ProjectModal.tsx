@@ -6,7 +6,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project, type Deliverable, projectAssetBase, projectCoverUrl } from "@/lib/projects";
+import { type Project, type Deliverable, type ProcessItem, projectAssetBase, projectCoverUrl } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 import EkaraUIKit from "@/components/EkaraUIKit";
 
@@ -139,6 +139,77 @@ interface FlightState {
   //       (still deep), 2 = swing toward the viewer while below the pile,
   //       3 = sweep up onto the front slot.
   phase: 0 | 1 | 2 | 3;
+}
+
+function ProcessSilentLoop({ src }: { src: string }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = true;
+    video.play().catch(() => {});
+  }, [src]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload="metadata"
+      controls={false}
+      disablePictureInPicture
+      controlsList="nodownload noplaybackrate noremoteplayback"
+      className="pointer-events-none block w-full h-auto rounded-xl bg-bg-secondary"
+      aria-hidden
+    />
+  );
+}
+
+function ProcessWorkflowStack({
+  items,
+  assetBase,
+}: {
+  items: ProcessItem[];
+  assetBase: string;
+}) {
+  return (
+    <div className="space-y-10 md:space-y-14">
+      {items.map((item, index) => {
+        const src = `${assetBase}/${item.file}`;
+
+        if (item.type === "loop") {
+          return (
+            <div key={`${item.file}-${index}`}>
+              <ProcessSilentLoop src={src} />
+            </div>
+          );
+        }
+
+        if (item.fullBleed) {
+          return (
+            <div
+              key={`${item.file}-${index}`}
+              className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt="" className="block w-full h-auto" loading="lazy" />
+            </div>
+          );
+        }
+
+        return (
+          <div key={`${item.file}-${index}`} className="overflow-hidden rounded-xl bg-bg-secondary">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="" className="block w-full h-auto" loading="lazy" />
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBase: string }) {
@@ -460,6 +531,10 @@ export default function ProjectModal({
     () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
   );
   const [touchControls, setTouchControls] = useState(false);
+  const unmuteOnOpen = project.slug === "big-flo-oli-colors-show";
+  const heroUnmuted = unmuteOnOpen && sharedContentVisible;
+  const hasDeliverables =
+    (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
 
   useEffect(() => {
     setTouchControls(false);
@@ -508,12 +583,22 @@ export default function ProjectModal({
     const video = heroVideoRef.current;
     if (!video || !project.hasVideo || !project.videoUrl) return;
     if (sharedContentVisible) {
+      video.muted = !unmuteOnOpen;
       // Also runs in the flight-handoff case (videoPlaying): iOS can reject
       // the play() issued while the modal was still hidden, and nothing else
       // would retry it. play() on an already-playing video is a no-op.
       video.play().catch(() => {});
+    } else {
+      video.muted = true;
     }
-  }, [sharedContentVisible, project.hasVideo, project.videoUrl, project.id, videoPlaying]);
+  }, [
+    sharedContentVisible,
+    project.hasVideo,
+    project.videoUrl,
+    project.id,
+    videoPlaying,
+    unmuteOnOpen,
+  ]);
 
 
   const measureTargets = useCallback((): ModalTargets | null => {
@@ -682,7 +767,7 @@ export default function ProjectModal({
                       }
                       autoPlay
                       loop
-                      muted
+                      muted={!heroUnmuted}
                       playsInline
                       preload={videoPlaying ? "auto" : "metadata"}
                       className="h-full w-full object-cover"
@@ -763,6 +848,7 @@ export default function ProjectModal({
               </p>
             </section>
 
+            {hasDeliverables && (
             <section className="mt-16 pt-16">
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
@@ -821,12 +907,18 @@ export default function ProjectModal({
                 </div>
               )}
             </section>
+            )}
 
             <section className="mt-16 pt-16">
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {project.processTitle?.[locale] ?? mt.process}
               </h3>
-              {project.processImages ? (
+              {project.processItems ? (
+                <ProcessWorkflowStack
+                  items={project.processItems}
+                  assetBase={projectAssetBase(project)}
+                />
+              ) : project.processImages ? (
                 <ProcessStackedCards
                   images={project.processImages}
                   assetBase={projectAssetBase(project)}
