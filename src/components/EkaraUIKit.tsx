@@ -489,6 +489,7 @@ function EyeClosedIcon({ color }: { color: string }) {
 }
 
 function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const isMobile = useContext(MobileCtx);
   const [v, next] = useVariant(6);
   const [showPw, setShowPw] = useState(false);
   const [hov, setHov] = useState(false);
@@ -591,7 +592,10 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             style={{
               flex: 1,
               minWidth: 0,
-              fontSize: 14,
+              // 16px on mobile stops Safari's auto-zoom-on-focus, which is
+              // what caused the page to lurch sideways when this field
+              // gained focus and the keyboard opened.
+              fontSize: isMobile ? 16 : 14,
               fontFamily: OS,
               color: tok.textSub,
               letterSpacing: showPw ? "normal" : "0.15em",
@@ -1005,6 +1009,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
 type LoginField = "email" | "password";
 
 function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const isMobile = useContext(MobileCtx);
   const [showPw, setShowPw] = useState(false);
   const [email, setEmail] = useState("jane.doe@ekara.io");
   const [password, setPassword] = useState("MyP@ssw0rd");
@@ -1034,7 +1039,10 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const inputStyle = {
     flex: 1,
     minWidth: 0,
-    fontSize: 13,
+    // 16px on mobile stops Safari's auto-zoom-on-focus (the cause of the
+    // page lurching sideways when a field gains focus and the keyboard
+    // opens).
+    fontSize: isMobile ? 16 : 13,
     fontFamily: OS,
     color: tok.textSub,
     background: "transparent",
