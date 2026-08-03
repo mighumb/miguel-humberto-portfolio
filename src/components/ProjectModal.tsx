@@ -606,7 +606,7 @@ export default function ProjectModal({
 
       <div
         ref={modalRef}
-        className="project-modal-scroll relative z-[1] h-full overflow-y-auto overscroll-contain"
+        className="project-modal-scroll relative z-[1] h-full overflow-x-hidden overflow-y-auto overscroll-contain"
       >
         <div
           className={`project-modal-body ${sharedContentVisible ? "is-visible" : ""}`}
