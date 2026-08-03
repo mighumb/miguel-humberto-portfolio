@@ -134,7 +134,7 @@ export const projects: Project[] = [
         file: "process/process-magnific-big-flo-oli-colors-show.png",
         fullBleed: true,
       },
-      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=2" },
+      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=3" },
     ],
   },
   {
