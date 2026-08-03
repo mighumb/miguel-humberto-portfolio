@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 /* ─── Tokens ──────────────────────────────────────────────────────── */
 
@@ -88,7 +88,6 @@ function AtomCell({
   name,
   v,
   total,
-  onClick,
   tok,
   pos,
   raised,
@@ -97,7 +96,6 @@ function AtomCell({
   name: string;
   v: number;
   total: number;
-  onClick: () => void;
   tok: Tok;
   pos: CellPos;
   /** Lifts the cell above its siblings so an open dropdown isn't painted over. */
@@ -112,7 +110,6 @@ function AtomCell({
 
   return (
     <div
-      onClick={onClick}
       style={{
         position: "relative",
         zIndex: raised ? 5 : undefined,
@@ -122,7 +119,8 @@ function AtomCell({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        cursor: "pointer",
+        // No cursor/onClick here on purpose: this wrapper is inert padding
+        // and label chrome. Only the actual component inside is clickable.
         userSelect: "none",
         background: tok.cellBg,
         borderRadius: radius,
@@ -212,10 +210,11 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   }[v as 0 | 1 | 2];
 
   return (
-    <AtomCell name="Button" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Button" v={v} total={3} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           background: styles.bg,
           color: styles.color,
@@ -226,6 +225,7 @@ function ButtonAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "10px 28px",
           borderRadius: 8,
           letterSpacing: "0.01em",
+          cursor: "pointer",
           transition: "background 220ms ease, color 220ms ease, border-color 220ms ease",
         }}
       >
@@ -248,10 +248,11 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const cur = variants[v];
 
   return (
-    <AtomCell name="Tag" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Tag" v={v} total={4} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           background: hov
             ? `color-mix(in srgb, ${cur.bg} 82%, ${tok.tagHoverBlend})`
@@ -263,6 +264,7 @@ function TagAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 20px",
           borderRadius: 20,
           letterSpacing: "0.01em",
+          cursor: "pointer",
           transition: "background 180ms ease",
         }}
       >
@@ -291,14 +293,16 @@ function CheckboxAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
     : "transparent";
 
   return (
-    <AtomCell name="Checkbox" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Checkbox" v={v} total={4} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 14,
+          cursor: "pointer",
           opacity: s.disabled ? 0.38 : 1,
           transition: "opacity 200ms ease",
         }}
@@ -364,15 +368,17 @@ function SwitchAtom({ tok, pos }: { tok: Tok; pos: CellPos }) {
       : (hov ? OFF_X + 4 : OFF_X);
 
   return (
-    <AtomCell name="Switch" v={v} total={3} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Switch" v={v} total={3} tok={tok} pos={pos}>
       <div
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}
+        onClick={next}
         style={{
           display: "flex",
           alignItems: "center",
           gap: 8,
           paddingLeft: 4, // room for the knob's left overhang
+          cursor: "pointer",
           opacity: s.disabled ? 0.38 : 1,
           transition: "opacity 200ms ease",
         }}
@@ -455,6 +461,8 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const [v, next] = useVariant(6);
   const [showPw, setShowPw] = useState(false);
   const [hov, setHov] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [value, setValue] = useState("");
 
   const states = [
     { label: "Default",  active: false, filled: false, error: false, success: false, disabled: false, helper: "" },
@@ -465,29 +473,40 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
     { label: "Disabled", active: false, filled: false, error: false, success: false, disabled: true,  helper: "" },
   ];
   const s = states[v];
-  const floated   = s.active || s.filled;
   const iconColor = tok.textMuted;
+
+  // Clicking the field explores the 6 documented states (unchanged). Each
+  // state seeds a canonical value so "Filled/Error/Success" don't look
+  // empty — from there the field is a real input: typing, selecting and
+  // repositioning the caret all work normally without jumping states.
+  useEffect(() => {
+    setValue(s.filled ? "MyP@ssw0rd" : "");
+    setFocused(false);
+  }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const floated = focused || value.length > 0 || s.active || s.filled;
 
   const borderColor =
     s.error   ? tok.error   :
     s.success ? tok.success :
-    s.active  ? tok.primary :
+    (focused || s.active) ? tok.primary :
     hov && !s.disabled ? tok.inputHoverStroke :
     tok.border;
 
   const labelColor =
     s.error   ? tok.error   :
     s.success ? tok.success :
-    s.active  ? tok.primary :
+    (focused || s.active) ? tok.primary :
     floated   ? tok.textSub :
     tok.textMuted;
 
   return (
-    <AtomCell name="Input Field" v={v} total={6} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Input Field" v={v} total={6} tok={tok} pos={pos}>
       <div style={{ width: "100%", maxWidth: 240, opacity: s.disabled ? 0.38 : 1, transition: "opacity 200ms" }}>
         <div
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
+          onClick={next}
           style={{
             position: "relative",
             height: 52,
@@ -498,6 +517,7 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             border: `1.25px solid ${borderColor}`,
             borderRadius: 8,
             background: tok.cellBg,
+            cursor: "pointer",
             transition: "border-color 200ms",
           }}
         >
@@ -525,36 +545,32 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             Password
           </span>
 
-          {floated ? (
-            <span
-              style={{
-                flex: 1,
-                fontSize: 14,
-                fontFamily: OS,
-                color: tok.textSub,
-                letterSpacing: showPw ? "normal" : "0.15em",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {showPw ? "MyP@ssw0rd" : "••••••••"}
-              {s.active && (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 1,
-                    height: 16,
-                    background: tok.text,
-                    marginLeft: 2,
-                    verticalAlign: "middle",
-                    letterSpacing: "normal",
-                  }}
-                />
-              )}
-            </span>
-          ) : (
-            <div style={{ flex: 1 }} />
-          )}
+          {/* Real input — clicks stop here so typing/selecting/repositioning
+              the caret never triggers the state cycle above. Clicking the
+              icon or the field's padding still cycles through the states. */}
+          <input
+            type={showPw ? "text" : "password"}
+            value={value}
+            disabled={s.disabled}
+            autoComplete="off"
+            onChange={(e) => setValue(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              flex: 1,
+              minWidth: 0,
+              fontSize: 14,
+              fontFamily: OS,
+              color: tok.textSub,
+              letterSpacing: showPw ? "normal" : "0.15em",
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              padding: 0,
+              cursor: s.disabled ? "not-allowed" : "text",
+            }}
+          />
 
           {floated && (
             <div
@@ -594,7 +610,6 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
       name="Select"
       v={open ? 1 : 0}
       total={2}
-      onClick={() => setOpen((o) => !o)}
       tok={tok}
       pos={pos}
       raised={open}
@@ -604,6 +619,7 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
         <div
           onMouseEnter={() => setHov(true)}
           onMouseLeave={() => setHov(false)}
+          onClick={() => setOpen((o) => !o)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -613,6 +629,7 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             border: `1.25px solid ${triggerBorder}`,
             borderRadius: 8,
             background: tok.cellBg,
+            cursor: "pointer",
             transition: "border-color 200ms",
           }}
         >
@@ -663,7 +680,6 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                   onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
                   onMouseLeave={() => setItemHov(null)}
                   onClick={(e) => {
-                    // Pick the value without letting AtomCell toggle the panel back open.
                     e.stopPropagation();
                     setSelected(i);
                     setOpen(false);
@@ -679,6 +695,7 @@ function SelectMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                     fontWeight: 600,
                     // item-menu/active: bg #effefd, text #057b80
                     color: isActive ? tok.primary : tok.menuText,
+                    cursor: "pointer",
                     background:
                       isActive ? tok.primaryLight
                       : itemHov === i ? tok.menuHoverBg
@@ -747,9 +764,10 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const c   = tok.snack[def.key];
 
   return (
-    <AtomCell name="Snackbar" v={v} total={4} onClick={next} tok={tok} pos={pos}>
+    <AtomCell name="Snackbar" v={v} total={4} tok={tok} pos={pos}>
       {/* Figma: pl-16 pr-12 py-8, gap 8, radius 8, no border */}
       <div
+        onClick={next}
         style={{
           width: "100%",
           maxWidth: 300,
@@ -759,6 +777,7 @@ function SnackbarMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           padding: "8px 12px 8px 16px",
           borderRadius: 8,
           background: c.bg,
+          cursor: "pointer",
           transition: "background 200ms",
         }}
       >
@@ -851,7 +870,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const dotColor = isOpen ? tok.primary : tok.text;
 
   return (
-    <AtomCell name="Kebab Menu" v={v} total={2} onClick={next} tok={tok} pos={pos} raised={isOpen}>
+    <AtomCell name="Kebab Menu" v={v} total={2} tok={tok} pos={pos} raised={isOpen}>
       {/* Anchor is only as tall as the trigger, so the cell never resizes.
           The block inside is centred on the anchor, so opening the menu
           slides the trigger up instead of pushing the grid around. */}
@@ -872,6 +891,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
           <div
             onMouseEnter={() => setTrigHov(true)}
             onMouseLeave={() => setTrigHov(false)}
+            onClick={next}
             style={{
               width: 40,
               height: 40,
@@ -880,6 +900,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
+              cursor: "pointer",
               // hover = grey, active/open = primary tint
               background:
                 isOpen   ? tok.primaryLight
@@ -914,6 +935,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                     key={item.label}
                     onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
                     onMouseLeave={() => setItemHov(null)}
+                    onClick={(e) => e.stopPropagation()}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -924,6 +946,7 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
                       fontFamily: OS,
                       fontWeight: 600,
                       color: c,
+                      cursor: "pointer",
                       background: itemHov === i ? tok.menuHoverBg : "transparent",
                       transition: "background 150ms",
                     }}
@@ -937,6 +960,553 @@ function KebabMenuMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
               })}
             </div>
           )}
+        </div>
+      </div>
+    </AtomCell>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ORGANISMS
+═══════════════════════════════════════════════════════════════════ */
+
+// 9 — CARD LOGIN
+type LoginField = "email" | "password";
+
+function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [showPw, setShowPw] = useState(false);
+  const [email, setEmail] = useState("jane.doe@ekara.io");
+  const [password, setPassword] = useState("MyP@ssw0rd");
+  const [focusedField, setFocusedField] = useState<LoginField | null>(null);
+  const [hovField, setHovField] = useState<LoginField | null>(null);
+  const [btnHov, setBtnHov] = useState(false);
+  const [btnPressed, setBtnPressed] = useState(false);
+  const [linkHov, setLinkHov] = useState(false);
+
+  const fieldBorder = (field: LoginField) =>
+    focusedField === field ? tok.primary
+    : hovField === field ? tok.inputHoverStroke
+    : tok.border;
+
+  const fieldStyle = (field: LoginField) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    height: 40,
+    padding: "0 12px",
+    border: `1.25px solid ${fieldBorder(field)}`,
+    borderRadius: 8,
+    background: tok.cellBg,
+    transition: "border-color 150ms",
+  }) as const;
+
+  const inputStyle = {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 13,
+    fontFamily: OS,
+    color: tok.textSub,
+    background: "transparent",
+    border: "none",
+    outline: "none",
+    padding: 0,
+    cursor: "text",
+  } as const;
+
+  // The whole card is never itself clickable — every interaction lives on
+  // the individual field/link/button, so the cell click cycle is off.
+  return (
+    <AtomCell name="Card Login" v={0} total={1} tok={tok} pos={pos}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 296,
+          border: `1px solid ${tok.divider}`,
+          borderRadius: 12,
+          background: tok.cellBg,
+          padding: 20,
+        }}
+      >
+        <div style={{ fontSize: 15, fontFamily: OS, fontWeight: 700, color: tok.text, marginBottom: 2 }}>
+          Connexion
+        </div>
+        <div style={{ fontSize: 12, fontFamily: OS, fontWeight: 400, color: tok.textMuted, marginBottom: 16 }}>
+          Accédez à votre espace
+        </div>
+
+        {/* Email */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 600, color: tok.textMuted, marginBottom: 4 }}>
+            Email
+          </div>
+          <div
+            onMouseEnter={() => setHovField("email")}
+            onMouseLeave={() => setHovField(null)}
+            style={fieldStyle("email")}
+          >
+            <input
+              type="email"
+              value={email}
+              autoComplete="off"
+              onChange={(e) => setEmail(e.target.value)}
+              onFocus={() => setFocusedField("email")}
+              onBlur={() => setFocusedField(null)}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        {/* Password */}
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 600, color: tok.textMuted, marginBottom: 4 }}>
+            Mot de passe
+          </div>
+          <div
+            onMouseEnter={() => setHovField("password")}
+            onMouseLeave={() => setHovField(null)}
+            style={fieldStyle("password")}
+          >
+            <input
+              type={showPw ? "text" : "password"}
+              value={password}
+              autoComplete="off"
+              onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setFocusedField("password")}
+              onBlur={() => setFocusedField(null)}
+              style={{ ...inputStyle, letterSpacing: showPw ? "normal" : "0.15em" }}
+            />
+            <div
+              onClick={(e) => { e.stopPropagation(); setShowPw((p) => !p); }}
+              style={{ flexShrink: 0, cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              {showPw ? <EyeOpenIcon color={tok.textMuted} /> : <EyeClosedIcon color={tok.textMuted} />}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ textAlign: "right", marginBottom: 16 }}>
+          <span
+            onMouseEnter={() => setLinkHov(true)}
+            onMouseLeave={() => setLinkHov(false)}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              fontSize: 11,
+              fontFamily: OS,
+              fontWeight: 700,
+              color: linkHov ? tok.primaryHover : tok.primary,
+              textDecoration: linkHov ? "underline" : "none",
+              cursor: "pointer",
+              transition: "color 150ms",
+            }}
+          >
+            Mot de passe oublié ?
+          </span>
+        </div>
+
+        <div
+          onMouseEnter={() => setBtnHov(true)}
+          onMouseLeave={() => { setBtnHov(false); setBtnPressed(false); }}
+          onMouseDown={() => setBtnPressed(true)}
+          onMouseUp={() => setBtnPressed(false)}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            height: 40,
+            borderRadius: 8,
+            background: btnPressed ? tok.primaryHover : btnHov ? tok.primaryHover : tok.primary,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transform: btnPressed ? "scale(0.98)" : "scale(1)",
+            transition: "background 150ms, transform 100ms",
+          }}
+        >
+          <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 700, color: tok.textInv }}>
+            Se connecter
+          </span>
+        </div>
+      </div>
+    </AtomCell>
+  );
+}
+
+// 10 — SELECT INPUT FILTER
+const FILTER_ITEMS = ["Statut", "Priorité", "Assigné"];
+
+function SelectInputFilterOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [open, setOpen] = useState(false);
+  const [checked, setChecked] = useState<boolean[]>([true, false, false]);
+  const [hov, setHov] = useState(false);
+  const [itemHov, setItemHov] = useState<number | null>(null);
+
+  const activeCount = checked.filter(Boolean).length;
+  const triggerBorder = open ? tok.primary : hov ? tok.inputHoverStroke : tok.border;
+
+  return (
+    <AtomCell
+      name="Select Input Filter"
+      v={open ? 1 : 0}
+      total={2}
+      tok={tok}
+      pos={pos}
+      raised={open}
+    >
+      <div style={{ width: "100%", maxWidth: 296, position: "relative" }}>
+        {/* Trigger */}
+        <div
+          onMouseEnter={() => setHov(true)}
+          onMouseLeave={() => setHov(false)}
+          onClick={() => setOpen((o) => !o)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: 44,
+            padding: "0 12px",
+            border: `1.25px solid ${triggerBorder}`,
+            borderRadius: 8,
+            background: tok.cellBg,
+            cursor: "pointer",
+            transition: "border-color 200ms",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M4 5h16M7 12h10M10 19h4" stroke={tok.textSub} strokeWidth="1.75" strokeLinecap="round" />
+            </svg>
+            <span
+              style={{
+                fontSize: 14,
+                fontFamily: OS,
+                fontWeight: 400,
+                color: tok.textSub,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              Filtrer
+            </span>
+            {activeCount > 0 && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontFamily: OS,
+                  fontWeight: 700,
+                  color: tok.primary,
+                  background: tok.primaryLight,
+                  borderRadius: 10,
+                  padding: "2px 7px",
+                  flexShrink: 0,
+                }}
+              >
+                {activeCount}
+              </span>
+            )}
+          </div>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 200ms", flexShrink: 0 }}
+          >
+            <path d="M6 9l6 6 6-6" stroke={tok.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+
+        {/* Dropdown — checkbox list, same detached-card treatment as Select */}
+        {open && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              right: 0,
+              borderRadius: 8,
+              background: tok.menuSurface,
+              padding: "6px 0",
+              boxShadow: "0 4px 8px rgba(0,0,0,0.12)",
+              zIndex: 2,
+            }}
+          >
+            {FILTER_ITEMS.map((item, i) => (
+              <div
+                key={item}
+                onMouseEnter={(e) => { e.stopPropagation(); setItemHov(i); }}
+                onMouseLeave={() => setItemHov(null)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setChecked((c) => c.map((val, idx) => (idx === i ? !val : val)));
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  height: 36,
+                  padding: "0 16px",
+                  cursor: "pointer",
+                  background: itemHov === i ? tok.menuHoverBg : "transparent",
+                  transition: "background 150ms",
+                }}
+              >
+                <div
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 4,
+                    flexShrink: 0,
+                    border: `1.5px solid ${checked[i] ? tok.primary : tok.borderDark}`,
+                    background: checked[i] ? tok.primary : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "background 150ms, border-color 150ms",
+                  }}
+                >
+                  {checked[i] && (
+                    <svg width="9" height="7" viewBox="0 0 12 10" fill="none">
+                      <path d="M1 5l4 4 6-8" stroke="#effefd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 600, color: tok.menuText }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </AtomCell>
+  );
+}
+
+// 11 — DATE PICKER (Style=Simple)
+const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+const MONTHS = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+];
+
+// Reference point: monthCursor 0 = January 2026. Tracking an absolute count
+// (instead of a month index modulo 12) lets navigation roll over years and
+// keeps every visited month independently selectable/range-able.
+const MONTH_CURSOR_ORIGIN_YEAR = 2026;
+
+type DateValue = { monthCursor: number; day: number };
+
+function dateValueRank(d: DateValue) {
+  return d.monthCursor * 100 + d.day; // day ≤ 31, so this sorts correctly across months
+}
+
+function todayDateValue(): DateValue {
+  const now = new Date();
+  const monthCursor = (now.getFullYear() - MONTH_CURSOR_ORIGIN_YEAR) * 12 + now.getMonth();
+  return { monthCursor, day: now.getDate() };
+}
+
+function DatePickerSimpleOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  // Defaults to today, recomputed fresh on every mount so the picker never
+  // shows a stale "today" once the calendar date has actually moved on.
+  const [monthCursor, setMonthCursor] = useState(() => todayDateValue().monthCursor);
+  const [rangeStart, setRangeStart] = useState<DateValue | null>(() => todayDateValue());
+  const [rangeEnd, setRangeEnd] = useState<DateValue | null>(null);
+
+  const year = MONTH_CURSOR_ORIGIN_YEAR + Math.floor(monthCursor / 12);
+  const monthIdx = ((monthCursor % 12) + 12) % 12;
+  const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+  const firstDayOffset = (new Date(year, monthIdx, 1).getDay() + 6) % 7; // Monday-first
+
+  // Always pad to 6 full weeks so the grid height never changes between months.
+  const cells: (number | null)[] = [
+    ...Array(firstDayOffset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length < 42) cells.push(null);
+
+  const pickDay = (day: number) => {
+    const clicked: DateValue = { monthCursor, day };
+    const clickedRank = dateValueRank(clicked);
+
+    if (!rangeStart || (rangeStart && rangeEnd)) {
+      // Nothing selected yet, or a full range already exists — start over.
+      setRangeStart(clicked);
+      setRangeEnd(null);
+      return;
+    }
+
+    // One endpoint already picked — close the range, earliest first.
+    const startRank = dateValueRank(rangeStart);
+    if (clickedRank < startRank) {
+      setRangeEnd(rangeStart);
+      setRangeStart(clicked);
+    } else {
+      setRangeEnd(clicked);
+    }
+  };
+
+  return (
+    <AtomCell name="Date Picker" v={0} total={1} tok={tok} pos={pos}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 296,
+          border: `1px solid ${tok.divider}`,
+          borderRadius: 10,
+          background: tok.cellBg,
+          padding: 14,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <button
+            onClick={(e) => { e.stopPropagation(); setMonthCursor((m) => m - 1); }}
+            style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 4, color: tok.textSub }}
+            aria-label="Mois précédent"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+          <span style={{ fontSize: 13, fontFamily: OS, fontWeight: 700, color: tok.text }}>
+            {MONTHS[monthIdx]} {year}
+          </span>
+          <button
+            onClick={(e) => { e.stopPropagation(); setMonthCursor((m) => m + 1); }}
+            style={{ display: "flex", background: "none", border: "none", cursor: "pointer", padding: 4, color: tok.textSub }}
+            aria-label="Mois suivant"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
+          {WEEKDAYS.map((d, i) => (
+            <div
+              key={i}
+              style={{ textAlign: "center", fontSize: 10, fontFamily: OS, fontWeight: 700, color: tok.textMuted, padding: "4px 0" }}
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
+          {cells.map((day, i) => {
+            if (day === null) return <div key={i} style={{ aspectRatio: "1" }} />;
+
+            const rank = dateValueRank({ monthCursor, day });
+            const startRank = rangeStart ? dateValueRank(rangeStart) : null;
+            const endRank = rangeEnd ? dateValueRank(rangeEnd) : null;
+            const isStart = startRank !== null && rank === startRank;
+            const isEnd = endRank !== null && rank === endRank;
+            const isEndpoint = isStart || isEnd;
+            const isInRange = startRank !== null && endRank !== null && rank > startRank && rank < endRank;
+
+            return (
+              <div
+                key={i}
+                onClick={(e) => { e.stopPropagation(); pickDay(day); }}
+                style={{
+                  position: "relative",
+                  aspectRatio: "1",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12,
+                  fontFamily: OS,
+                  fontWeight: isEndpoint ? 700 : 400,
+                  color: isEndpoint ? tok.textInv : tok.textSub,
+                  background: isEndpoint ? tok.primary : isInRange ? tok.primaryLight : "transparent",
+                  borderRadius: isEndpoint ? 6 : 0,
+                  cursor: "pointer",
+                  transition: "background 150ms, color 150ms",
+                }}
+              >
+                {day}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </AtomCell>
+  );
+}
+
+// 12 — CARD REPLAY
+function CardReplayOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
+  const [hov, setHov] = useState(false);
+
+  return (
+    <AtomCell name="Card Replay" v={0} total={1} tok={tok} pos={pos}>
+      <div
+        onMouseEnter={() => setHov(true)}
+        onMouseLeave={() => setHov(false)}
+        style={{
+          width: "100%",
+          maxWidth: 280,
+          borderRadius: 10,
+          overflow: "hidden",
+          background: tok.cellBg,
+          border: `1px solid ${tok.divider}`,
+          boxShadow: hov ? "0 8px 20px rgba(0,0,0,0.16)" : "0 1px 2px rgba(0,0,0,0.06)",
+          transform: hov ? "translateY(-2px)" : "none",
+          cursor: "pointer",
+          transition: "box-shadow 200ms, transform 200ms",
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            aspectRatio: "16/10",
+            background: "var(--placeholder)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background: hov ? tok.primary : "rgba(255,255,255,0.92)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transform: hov ? "scale(1.08)" : "scale(1)",
+              transition: "background 200ms, transform 200ms",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill={hov ? "#fefefe" : "#292929"}>
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </div>
+          <span
+            style={{
+              position: "absolute",
+              bottom: 8,
+              right: 8,
+              fontSize: 10,
+              fontFamily: OS,
+              fontWeight: 700,
+              color: "#fefefe",
+              background: "rgba(0,0,0,0.6)",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            04:12
+          </span>
+        </div>
+        <div style={{ padding: "12px 14px" }}>
+          <div style={{ fontSize: 13, fontFamily: OS, fontWeight: 700, color: tok.text, marginBottom: 4 }}>
+            Session replay
+          </div>
+          <div style={{ fontSize: 11, fontFamily: OS, fontWeight: 400, color: tok.textMuted }}>
+            Aujourd&apos;hui, 14:32
+          </div>
         </div>
       </div>
     </AtomCell>
@@ -1063,6 +1633,40 @@ export default function EkaraUIKit() {
           <SelectMolecule     tok={tok} pos={{ col: 1, row: 0 }} />
           <SnackbarMolecule   tok={tok} pos={{ col: 0, row: 1 }} />
           <KebabMenuMolecule  tok={tok} pos={{ col: 1, row: 1 }} />
+        </div>
+      </div>
+
+      {/* ── Organismes ── */}
+      <div style={{ marginTop: 40 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontFamily: OS,
+              fontWeight: 700,
+              color: tok.primary,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+          >
+            Organismes
+          </span>
+          <div style={{ width: 40, height: 1, background: `${tok.primary}40` }} />
+        </div>
+
+        {/* Organisms 2×2 grid */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            overflow: "hidden",
+            borderRadius: 12,
+          }}
+        >
+          <CardLoginOrganism         tok={tok} pos={{ col: 0, row: 0 }} />
+          <SelectInputFilterOrganism tok={tok} pos={{ col: 1, row: 0 }} />
+          <DatePickerSimpleOrganism  tok={tok} pos={{ col: 0, row: 1 }} />
+          <CardReplayOrganism        tok={tok} pos={{ col: 1, row: 1 }} />
         </div>
       </div>
     </div>
