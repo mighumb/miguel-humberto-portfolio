@@ -102,9 +102,9 @@ export const projects: Project[] = [
     },
     deliverableCount: 3,
     deliverables: [
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4" },
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4" },
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4?v=2" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4?v=2" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4?v=2" },
     ],
   },
   {
