@@ -183,7 +183,7 @@ export const projects: Project[] = [
     hasVideo: false,
     thumbnail: "thumbnail-ekara-design-system.png",
     tools: ["Figma"],
-    links: { figma: "https://www.figma.com/design/Fwn3pUkAQweQvuf2MVnqLH/0.-Design-system?node-id=3547-28514&p=f&t=VREC3uAjRDX57LBz-0" },
+    links: { figma: "https://www.figma.com/design/Fwn3pUkAQweQvuf2MVnqLH/0.-Design-system?node-id=3547-28514&t=VREC3uAjRDX57LBz-1" },
     deliverableCount: 8,
     processTitle: { en: "Brand system", fr: "Brand system" },
     processImages: [
