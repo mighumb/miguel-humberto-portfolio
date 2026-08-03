@@ -592,10 +592,15 @@ function InputFieldMolecule({ tok, pos }: { tok: Tok; pos: CellPos }) {
             style={{
               flex: 1,
               minWidth: 0,
-              // 16px on mobile stops Safari's auto-zoom-on-focus, which is
-              // what caused the page to lurch sideways when this field
-              // gained focus and the keyboard opened.
+              // Real font-size must stay >=16px on mobile so Safari doesn't
+              // auto-zoom on focus (that zoom is what caused the page to
+              // lurch sideways). Visually scaled back down to the designed
+              // 14px so the password mask dots aren't oversized — transform
+              // only repaints smaller, it doesn't shrink the flex box, so
+              // the eye icon next to it doesn't move.
               fontSize: isMobile ? 16 : 14,
+              transform: isMobile ? "scale(0.875)" : undefined,
+              transformOrigin: "left center",
               fontFamily: OS,
               color: tok.textSub,
               letterSpacing: showPw ? "normal" : "0.15em",
@@ -1039,10 +1044,15 @@ function CardLoginOrganism({ tok, pos }: { tok: Tok; pos: CellPos }) {
   const inputStyle = {
     flex: 1,
     minWidth: 0,
-    // 16px on mobile stops Safari's auto-zoom-on-focus (the cause of the
-    // page lurching sideways when a field gains focus and the keyboard
-    // opens).
+    // Real font-size must stay >=16px on mobile so Safari doesn't
+    // auto-zoom on focus (that zoom is what caused the page to lurch
+    // sideways). Visually scaled back down to the designed 13px so the
+    // password mask dots aren't oversized — transform only repaints
+    // smaller, it doesn't shrink the flex box, so the eye icon next to
+    // the password field doesn't move.
     fontSize: isMobile ? 16 : 13,
+    transform: isMobile ? "scale(0.8125)" : undefined,
+    transformOrigin: "left center",
     fontFamily: OS,
     color: tok.textSub,
     background: "transparent",
