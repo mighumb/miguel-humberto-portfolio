@@ -75,8 +75,9 @@ function WorkCarouselNav({
   nextLabel: string;
   disabled?: boolean;
 }) {
+  // Same resting tone as the theme toggle in the header nav.
   const buttonClass =
-    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-primary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35 md:text-text-secondary md:hover:text-text-primary";
+    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35";
 
   return (
     <div className="flex items-center gap-2" aria-label="Carousel navigation">
