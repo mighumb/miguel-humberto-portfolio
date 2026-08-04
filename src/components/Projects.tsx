@@ -19,6 +19,7 @@ import {
   measureCardOrigin,
   buildCloseFlight,
   findVisibleProjectCard,
+  SHARED_TRANSITION_MS,
   type CardOrigin,
   type CardPerspective,
   type FlightPair,
@@ -26,7 +27,10 @@ import {
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
 import {
+  animateCardPerspectives,
+  applySnapshotPerspective,
   captureCardPerspectives,
+  FLAT_PERSPECTIVE,
   restoreCardPerspectives,
 } from "@/lib/workCardFocus";
 import { alignCardIntoView } from "@/lib/flipClose";
@@ -433,6 +437,22 @@ export default function Projects() {
       return;
     }
 
+    // Measure happened on the curved snapshot so flight destinations match the
+    // final carousel. Flatten now (still under the opaque backdrop), then lerp
+    // flat → curve in lockstep with the shared-element flight — avoids the
+    // instant "pop" back into 3D when the portal lands.
+    const container = scrollRef.current;
+    if (container) {
+      applySnapshotPerspective(container, snapshot, FLAT_PERSPECTIVE);
+      flipCleanupRef.current?.();
+      flipCleanupRef.current = animateCardPerspectives({
+        container,
+        to: snapshot,
+        from: FLAT_PERSPECTIVE,
+        durationMs: SHARED_TRANSITION_MS,
+      });
+    }
+
     setSharedHiddenInstance(origin.carouselInstanceId ?? instanceId ?? null);
     setFlightShowVideo(origin.showVideo);
     setFlightVideoTime(origin.videoTime);
@@ -506,6 +526,9 @@ export default function Projects() {
 
   const handleFlightLanding = useCallback((handoffVideoTime?: number) => {
     if (phaseRef.current === "closing") {
+      // Finish the perspective lerp at its end state before tearing down.
+      flipCleanupRef.current?.();
+      flipCleanupRef.current = null;
       restoreFrozenCarousel(
         scrollRef,
         savedWorkScrollLeftRef.current,
