@@ -553,7 +553,7 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="relative z-10 -mt-28 pb-8 md:-mt-32 md:pb-10"
+      className="relative z-10 pb-8 md:pb-10"
       aria-label={t.projects}
     >
       <h2 className="sr-only">{t.projects}</h2>
@@ -580,7 +580,7 @@ export default function Projects() {
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-2 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
           aria-hidden
         />
 

@@ -43,23 +43,17 @@ export default function Hero() {
   const copy = t.modes[mode];
 
   return (
-    <section
-      className="relative flex h-[calc(100svh-min(5.5svh,3.25rem))] w-full flex-col"
-      aria-label="Introduction"
-    >
+    <section className="relative flex w-full flex-col" aria-label="Introduction">
       <HeroNav />
 
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-12 text-center md:px-10 md:pb-16">
+      <div className="relative z-10 flex flex-col items-center px-6 pb-10 pt-[12svh] text-center md:px-10 md:pb-14 md:pt-[16svh]">
         <h1
           id="hero-title"
-          className="text-4xl font-light tracking-tight text-text-primary md:text-6xl lg:text-7xl"
+          className="text-2xl font-light tracking-tight text-text-primary md:text-4xl lg:text-5xl"
         >
-          Miguel Humberto
-        </h1>
-        <p className="mt-4 text-lg font-medium text-text-secondary md:text-xl">
           {copy.role}
-        </p>
-        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-text-secondary md:text-lg">
+        </h1>
+        <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-secondary md:mt-6 md:text-lg">
           <MobileTaglineBreak text={copy.tagline} />
         </p>
       </div>
