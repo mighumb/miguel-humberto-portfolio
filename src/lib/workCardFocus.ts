@@ -14,6 +14,8 @@ export const MAX_BLUR = 1.15;
 export const MAX_BLUR_MOBILE = 3.1;
 /** Desktop only: cover reads softer than text at the same body blur. */
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
+/** Desktop: soft depth growth rate so cards keep receding past 1 step. */
+const DESKTOP_DEPTH_FALLOFF = 0.9;
 
 export interface CardPerspective {
   articleTranslateY: number;
@@ -21,6 +23,8 @@ export interface CardPerspective {
   translateZ: number;
   bodyOpacity: number;
   blur: number;
+  /** 0..1 distance used for z-index ordering along the curve. */
+  depth: number;
 }
 
 export const FLAT_PERSPECTIVE: CardPerspective = {
@@ -29,6 +33,7 @@ export const FLAT_PERSPECTIVE: CardPerspective = {
   translateZ: 0,
   bodyOpacity: 1,
   blur: 0,
+  depth: 0,
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -44,6 +49,16 @@ function blurFilter(blurPx: number) {
   return blurPx > 0.08 ? `blur(${blurPx}px)` : "none";
 }
 
+/**
+ * Desktop depth curve: keeps growing past one card step with diminishing returns,
+ * so card 3 is always farther than card 2 (continuous fan).
+ * Mobile stays hard-capped at one step (existing feel).
+ */
+function focusAmount(distanceInSteps: number, mobile: boolean) {
+  if (mobile) return Math.min(1, distanceInSteps);
+  return 1 - Math.exp(-distanceInSteps * DESKTOP_DEPTH_FALLOFF);
+}
+
 export function computeCardFocus(
   card: HTMLElement,
   container: HTMLElement,
@@ -56,17 +71,30 @@ export function computeCardFocus(
   const idealScroll = getCardIdealScroll(container, card);
   const delta = scrollLeft - idealScroll;
   const step = card.offsetWidth + gap;
-  const progress = Math.min(1, Math.abs(delta) / step);
-  const direction = step === 0 ? 0 : delta / step;
+  const distance = step === 0 ? 0 : Math.abs(delta) / step;
+  const sign = delta === 0 ? 0 : Math.sign(delta);
   const mobile = isMobileViewport();
+  const amount = focusAmount(distance, mobile);
 
+  if (mobile) {
+    return {
+      articleTranslateY: amount * MAX_SHIFT_Y,
+      rotateY: clamp(sign * -amount * MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
+      translateZ: amount * MAX_TRANSLATE_Z_MOBILE,
+      bodyOpacity: 1,
+      blur: amount * MAX_BLUR_MOBILE,
+      depth: amount,
+    };
+  }
+
+  // Desktop: continuous curve — farther cards keep gaining depth / tilt / blur.
   return {
-    articleTranslateY: progress * MAX_SHIFT_Y,
-    rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
-    translateZ: progress * (mobile ? MAX_TRANSLATE_Z_MOBILE : MAX_TRANSLATE_Z),
-    // Mobile: no opacity wash on the focused CTA; side cards still blur.
-    bodyOpacity: mobile ? 1 : 1 - progress * 0.14,
-    blur: progress * (mobile ? MAX_BLUR_MOBILE : MAX_BLUR),
+    articleTranslateY: amount * MAX_SHIFT_Y * 1.15,
+    rotateY: clamp(sign * -amount * MAX_ROTATE_Y * 1.25, -22, 22),
+    translateZ: amount * MAX_TRANSLATE_Z,
+    bodyOpacity: 1 - amount * 0.18,
+    blur: amount * MAX_BLUR * 1.15,
+    depth: amount,
   };
 }
 
@@ -83,6 +111,7 @@ export function lerpPerspective(
     translateZ: mix(from.translateZ, to.translateZ),
     bodyOpacity: mix(from.bodyOpacity, to.bodyOpacity),
     blur: mix(from.blur, to.blur),
+    depth: mix(from.depth, to.depth),
   };
 }
 
@@ -108,10 +137,8 @@ function clearMediaFilters(card: HTMLElement) {
 }
 
 export function applyCardPerspective(card: HTMLElement, perspective: CardPerspective) {
-  const progress = Math.min(1, Math.abs(perspective.rotateY) / MAX_ROTATE_Y);
-
   card.style.transform = `translateY(${perspective.articleTranslateY}px)`;
-  card.style.zIndex = `${1000 - Math.round(progress * 100)}`;
+  card.style.zIndex = `${1000 - Math.round(perspective.depth * 100)}`;
 
   const body = card.querySelector<HTMLElement>(".work-card-body");
   if (!body) return;
