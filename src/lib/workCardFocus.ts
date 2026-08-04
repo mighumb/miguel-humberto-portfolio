@@ -7,6 +7,8 @@ export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
 /** Stronger on mobile so off-axis peeks read clearly on retina. */
 export const MAX_BLUR_MOBILE = 3.1;
+/** Desktop only: cover reads softer than text at the same body blur. */
+export const DESKTOP_COVER_BLUR_MULT = 1.4;
 
 export interface CardPerspective {
   articleTranslateY: number;
@@ -31,6 +33,10 @@ function clamp(value: number, min: number, max: number) {
 function isMobileViewport() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(max-width: 767px)").matches;
+}
+
+function blurFilter(blurPx: number) {
+  return blurPx > 0.08 ? `blur(${blurPx}px)` : "none";
 }
 
 export function computeCardFocus(
@@ -80,7 +86,20 @@ export function flightTransformStyle(perspective: CardPerspective) {
 }
 
 export function flightFilterStyle(perspective: CardPerspective) {
-  return perspective.blur > 0.08 ? `blur(${perspective.blur}px)` : "none";
+  return blurFilter(perspective.blur);
+}
+
+function clearMediaFilters(card: HTMLElement) {
+  const visual = card.querySelector<HTMLElement>(".work-card-visual");
+  const meta = card.querySelector<HTMLElement>(".work-card-meta");
+  if (visual) {
+    visual.style.filter = "";
+    visual.style.transformStyle = "";
+  }
+  if (meta) {
+    meta.style.filter = "";
+    meta.style.transformStyle = "";
+  }
 }
 
 export function applyCardPerspective(card: HTMLElement, perspective: CardPerspective) {
@@ -92,12 +111,35 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   const body = card.querySelector<HTMLElement>(".work-card-body");
   if (!body) return;
 
-  // Same path as desktop: filter on the 3D body (works in Safari).
-  // Media-only filters under preserve-3d were ignored on iOS.
   body.style.transformOrigin = "center bottom";
   body.style.transform = flightTransformStyle(perspective);
   body.style.opacity = `${perspective.bodyOpacity}`;
-  body.style.filter = flightFilterStyle(perspective);
+
+  const mobile = isMobileViewport();
+  if (mobile) {
+    // Mobile: one body filter (Safari-safe). Unchanged.
+    body.style.filter = flightFilterStyle(perspective);
+    clearMediaFilters(card);
+    return;
+  }
+
+  // Desktop: stronger blur on cover only; meta keeps the current text blur.
+  body.style.filter = "";
+  const visual = card.querySelector<HTMLElement>(".work-card-visual");
+  const meta = card.querySelector<HTMLElement>(".work-card-meta");
+  const textBlur = perspective.blur;
+  const coverBlur = perspective.blur * DESKTOP_COVER_BLUR_MULT;
+  const textFilter = blurFilter(textBlur);
+  const coverFilter = blurFilter(coverBlur);
+
+  if (visual) {
+    visual.style.filter = coverFilter;
+    visual.style.transformStyle = coverFilter === "none" ? "" : "flat";
+  }
+  if (meta) {
+    meta.style.filter = textFilter;
+    meta.style.transformStyle = textFilter === "none" ? "" : "flat";
+  }
 }
 
 export function captureCardPerspectives(container: HTMLElement): Map<string, CardPerspective> {
@@ -133,9 +175,11 @@ export function resetCardPerspective(card: HTMLElement) {
   card.style.zIndex = "";
 
   const body = card.querySelector<HTMLElement>(".work-card-body");
-  if (!body) return;
+  if (body) {
+    body.style.transform = "";
+    body.style.opacity = "";
+    body.style.filter = "";
+  }
 
-  body.style.transform = "";
-  body.style.opacity = "";
-  body.style.filter = "";
+  clearMediaFilters(card);
 }
