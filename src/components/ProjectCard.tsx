@@ -28,6 +28,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const titleRef = useRef<HTMLHeadingElement>(null);
   const cardRef = useRef<HTMLElement | null>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [isGlitching, setIsGlitching] = useState(false);
   const [isNearViewport, setIsNearViewport] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
   const videoPosterUrl = projectVideoPosterUrl(project);
@@ -81,10 +82,22 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     if (project.hasVideo && videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
+
+    // Entrance-only micro-glitch: skip while dragging, on touch, or reduced motion.
+    const scroll = cardRef.current?.closest(".work-scroll");
+    const fineHover =
+      typeof window !== "undefined" &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (fineHover && !scroll?.classList.contains("is-dragging")) {
+      setIsGlitching(false);
+      requestAnimationFrame(() => setIsGlitching(true));
+    }
   };
 
   const handleMouseLeave = () => {
     setIsHovering(false);
+    setIsGlitching(false);
     if (videoIsHero || keepVideoAlive || !videoRef.current) return;
     videoRef.current.pause();
     videoRef.current.currentTime = 0;
@@ -159,8 +172,16 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[62vw] max-w-[44rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[56vw] lg:w-[50vw]"
+      className={`work-card-focus group w-[62vw] max-w-[44rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[56vw] lg:w-[50vw]${
+        isGlitching ? " is-glitching" : ""
+      }`}
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
+      onAnimationEnd={(event) => {
+        const target = event.target as HTMLElement | null;
+        if (!target?.classList.contains("work-card-media")) return;
+        if (event.animationName !== "work-card-glitch-flash") return;
+        setIsGlitching(false);
+      }}
     >
       <div className="work-card-body">
         <div
