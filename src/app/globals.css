@@ -222,13 +222,16 @@ html.modal-main-hidden .ambient-background {
 }
 
 
+/* Fades the starfield into the solid section. Kept short enough to live inside
+   the carousel's bottom padding: a taller ramp reads as a flat plate behind the
+   cards and visually splits them from the hero. */
 .manifesto-section::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: -12rem;
-  height: 12rem;
+  top: -6rem;
+  height: 6rem;
   background: linear-gradient(
     to bottom,
     transparent 0%,
