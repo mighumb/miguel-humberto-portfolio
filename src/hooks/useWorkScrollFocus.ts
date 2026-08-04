@@ -8,7 +8,7 @@ import {
   restoreCardPerspectives,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { attachWorkDragScroll } from "@/lib/workDragScroll";
+import { attachWorkDragScroll, prefersNativeTouchScroll } from "@/lib/workDragScroll";
 import {
   enforceWorkLoopBounds,
   recenterWorkLoopScroll,
@@ -61,6 +61,10 @@ export function useWorkScrollFocus(
     }
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Writing scrollLeft during a native inertial fling cancels it on WebKit.
+    // Touch already has several cycle-lengths of runway and idle-recenters, so
+    // skip the mid-scroll edge wrap there; keep it for JS-driven desktop drag.
+    const allowMidScrollWrap = !prefersNativeTouchScroll();
 
     let raf = 0;
     let idleTimer = 0;
@@ -71,7 +75,9 @@ export function useWorkScrollFocus(
 
       // Never let the scroll reach the end of the rendered strip: past it there
       // are no cards left to show.
-      enforceWorkLoopBounds(container);
+      if (allowMidScrollWrap) {
+        enforceWorkLoopBounds(container);
+      }
 
       // The loop renders many offscreen copies. Only cards that could be seen
       // get the perspective pass; the cutoff sits well beyond the visible span

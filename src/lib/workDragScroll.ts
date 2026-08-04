@@ -32,7 +32,7 @@ export function stopWorkCarouselMotion(container: HTMLElement) {
 }
 
 /** Touch / coarse pointers: prefer native overflow scrolling (no JS drag fight). */
-function prefersNativeTouchScroll() {
+export function prefersNativeTouchScroll() {
   return (
     window.matchMedia("(pointer: coarse)").matches ||
     window.matchMedia("(hover: none)").matches

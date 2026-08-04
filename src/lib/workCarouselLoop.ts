@@ -89,12 +89,18 @@ export function getWorkLoopStart(container: HTMLElement) {
  * cards should be. Wrapping this close to the edge costs at most a hitch in the
  * current scroll animation, and only after many cycles without a pause, whereas
  * wrapping at every cycle boundary would fight inertia constantly.
+ *
+ * The margin is measured from the real DOM edges of the strip. Using
+ * `2 × cycleWidth` previously overlapped the middle-cycle resting position
+ * (with 5 copies that rest starts at exactly two cycles), so the first frame of
+ * a rightward swipe already wrapped — on iOS that kills native fling and reads
+ * as snapping to the first card.
  */
 export function enforceWorkLoopBounds(container: HTMLElement) {
   const metrics = getWorkLoopMetrics(container);
   if (!metrics) return false;
 
-  const margin = metrics.cycleWidth * 2;
+  const margin = Math.max(container.clientWidth, metrics.cycleWidth * 0.5);
   const maxScroll = container.scrollWidth - container.clientWidth;
   const scrollLeft = container.scrollLeft;
   if (scrollLeft > margin && scrollLeft < maxScroll - margin) return false;
