@@ -580,7 +580,7 @@ export default function Projects() {
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-2 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
           aria-hidden
         />
 
