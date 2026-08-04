@@ -169,6 +169,13 @@ button:disabled {
   visibility: hidden;
 }
 
+/* Hide modal content while measuring / restoring home scroll, but keep the
+   opaque backdrop so the home page never flashes underneath. */
+html.is-closing-prepare .project-modal-scroll {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 html.is-closing-flip .project-modal {
   visibility: hidden;
   pointer-events: none;
@@ -182,6 +189,11 @@ html.is-closing-flip .project-modal-backdrop {
 html.is-closing-flip .work-scroll-stage {
   position: relative;
   z-index: 210;
+}
+
+/* Destination cards near the viewport edge must not clip the FLIP. */
+html.is-closing-flip .work-scroll {
+  overflow: visible !important;
 }
 
 .work-card-visual.work-card-flip-active,

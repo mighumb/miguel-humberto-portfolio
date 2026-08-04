@@ -6,6 +6,12 @@ export function getSavedScrollPosition() {
   return { x: savedScrollX, y: savedScrollY };
 }
 
+/** Keep the unlock target in sync when close FLIP nudges page scroll. */
+export function updateSavedScrollPosition(x: number, y: number) {
+  savedScrollX = Math.max(0, x);
+  savedScrollY = Math.max(0, y);
+}
+
 export function snapScrollTo(x: number, y: number) {
   if (typeof window === "undefined") return;
 
@@ -24,17 +30,12 @@ export function snapScrollTo(x: number, y: number) {
   body.scrollLeft = x;
   body.scrollTop = y;
 
-  requestAnimationFrame(() => {
-    window.scrollTo(x, y);
-    html.scrollLeft = x;
-    html.scrollTop = y;
-    body.scrollLeft = x;
-    body.scrollTop = y;
-
-    html.style.scrollBehavior = previousHtmlBehavior;
-    body.style.scrollBehavior = previousBodyBehavior;
-    html.classList.remove("scroll-snap");
-  });
+  // Keep the restore synchronous. A deferred second pass used to run after the
+  // close FLIP had already measured its destination, which shifted the home
+  // page under the animation and read as a jump.
+  html.style.scrollBehavior = previousHtmlBehavior;
+  body.style.scrollBehavior = previousBodyBehavior;
+  html.classList.remove("scroll-snap");
 }
 
 export function lockScroll() {

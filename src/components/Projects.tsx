@@ -334,19 +334,19 @@ export default function Projects() {
     } else {
       root.classList.remove("modal-main-hidden");
     }
-    // Remove is-closing-flip when reaching idle so it's cleared even if we
-    // skipped the "closing" phase (e.g. measureRef returned null).
+    // Clear close-transition classes when reaching idle so they're gone even
+    // if we skipped the "closing" phase (e.g. measureRef returned null).
     if (phase === "idle") {
-      root.classList.remove("is-closing-flip");
+      root.classList.remove("is-closing-flip", "is-closing-prepare");
     }
 
     return () => {
       root.classList.remove("modal-main-hidden");
-      // Remove is-closing-flip when leaving "closing". This cleanup runs
-      // after React's DOM mutations (modal already unmounted) but before
-      // paint — guaranteeing the class is gone before the next frame.
+      // Remove close-transition classes when leaving "closing". This cleanup
+      // runs after React's DOM mutations (modal already unmounted) but before
+      // paint — guaranteeing the classes are gone before the next frame.
       if (phase === "closing") {
-        root.classList.remove("is-closing-flip");
+        root.classList.remove("is-closing-flip", "is-closing-prepare");
       }
     };
   }, [phase]);
@@ -521,14 +521,18 @@ export default function Projects() {
       return;
     }
 
-    // Hide the modal before measuring so neither the modal-header background
-    // nor a scroll-to-top flash is ever painted. getBoundingClientRect still
-    // returns correct layout positions with visibility:hidden.
-    document.documentElement.classList.remove("modal-main-hidden");
-    document.documentElement.classList.add("is-closing-flip");
+    // Keep the opaque backdrop over the home page while we (1) hide modal
+    // content, (2) snap the modal scroll to top for measurement, and (3) restore
+    // the home/carousel scroll. is-closing-flip is applied only once the FLIP
+    // is primed, so the first revealed home frame already has the flying
+    // elements parked at the modal rects — no scroll-mismatch jump.
+    const root = document.documentElement;
+    root.classList.remove("modal-main-hidden");
+    root.classList.add("is-closing-prepare");
 
     const modalTargets = measureRef.current?.();
     if (!modalTargets) {
+      root.classList.remove("is-closing-prepare");
       closeModal();
       return;
     }
@@ -631,7 +635,9 @@ export default function Projects() {
           total={projects.length}
           sharedContentVisible={sharedContentVisible}
           awaitingFlightTargets={phase === "opening"}
-          backdropVisible={phase === "opening" || phase === "open"}
+          backdropVisible={
+            phase === "opening" || phase === "open" || phase === "closing"
+          }
           videoPlaying={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}

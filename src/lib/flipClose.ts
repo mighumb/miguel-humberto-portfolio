@@ -5,6 +5,7 @@ import {
   type ElementRect,
   type ModalTargets,
 } from "@/lib/motion";
+import { updateSavedScrollPosition } from "@/lib/scrollLock";
 
 export const FLIP_CLOSE_MS = SHARED_TRANSITION_MS;
 export const FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -112,6 +113,22 @@ export function runFlipClose({
     return () => {};
   }
 
+  // Bring the destination card fully into the viewport before measuring. Opening
+  // can leave it clipped under the sticky header or above the fold; FLIP-ing
+  // into a clipped card reads as a cut-off jump. Done while the modal still
+  // covers the page, so the scroll adjust is invisible.
+  const rect = shared.card.getBoundingClientRect();
+  const edge = 24;
+  let dy = 0;
+  if (rect.top < edge) dy = rect.top - edge;
+  else if (rect.bottom > window.innerHeight - edge) {
+    dy = rect.bottom - (window.innerHeight - edge);
+  }
+  if (Math.abs(dy) > 1) {
+    window.scrollBy({ top: dy, left: 0, behavior: "auto" });
+    updateSavedScrollPosition(window.scrollX, window.scrollY);
+  }
+
   const flips = buildFlips(modalTargets, shared);
   const root = document.documentElement;
   const frozenCardHeight = shared.card.offsetHeight;
@@ -137,8 +154,13 @@ export function runFlipClose({
     finish();
   };
 
-  root.classList.add("is-closing-flip");
+  // Prime the inverted FLIP under the still-opaque backdrop, then reveal by
+  // hiding the modal entirely. The first painted home frame already has the
+  // flying elements at the modal positions — no frame where home sits alone
+  // at a mismatched scroll.
   flips.forEach(applyFlipIn);
+  root.classList.add("is-closing-flip");
+  root.classList.remove("is-closing-prepare");
 
   const raf = requestAnimationFrame(() => {
     requestAnimationFrame(() => {
