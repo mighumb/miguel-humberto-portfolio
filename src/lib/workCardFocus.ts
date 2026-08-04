@@ -3,6 +3,11 @@ import { getCardIdealScroll } from "@/lib/workCarouselNav";
 export const CARD_PERSPECTIVE = 1100;
 export const MAX_ROTATE_Y = 17;
 export const MAX_TRANSLATE_Z = -280;
+/**
+ * Mobile: pushing side cards this far back shrinks them enough that their left
+ * edge drifts inward, reading as a much wider gap than the flex gap actually is.
+ */
+export const MAX_TRANSLATE_Z_MOBILE = -130;
 export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
 /** Stronger on mobile so off-axis peeks read clearly on retina. */
@@ -58,7 +63,7 @@ export function computeCardFocus(
   return {
     articleTranslateY: progress * MAX_SHIFT_Y,
     rotateY: clamp(direction * -MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
-    translateZ: progress * MAX_TRANSLATE_Z,
+    translateZ: progress * (mobile ? MAX_TRANSLATE_Z_MOBILE : MAX_TRANSLATE_Z),
     // Mobile: no opacity wash on the focused CTA; side cards still blur.
     bodyOpacity: mobile ? 1 : 1 - progress * 0.14,
     blur: progress * (mobile ? MAX_BLUR_MOBILE : MAX_BLUR),
