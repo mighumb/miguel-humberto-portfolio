@@ -80,3 +80,28 @@ export function recenterWorkLoopScroll(container: HTMLElement) {
 export function getWorkLoopStart(container: HTMLElement) {
   return getWorkLoopMetrics(container)?.start ?? 0;
 }
+
+/**
+ * Last-resort wrap while the carousel is still moving.
+ *
+ * Chained fast swipes never leave an idle gap, so the position can keep
+ * travelling until it runs off the rendered strip and leaves empty space where
+ * cards should be. Wrapping this close to the edge costs at most a hitch in the
+ * current scroll animation, and only after many cycles without a pause, whereas
+ * wrapping at every cycle boundary would fight inertia constantly.
+ */
+export function enforceWorkLoopBounds(container: HTMLElement) {
+  const metrics = getWorkLoopMetrics(container);
+  if (!metrics) return false;
+
+  const margin = metrics.cycleWidth * 2;
+  const maxScroll = container.scrollWidth - container.clientWidth;
+  const scrollLeft = container.scrollLeft;
+  if (scrollLeft > margin && scrollLeft < maxScroll - margin) return false;
+
+  const normalized = normalizeWorkLoopScroll(container, scrollLeft);
+  if (Math.abs(normalized - scrollLeft) < 0.5) return false;
+
+  container.scrollLeft = normalized;
+  return true;
+}

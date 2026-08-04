@@ -32,7 +32,8 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const thumbnailUrl = projectThumbnailUrl(project);
   const videoPosterUrl = projectVideoPosterUrl(project);
   const videoIsHero = project.hasVideo && !!project.videoUrl && !thumbnailUrl;
-  const videoIsLive = videoIsHero && (isNearViewport || keepVideoAlive);
+  const coverStillUrl = thumbnailUrl ?? videoPosterUrl;
+  const isVideoMounted = isNearViewport || keepVideoAlive;
 
   const setCardNode = useCallback(
     (node: HTMLElement | null) => {
@@ -46,9 +47,8 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     [ref],
   );
 
-  // The carousel repeats every project several times to loop seamlessly. Loading
-  // and playing every copy would split bandwidth across dozens of videos, so
-  // offscreen copies stay on their poster until they approach the viewport.
+  // The carousel repeats every project many times to loop seamlessly, so only
+  // copies approaching the viewport get a video element at all.
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
@@ -71,15 +71,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !videoIsHero) return;
+    if (!video || !videoIsHero || !isVideoMounted) return;
 
-    if (videoIsLive) {
-      video.play().catch(() => {});
-      return;
-    }
-
-    video.pause();
-  }, [videoIsHero, videoIsLive]);
+    video.play().catch(() => {});
+  }, [videoIsHero, isVideoMounted]);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -174,18 +169,21 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         >
           <div className="work-card-media relative h-full w-full">
             <div className="absolute inset-0">
-              {thumbnailUrl ? (
+              {/* A still always sits under the video: the cover then shows the
+                  instant a card scrolls into view, with no video bytes needed.
+                  Hero covers hide it only once the video is actually playing. */}
+              {coverStillUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={thumbnailUrl}
+                  src={coverStillUrl}
                   alt=""
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
-                    isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
+                    isHovering && project.hasVideo && thumbnailUrl
+                      ? "opacity-0"
+                      : "opacity-100"
                   }`}
                 />
-              ) : !videoIsHero || !videoPosterUrl ? (
-                // Also sits under poster-less hero videos so the cover is never
-                // an empty hole while the video has no decoded frame.
+              ) : (
                 <div
                   className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
                     isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
@@ -198,18 +196,21 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                     </span>
                   </div>
                 </div>
-              ) : null}
+              )}
 
-              {project.hasVideo && project.videoUrl && (
+              {/* Mounted near the viewport only: the loop repeats every project
+                  many times, and dozens of video elements would compete for
+                  bandwidth and decoders. */}
+              {project.hasVideo && project.videoUrl && isVideoMounted && (
                 <video
                   ref={videoRef}
                   src={project.videoUrl}
                   poster={videoPosterUrl ?? undefined}
-                  autoPlay={videoIsLive}
+                  autoPlay={videoIsHero}
                   muted
                   loop
                   playsInline
-                  preload={videoIsLive ? "auto" : "none"}
+                  preload="auto"
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
                     videoIsHero || isHovering ? "opacity-100" : "opacity-0"
                   }`}

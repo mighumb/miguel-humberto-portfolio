@@ -9,9 +9,15 @@ import {
   type CardPerspective,
 } from "@/lib/workCardFocus";
 import { attachWorkDragScroll } from "@/lib/workDragScroll";
-import { recenterWorkLoopScroll } from "@/lib/workCarouselLoop";
+import {
+  enforceWorkLoopBounds,
+  recenterWorkLoopScroll,
+} from "@/lib/workCarouselLoop";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
+
+/** Card-steps from the focused position still worth styling each frame. */
+const FOCUS_CULL_STEPS = 5;
 
 export { restoreCardPerspectives };
 
@@ -63,7 +69,25 @@ export function useWorkScrollFocus(
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
 
+      // Never let the scroll reach the end of the rendered strip: past it there
+      // are no cards left to show.
+      enforceWorkLoopBounds(container);
+
+      // The loop renders many offscreen copies. Only cards that could be seen
+      // get the perspective pass; the cutoff sits well beyond the visible span
+      // so a card is always styled before it scrolls into view.
+      const styles = getComputedStyle(container);
+      const gap =
+        Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 0;
+      const inset = Number.parseFloat(styles.paddingLeft) || 0;
+      const step = cards[0].offsetWidth + gap;
+      const cutoff = step > 0 ? step * FOCUS_CULL_STEPS : Infinity;
+      const scrollLeft = container.scrollLeft;
+
       cards.forEach((card) => {
+        const offset = Math.max(0, card.offsetLeft - inset);
+        if (Math.abs(offset - scrollLeft) > cutoff) return;
+
         if (reducedMotion) {
           resetCardPerspective(card);
           return;

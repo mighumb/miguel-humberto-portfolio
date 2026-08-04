@@ -33,10 +33,15 @@ import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
 /**
- * Odd number of copies so the viewport rests in the exact middle cycle and a
- * single fling has two full cycles of runway before reaching a real DOM edge.
+ * Odd number of copies so the viewport rests in the exact middle cycle.
+ *
+ * Re-centring only happens once the scroll settles, because rewriting
+ * scrollLeft mid-fling cancels native inertia. Chained fast swipes never pause,
+ * so the runway on each side has to cover a whole burst of them: ten cycles out
+ * is far beyond reach, where five was not. Offscreen copies are cheap — they
+ * carry no video element and are skipped by the per-frame perspective pass.
  */
-const WORK_LOOP_COPIES = 5;
+const WORK_LOOP_COPIES = 21;
 
 function EndScrollGutter({ width }: { width: number }) {
   return (
