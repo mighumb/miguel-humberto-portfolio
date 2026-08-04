@@ -18,7 +18,13 @@ export const DESKTOP_COVER_BLUR_MULT = 2.1;
 const DESKTOP_DEPTH_RATE = 0.26;
 const DESKTOP_TILT_RATE = 0.36;
 const DESKTOP_ROTATE_CAP = 38;
-const DESKTOP_SHIFT_Y_LIMIT = 72;
+/**
+ * Cards also sink as they recede, so each one reads as sitting further along the
+ * curve than the previous. The limit stays under the carousel's bottom padding
+ * so the farthest card never clips against the scroll container.
+ */
+const DESKTOP_SHIFT_RATE = 0.22;
+const DESKTOP_SHIFT_Y_LIMIT = 128;
 const DESKTOP_BLUR_LIMIT = 2.2;
 const DESKTOP_OPACITY_REDUCTION = 0.3;
 
@@ -167,7 +173,7 @@ export function computeCardFocus(
 
   return {
     articleTranslateX: desktopGapCompensationX(card.offsetWidth, distance, sign),
-    articleTranslateY: depthAmount * DESKTOP_SHIFT_Y_LIMIT,
+    articleTranslateY: desktopCurve(distance, DESKTOP_SHIFT_RATE) * DESKTOP_SHIFT_Y_LIMIT,
     rotateY: clamp(sign * -desktopRotateYAbs(distance), -DESKTOP_ROTATE_CAP, DESKTOP_ROTATE_CAP),
     translateZ,
     bodyOpacity: 1 - tiltAmount * DESKTOP_OPACITY_REDUCTION,
