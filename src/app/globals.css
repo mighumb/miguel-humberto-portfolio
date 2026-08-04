@@ -412,6 +412,12 @@ html.modal-main-hidden .ambient-background {
     opacity: 1 !important;
     filter: none !important;
   }
+
+  .work-card-visual,
+  .work-card-meta {
+    filter: none !important;
+    transform-style: preserve-3d !important;
+  }
 }
 
 .site-sticky-header {
