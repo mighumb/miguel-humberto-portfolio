@@ -4,52 +4,33 @@ export const CARD_PERSPECTIVE = 1100;
 export const MAX_ROTATE_Y = 17;
 /** Desktop asymptote; every farther card still approaches it progressively. */
 export const MAX_TRANSLATE_Z = -600;
-/** Mobile asymptote — shallower than desktop so peeks stay readable. */
-export const MAX_TRANSLATE_Z_MOBILE = -220;
+/**
+ * Mobile: pushing side cards this far back shrinks them enough that their left
+ * edge drifts inward, reading as a much wider gap than the flex gap actually is.
+ */
+export const MAX_TRANSLATE_Z_MOBILE = -130;
 export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
 /** Soft peek blur on mobile — kept near the desktop cover softness. */
 export const MAX_BLUR_MOBILE = 1.6;
 /** Desktop only: cover reads softer than text at the same body blur. */
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
-
-interface CurveProfile {
-  depthRate: number;
-  tiltRate: number;
-  shiftRate: number;
-  translateZMax: number;
-  rotateCap: number;
-  shiftYLimit: number;
-  blurLimit: number;
-  opacityReduction: number;
-}
-
+const DESKTOP_DEPTH_RATE = 0.26;
+const DESKTOP_TILT_RATE = 0.36;
 /**
- * Continuous exponential fan. Farther cards keep gaining depth / tilt instead of
- * sharing a hard 1-step cap. Rates and caps differ per viewport so the descent
- * fits the carousel's bottom padding (mobile 48px, desktop 128px).
+ * The tilt sets how steeply each card's top edge slopes, and the next card must
+ * clear that slope to keep descending. A steeper cap pushed far cards hundreds
+ * of pixels down, past the carousel's padding, so keep it moderate.
  */
-const DESKTOP_CURVE: CurveProfile = {
-  depthRate: 0.26,
-  tiltRate: 0.36,
-  shiftRate: 0.22,
-  translateZMax: MAX_TRANSLATE_Z,
-  rotateCap: 26,
-  shiftYLimit: 128,
-  blurLimit: 2.2,
-  opacityReduction: 0.3,
-};
-
-const MOBILE_CURVE: CurveProfile = {
-  depthRate: 0.32,
-  tiltRate: 0.42,
-  shiftRate: 0.28,
-  translateZMax: MAX_TRANSLATE_Z_MOBILE,
-  rotateCap: 14,
-  shiftYLimit: 36,
-  blurLimit: MAX_BLUR_MOBILE,
-  opacityReduction: 0.12,
-};
+const DESKTOP_ROTATE_CAP = 26;
+/**
+ * Desired descent of the visible top-edge envelope. Perspective compensation
+ * below adds the extra Y needed to prevent each new trapezoid from stepping up.
+ */
+const DESKTOP_SHIFT_RATE = 0.22;
+const DESKTOP_SHIFT_Y_LIMIT = 128;
+const DESKTOP_BLUR_LIMIT = 2.2;
+const DESKTOP_OPACITY_REDUCTION = 0.3;
 
 export interface CardPerspective {
   articleTranslateX: number;
@@ -118,26 +99,31 @@ function projectedTopEdgeY(
   return height - (height * CARD_PERSPECTIVE) / depth;
 }
 
-function curveAmount(distanceInSteps: number, rate: number) {
+/**
+ * An exponential approach never reaches its limit at a finite card distance.
+ * Cards 4–6 therefore remain progressively deeper and more tilted instead of
+ * sharing the old hard cap, while the diminishing increments avoid a harsh fan.
+ */
+function desktopCurve(distanceInSteps: number, rate: number) {
   return 1 - Math.exp(-Math.max(0, distanceInSteps) * rate);
 }
 
-function curveTranslateZ(distanceInSteps: number, profile: CurveProfile) {
-  return curveAmount(distanceInSteps, profile.depthRate) * profile.translateZMax;
+function desktopTranslateZ(distanceInSteps: number) {
+  return desktopCurve(distanceInSteps, DESKTOP_DEPTH_RATE) * MAX_TRANSLATE_Z;
 }
 
-function curveRotateYAbs(distanceInSteps: number, profile: CurveProfile) {
-  return curveAmount(distanceInSteps, profile.tiltRate) * profile.rotateCap;
+function desktopRotateYAbs(distanceInSteps: number) {
+  return desktopCurve(distanceInSteps, DESKTOP_TILT_RATE) * DESKTOP_ROTATE_CAP;
 }
 
 /**
  * How far each edge of an off-axis card drifts inward, in px.
  * `toward` is the edge facing the focused card, `away` the outer one.
  */
-function edgeDrift(width: number, distanceInSteps: number, profile: CurveProfile) {
+function desktopEdgeDrift(width: number, distanceInSteps: number) {
   const half = width / 2;
-  const translateZ = curveTranslateZ(distanceInSteps, profile);
-  const rotateY = curveRotateYAbs(distanceInSteps, profile);
+  const translateZ = desktopTranslateZ(distanceInSteps);
+  const rotateY = desktopRotateYAbs(distanceInSteps);
 
   return {
     toward: half - Math.abs(projectedEdgeX(-half, translateZ, rotateY)),
@@ -149,15 +135,14 @@ function edgeDrift(width: number, distanceInSteps: number, profile: CurveProfile
  * Downward drift of the top corners introduced by perspective. The outer corner
  * drops more than the inner one, producing the trapezoid seen on screen.
  */
-function topEdgeDrift(
+function desktopTopEdgeDrift(
   width: number,
   height: number,
   distanceInSteps: number,
-  profile: CurveProfile,
 ) {
   const half = width / 2;
-  const translateZ = curveTranslateZ(distanceInSteps, profile);
-  const rotateY = curveRotateYAbs(distanceInSteps, profile);
+  const translateZ = desktopTranslateZ(distanceInSteps);
+  const rotateY = desktopRotateYAbs(distanceInSteps);
 
   return {
     toward: projectedTopEdgeY(-half, height, translateZ, rotateY),
@@ -173,20 +158,15 @@ function topEdgeDrift(
  * the farther one, so pulls accumulate along the fan:
  *   T(n) = T(n-1) + away(n-1) + toward(n)
  */
-function gapCompensationX(
-  width: number,
-  distance: number,
-  sign: number,
-  profile: CurveProfile,
-) {
+function desktopGapCompensationX(width: number, distance: number, sign: number) {
   if (distance < 0.001 || sign === 0 || width <= 0) return 0;
 
-  let pull = edgeDrift(width, distance, profile).toward;
+  let pull = desktopEdgeDrift(width, distance).toward;
 
   // Nearer cards sit exactly one step apart in distance, so walking back by
   // whole steps from `distance` keeps the pull continuous while scrolling.
   for (let prev = distance - 1; prev > 0.001; prev -= 1) {
-    const drift = edgeDrift(width, prev, profile);
+    const drift = desktopEdgeDrift(width, prev);
     pull += drift.away + drift.toward;
   }
 
@@ -198,22 +178,17 @@ function gapCompensationX(
  * the outer top corner of one tilted card sits below the inner top corner of the
  * next card, making the farther card look higher despite its lower centre.
  */
-function curveTranslateY(
-  width: number,
-  height: number,
-  distance: number,
-  profile: CurveProfile,
-) {
+function desktopCurveTranslateY(width: number, height: number, distance: number) {
   if (distance < 0.001 || width <= 0 || height <= 0) return 0;
 
-  const current = topEdgeDrift(width, height, distance, profile);
+  const current = desktopTopEdgeDrift(width, height, distance);
   let visualNearY =
-    curveAmount(distance, profile.shiftRate) * profile.shiftYLimit;
+    desktopCurve(distance, DESKTOP_SHIFT_RATE) * DESKTOP_SHIFT_Y_LIMIT;
 
   // Add every nearer card's top-edge slope. Walking back from the fractional
   // distance keeps this correction continuous at all scroll positions.
   for (let prev = distance - 1; prev > 0.001; prev -= 1) {
-    const drift = topEdgeDrift(width, height, prev, profile);
+    const drift = desktopTopEdgeDrift(width, height, prev);
     visualNearY += drift.away - drift.toward;
   }
 
@@ -235,29 +210,38 @@ export function computeCardFocus(
   const distance = step === 0 ? 0 : Math.abs(delta) / step;
   const sign = delta === 0 ? 0 : Math.sign(delta);
   const mobile = isMobileViewport();
-  const profile = mobile ? MOBILE_CURVE : DESKTOP_CURVE;
 
-  const depthAmount = curveAmount(distance, profile.depthRate);
-  const tiltAmount = curveAmount(distance, profile.tiltRate);
-  const translateZ = curveTranslateZ(distance, profile);
+  if (mobile) {
+    const amount = Math.min(1, distance);
+    return {
+      articleTranslateX: 0,
+      articleTranslateY: amount * MAX_SHIFT_Y,
+      rotateY: clamp(sign * -amount * MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
+      translateZ: amount * MAX_TRANSLATE_Z_MOBILE,
+      bodyOpacity: 1,
+      blur: amount * MAX_BLUR_MOBILE,
+      depth: amount,
+    };
+  }
+
+  // Desktop: continuous curve — farther cards keep gaining depth / tilt / blur.
+  // Horizontal compensation keeps visual gaps equal despite perspective shrink.
+  const depthAmount = desktopCurve(distance, DESKTOP_DEPTH_RATE);
+  const tiltAmount = desktopCurve(distance, DESKTOP_TILT_RATE);
+  const translateZ = desktopTranslateZ(distance);
   const body = card.querySelector<HTMLElement>(".work-card-body");
 
   return {
-    articleTranslateX: gapCompensationX(card.offsetWidth, distance, sign, profile),
-    articleTranslateY: curveTranslateY(
+    articleTranslateX: desktopGapCompensationX(card.offsetWidth, distance, sign),
+    articleTranslateY: desktopCurveTranslateY(
       card.offsetWidth,
       body?.offsetHeight ?? card.offsetHeight,
       distance,
-      profile,
     ),
-    rotateY: clamp(
-      sign * -curveRotateYAbs(distance, profile),
-      -profile.rotateCap,
-      profile.rotateCap,
-    ),
+    rotateY: clamp(sign * -desktopRotateYAbs(distance), -DESKTOP_ROTATE_CAP, DESKTOP_ROTATE_CAP),
     translateZ,
-    bodyOpacity: 1 - tiltAmount * profile.opacityReduction,
-    blur: tiltAmount * profile.blurLimit,
+    bodyOpacity: 1 - tiltAmount * DESKTOP_OPACITY_REDUCTION,
+    blur: tiltAmount * DESKTOP_BLUR_LIMIT,
     depth: depthAmount,
   };
 }
@@ -314,7 +298,7 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
 
   const mobile = isMobileViewport();
   if (mobile) {
-    // Mobile: one body filter (Safari-safe). Soft progressive blur.
+    // Mobile: one body filter (Safari-safe). Unchanged.
     body.style.filter = flightFilterStyle(perspective);
     clearMediaFilters(card);
     return;
