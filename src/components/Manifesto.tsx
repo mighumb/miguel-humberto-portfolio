@@ -9,7 +9,7 @@ export default function Manifesto() {
 
   return (
     <section className="manifesto-section relative z-[2] bg-bg-primary">
-      <div className="mx-auto max-w-2xl px-6 pb-20 pt-8 md:px-10 md:pb-28 md:pt-12">
+      <div className="mx-auto max-w-2xl px-6 pb-20 pt-24 md:px-10 md:pb-28 md:pt-12">
         <h2 className="text-center text-3xl font-light tracking-tight text-text-primary md:text-5xl">
           {t.manifestoTitle}
         </h2>
