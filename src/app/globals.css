@@ -186,11 +186,6 @@ html.is-closing-flip .project-modal-backdrop {
   transition: none !important;
 }
 
-html.is-closing-flip .work-scroll-stage {
-  position: relative;
-  z-index: 210;
-}
-
 .work-card-visual.work-card-flip-active,
 .work-card-title.work-card-flip-active,
 .work-card-year.work-card-flip-active,
