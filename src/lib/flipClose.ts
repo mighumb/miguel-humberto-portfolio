@@ -50,8 +50,8 @@ export function cleanupFlip(el: HTMLElement) {
   el.style.fontSize = "";
 }
 
-export function getCardSharedElements(projectId: string) {
-  const card = findVisibleProjectCard(projectId);
+export function getCardSharedElements(projectId: string, instanceId?: string) {
+  const card = findVisibleProjectCard(projectId, instanceId);
   if (!card) return null;
 
   const visual = card.querySelector<HTMLElement>(".work-card-visual");
@@ -97,14 +97,16 @@ function buildFlips(modalTargets: ModalTargets, shared: NonNullable<ReturnType<t
 
 export function runFlipClose({
   projectId,
+  instanceId,
   modalTargets,
   onComplete,
 }: {
   projectId: string;
+  instanceId?: string;
   modalTargets: ModalTargets;
   onComplete: () => void;
 }) {
-  const shared = getCardSharedElements(projectId);
+  const shared = getCardSharedElements(projectId, instanceId);
   if (!shared) {
     onComplete();
     return () => {};

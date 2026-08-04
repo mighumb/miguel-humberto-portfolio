@@ -15,6 +15,8 @@ export const MAX_BLUR = 1.15;
 export const MAX_BLUR_MOBILE = 1.6;
 /** Desktop only: cover reads softer than text at the same body blur. */
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
+/** Card-steps around the focus that the open/close freeze needs to cover. */
+const SNAPSHOT_STEPS = 5;
 const DESKTOP_DEPTH_RATE = 0.26;
 const DESKTOP_TILT_RATE = 0.36;
 /**
@@ -323,13 +325,41 @@ export function applyCardPerspective(card: HTMLElement, perspective: CardPerspec
   }
 }
 
+function cardKey(card: HTMLElement) {
+  return (
+    card.getAttribute("data-work-instance") ?? card.getAttribute("data-project-id")
+  );
+}
+
+/**
+ * Only copies that could be on screen are worth freezing: this runs while a card
+ * is being opened, and measuring every loop copy would stall that frame.
+ */
+function nearbyCards(container: HTMLElement) {
+  const cards = Array.from(
+    container.querySelectorAll<HTMLElement>("[data-project-id]"),
+  );
+  if (!cards.length) return cards;
+
+  const styles = getComputedStyle(container);
+  const gap =
+    Number.parseFloat(styles.gap) || Number.parseFloat(styles.columnGap) || 0;
+  const inset = Number.parseFloat(styles.paddingLeft) || 0;
+  const step = cards[0].offsetWidth + gap;
+  if (step <= 0) return cards;
+
+  const cutoff = step * SNAPSHOT_STEPS;
+  const scrollLeft = container.scrollLeft;
+  return cards.filter(
+    (card) => Math.abs(Math.max(0, card.offsetLeft - inset) - scrollLeft) <= cutoff,
+  );
+}
+
 export function captureCardPerspectives(container: HTMLElement): Map<string, CardPerspective> {
   const snapshot = new Map<string, CardPerspective>();
 
-  container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
-    const id =
-      card.getAttribute("data-work-instance") ??
-      card.getAttribute("data-project-id");
+  nearbyCards(container).forEach((card) => {
+    const id = cardKey(card);
     if (id) {
       snapshot.set(id, computeCardFocus(card, container));
     }
@@ -343,9 +373,7 @@ export function restoreCardPerspectives(
   snapshot: Map<string, CardPerspective>,
 ): void {
   container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
-    const id =
-      card.getAttribute("data-work-instance") ??
-      card.getAttribute("data-project-id");
+    const id = cardKey(card);
     if (!id) return;
 
     const perspective = snapshot.get(id);

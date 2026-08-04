@@ -33,15 +33,12 @@ import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
 /**
- * Odd number of copies so the viewport rests in the exact middle cycle.
- *
- * Re-centring only happens once the scroll settles, because rewriting
- * scrollLeft mid-fling cancels native inertia. Chained fast swipes never pause,
- * so the runway on each side has to cover a whole burst of them: ten cycles out
- * is far beyond reach, where five was not. Offscreen copies are cheap — they
- * carry no video element and are skipped by the per-frame perspective pass.
+ * Odd number of copies so the viewport rests in the exact middle cycle. Two
+ * cycles of slack on each side is all the loop needs: `enforceWorkLoopBounds`
+ * wraps before the strip can run out, whatever the scroll speed. Keeping the
+ * count low matters because opening a card snapshots every copy.
  */
-const WORK_LOOP_COPIES = 21;
+const WORK_LOOP_COPIES = 5;
 
 function EndScrollGutter({ width }: { width: number }) {
   return (
@@ -162,7 +159,8 @@ export default function Projects() {
   const [phase, setPhase] = useState<TransitionPhase>("idle");
   const [cardOrigin, setCardOrigin] = useState<CardOrigin | null>(null);
   const [flight, setFlight] = useState<FlightPair | null>(null);
-  const [sharedHiddenId, setSharedHiddenId] = useState<string | null>(null);
+  const [sharedHiddenInstance, setSharedHiddenInstance] = useState<string | null>(null);
+  const [activeInstanceId, setActiveInstanceId] = useState<string | null>(null);
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const [flightVideoTime, setFlightVideoTime] = useState(0);
@@ -178,6 +176,7 @@ export default function Projects() {
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
+  const activeInstanceRef = useRef<string | null>(null);
   const closedViaTransitionRef = useRef(false);
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
@@ -240,7 +239,8 @@ export default function Projects() {
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
+    setActiveInstanceId(null);
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
@@ -325,6 +325,7 @@ export default function Projects() {
   phaseRef.current = phase;
   cardOriginRef.current = cardOrigin;
   activeProjectRef.current = activeProject;
+  activeInstanceRef.current = activeInstanceId;
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -380,7 +381,8 @@ export default function Projects() {
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
+    setActiveInstanceId(null);
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
@@ -414,6 +416,9 @@ export default function Projects() {
     flipCleanupRef.current?.();
     flipCleanupRef.current = runFlipClose({
       projectId: project.id,
+      // Fly back into the very copy that was opened, not merely a copy of the
+      // same project that happens to sit nearest the scroll position.
+      instanceId: activeInstanceRef.current ?? undefined,
       modalTargets,
       onComplete: () => {
         restoreFrozenCarousel(
@@ -444,6 +449,7 @@ export default function Projects() {
 
     setActiveIndex(index);
     setActiveProject(project);
+    setActiveInstanceId(origin?.carouselInstanceId ?? null);
 
     if (!origin || prefersReducedMotion()) {
       setSharedContentVisible(true);
@@ -462,7 +468,8 @@ export default function Projects() {
     setFlightShowVideo(freshOrigin.showVideo);
     setFlightVideoTime(freshOrigin.videoTime);
     setFlightVideoPoster(freshOrigin.videoPoster);
-    setSharedHiddenId(project.id);
+    setActiveInstanceId(freshOrigin.carouselInstanceId ?? null);
+    setSharedHiddenInstance(freshOrigin.carouselInstanceId ?? null);
     setSharedContentVisible(false);
     setPhase("opening");
   }, [scrollRef, projects]);
@@ -504,7 +511,7 @@ export default function Projects() {
     }
     setSharedContentVisible(true);
     setPhase("open");
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
     setFlight(null);
   }, []);
 
@@ -528,7 +535,7 @@ export default function Projects() {
 
     closeTargetsRef.current = modalTargets;
     setSharedContentVisible(false);
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
     setPhase("closing");
   }, [activeProject, closeModal]);
 
@@ -541,6 +548,9 @@ export default function Projects() {
     setFlightVideoTime(0);
     setActiveIndex(newIndex);
     setActiveProject(projects[newIndex]);
+    // Different project than the card we came from: let the close flight pick
+    // the copy nearest the carousel instead of the stale one.
+    setActiveInstanceId(null);
   };
 
   const registerMeasure = useCallback((fn: (() => ModalTargets | null) | null) => {
@@ -593,11 +603,15 @@ export default function Projects() {
                   project={project}
                   loopInstance={`${copyIndex}-${project.id}`}
                   onOpen={openProject}
-                  isSharedHidden={sharedHiddenId === project.id}
+                  // Scoped to the exact copy that was opened: matching on the
+                  // project id alone would hide every copy of it and keep them
+                  // all decoding video during the flight.
+                  isSharedHidden={sharedHiddenInstance === `${copyIndex}-${project.id}`}
                   keepVideoAlive={
-                    sharedHiddenId === project.id ||
-                    (activeProject?.id === project.id &&
-                      (phase === "opening" || phase === "closing"))
+                    activeInstanceId === `${copyIndex}-${project.id}` &&
+                    (sharedHiddenInstance !== null ||
+                      phase === "opening" ||
+                      phase === "closing")
                   }
                 />
               ))}
