@@ -19,9 +19,8 @@ const DESKTOP_DEPTH_RATE = 0.26;
 const DESKTOP_TILT_RATE = 0.36;
 const DESKTOP_ROTATE_CAP = 38;
 /**
- * Cards also sink as they recede, so each one reads as sitting further along the
- * curve than the previous. The limit stays under the carousel's bottom padding
- * so the farthest card never clips against the scroll container.
+ * Desired descent of the visible top-edge envelope. Perspective compensation
+ * below adds the extra Y needed to prevent each new trapezoid from stepping up.
  */
 const DESKTOP_SHIFT_RATE = 0.22;
 const DESKTOP_SHIFT_Y_LIMIT = 128;
@@ -81,6 +80,20 @@ function projectedEdgeX(localX: number, translateZ: number, rotateYDeg: number) 
   return (rotatedX * CARD_PERSPECTIVE) / depth;
 }
 
+/** Downward screen drift of a top corner; transform-origin is bottom-centre. */
+function projectedTopEdgeY(
+  localX: number,
+  height: number,
+  translateZ: number,
+  rotateYDeg: number,
+) {
+  const angle = (rotateYDeg * Math.PI) / 180;
+  const rotatedZ = translateZ - localX * Math.sin(angle);
+  const depth = CARD_PERSPECTIVE - rotatedZ;
+  if (depth <= 1) return 0;
+  return height - (height * CARD_PERSPECTIVE) / depth;
+}
+
 /**
  * An exponential approach never reaches its limit at a finite card distance.
  * Cards 4–6 therefore remain progressively deeper and more tilted instead of
@@ -114,6 +127,25 @@ function desktopEdgeDrift(width: number, distanceInSteps: number) {
 }
 
 /**
+ * Downward drift of the top corners introduced by perspective. The outer corner
+ * drops more than the inner one, producing the trapezoid seen on screen.
+ */
+function desktopTopEdgeDrift(
+  width: number,
+  height: number,
+  distanceInSteps: number,
+) {
+  const half = width / 2;
+  const translateZ = desktopTranslateZ(distanceInSteps);
+  const rotateY = desktopRotateYAbs(distanceInSteps);
+
+  return {
+    toward: projectedTopEdgeY(-half, height, translateZ, rotateY),
+    away: projectedTopEdgeY(half, height, translateZ, rotateY),
+  };
+}
+
+/**
  * Pull cards toward the focused one just enough that projected edge-to-edge
  * gaps stay equal to the flex gap, while depth / tilt keep increasing.
  *
@@ -134,6 +166,28 @@ function desktopGapCompensationX(width: number, distance: number, sign: number) 
   }
 
   return sign * pull;
+}
+
+/**
+ * Keep the upper silhouette descending continuously. Without this correction,
+ * the outer top corner of one tilted card sits below the inner top corner of the
+ * next card, making the farther card look higher despite its lower centre.
+ */
+function desktopCurveTranslateY(width: number, height: number, distance: number) {
+  if (distance < 0.001 || width <= 0 || height <= 0) return 0;
+
+  const current = desktopTopEdgeDrift(width, height, distance);
+  let visualNearY =
+    desktopCurve(distance, DESKTOP_SHIFT_RATE) * DESKTOP_SHIFT_Y_LIMIT;
+
+  // Add every nearer card's top-edge slope. Walking back from the fractional
+  // distance keeps this correction continuous at all scroll positions.
+  for (let prev = distance - 1; prev > 0.001; prev -= 1) {
+    const drift = desktopTopEdgeDrift(width, height, prev);
+    visualNearY += drift.away - drift.toward;
+  }
+
+  return visualNearY - current.toward;
 }
 
 export function computeCardFocus(
@@ -170,10 +224,15 @@ export function computeCardFocus(
   const depthAmount = desktopCurve(distance, DESKTOP_DEPTH_RATE);
   const tiltAmount = desktopCurve(distance, DESKTOP_TILT_RATE);
   const translateZ = desktopTranslateZ(distance);
+  const body = card.querySelector<HTMLElement>(".work-card-body");
 
   return {
     articleTranslateX: desktopGapCompensationX(card.offsetWidth, distance, sign),
-    articleTranslateY: desktopCurve(distance, DESKTOP_SHIFT_RATE) * DESKTOP_SHIFT_Y_LIMIT,
+    articleTranslateY: desktopCurveTranslateY(
+      card.offsetWidth,
+      body?.offsetHeight ?? card.offsetHeight,
+      distance,
+    ),
     rotateY: clamp(sign * -desktopRotateYAbs(distance), -DESKTOP_ROTATE_CAP, DESKTOP_ROTATE_CAP),
     translateZ,
     bodyOpacity: 1 - tiltAmount * DESKTOP_OPACITY_REDUCTION,
