@@ -57,9 +57,9 @@ export function useWorkScrollFocus(
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let raf = 0;
+    let idleTimer = 0;
 
     const update = () => {
-      recenterWorkLoopScroll(container);
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
 
@@ -73,8 +73,20 @@ export function useWorkScrollFocus(
       });
     };
 
+    // Re-centre into the middle cycle only once the scroll has settled. Doing it
+    // mid-scroll would rewrite scrollLeft during a native fling and kill the
+    // inertia — the loop boundary sits on a card, so that read as snapping to it.
+    const scheduleRecenter = () => {
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        recenterWorkLoopScroll(container);
+        update();
+      }, 140);
+    };
+
     // Coalesce scroll events to one paint per frame — keeps 3D (incl. blur) intact.
     const scheduleUpdate = () => {
+      scheduleRecenter();
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
@@ -96,6 +108,7 @@ export function useWorkScrollFocus(
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
+      window.clearTimeout(idleTimer);
       container.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
     };

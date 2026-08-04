@@ -32,7 +32,11 @@ import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
-const WORK_LOOP_COPIES = 3;
+/**
+ * Odd number of copies so the viewport rests in the exact middle cycle and a
+ * single fling has two full cycles of runway before reaching a real DOM edge.
+ */
+const WORK_LOOP_COPIES = 5;
 
 function logicalProjectIndex(renderedIndex: number, projectCount: number) {
   if (projectCount < 1) return 0;
@@ -617,6 +621,7 @@ export default function Projects() {
               ref={scrollRef}
               dir="ltr"
               data-work-loop-size={projects.length}
+              data-work-loop-copies={WORK_LOOP_COPIES}
               className="work-scroll flex items-end gap-4 overflow-x-auto overflow-y-clip overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-8 md:scroll-pl-10 md:pb-32 md:pl-10"
             >
               {loopedProjects.map(({ project, copyIndex }, index) => (
