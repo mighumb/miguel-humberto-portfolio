@@ -327,7 +327,9 @@ export function captureCardPerspectives(container: HTMLElement): Map<string, Car
   const snapshot = new Map<string, CardPerspective>();
 
   container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
-    const id = card.getAttribute("data-project-id");
+    const id =
+      card.getAttribute("data-work-instance") ??
+      card.getAttribute("data-project-id");
     if (id) {
       snapshot.set(id, computeCardFocus(card, container));
     }
@@ -341,7 +343,9 @@ export function restoreCardPerspectives(
   snapshot: Map<string, CardPerspective>,
 ): void {
   container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
-    const id = card.getAttribute("data-project-id");
+    const id =
+      card.getAttribute("data-work-instance") ??
+      card.getAttribute("data-project-id");
     if (!id) return;
 
     const perspective = snapshot.get(id);

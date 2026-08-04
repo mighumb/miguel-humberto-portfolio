@@ -9,6 +9,7 @@ import {
   type CardPerspective,
 } from "@/lib/workCardFocus";
 import { attachWorkDragScroll } from "@/lib/workDragScroll";
+import { recenterWorkLoopScroll } from "@/lib/workCarouselLoop";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
 
@@ -58,6 +59,7 @@ export function useWorkScrollFocus(
     let raf = 0;
 
     const update = () => {
+      recenterWorkLoopScroll(container);
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
 

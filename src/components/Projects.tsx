@@ -13,6 +13,7 @@ import {
   whenWorkCarouselScrollSettles,
 } from "@/lib/workCarouselNav";
 import { stopWorkCarouselMotion } from "@/lib/workDragScroll";
+import { getWorkLoopStart } from "@/lib/workCarouselLoop";
 import {
   prefersReducedMotion,
   measureCardOrigin,
@@ -30,6 +31,13 @@ import { runFlipClose } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
+
+const WORK_LOOP_COPIES = 3;
+
+function logicalProjectIndex(renderedIndex: number, projectCount: number) {
+  if (projectCount < 1) return 0;
+  return ((renderedIndex % projectCount) + projectCount) % projectCount;
+}
 
 function EndScrollGutter({ width }: { width: number }) {
   return (
@@ -135,6 +143,16 @@ export default function Projects() {
   const { mode } = useTheme();
   const t = translations[locale];
   const projects = useMemo(() => projectsForTrack(mode), [mode]);
+  const loopedProjects = useMemo(
+    () =>
+      Array.from({ length: WORK_LOOP_COPIES }, (_, copyIndex) =>
+        projects.map((project) => ({
+          project,
+          copyIndex,
+        })),
+      ).flat(),
+    [projects],
+  );
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [phase, setPhase] = useState<TransitionPhase>("idle");
@@ -170,7 +188,7 @@ export default function Projects() {
         : false;
 
   const { scrollRef, setCardRef } = useWorkScrollFocus(
-    projects.length,
+    loopedProjects.length,
     pauseCarousel,
     carouselSnapshotRef,
   );
@@ -188,7 +206,7 @@ export default function Projects() {
       // Keep the first card flush left after layout/gutter measurement settles.
       if (shouldAnchorStartRef.current && pinnedCardIndexRef.current === null) {
         stopWorkCarouselMotion(container);
-        container.scrollTo({ left: 0, behavior: "auto" });
+        container.scrollTo({ left: getWorkLoopStart(container), behavior: "auto" });
         setFocusedCardIndex(0);
       }
     };
@@ -206,7 +224,7 @@ export default function Projects() {
       observer.disconnect();
       window.removeEventListener("resize", updateEndGutter);
     };
-  }, [scrollRef, projects.length, mode]);
+  }, [scrollRef, loopedProjects.length, mode]);
 
   useEffect(() => {
     shouldAnchorStartRef.current = true;
@@ -231,7 +249,7 @@ export default function Projects() {
     const container = scrollRef.current;
     if (container) {
       stopWorkCarouselMotion(container);
-      container.scrollLeft = 0;
+      container.scrollLeft = getWorkLoopStart(container);
     }
   }, [mode, scrollRef]);
 
@@ -250,7 +268,7 @@ export default function Projects() {
     const anchorStart = () => {
       if (!shouldAnchorStartRef.current) return;
       stopWorkCarouselMotion(container);
-      container.scrollTo({ left: 0, behavior: "auto" });
+      container.scrollTo({ left: getWorkLoopStart(container), behavior: "auto" });
     };
     const raf1 = window.requestAnimationFrame(() => {
       anchorStart();
@@ -266,7 +284,7 @@ export default function Projects() {
       window.cancelAnimationFrame(raf1);
       window.clearTimeout(timer);
     };
-  }, [scrollRef, mode, projects.length]);
+  }, [scrollRef, mode, loopedProjects.length]);
 
   const carouselNavDisabled = activeProject !== null;
 
@@ -279,7 +297,9 @@ export default function Projects() {
 
       window.clearTimeout(scrollSettleTimerRef.current);
       scrollSettleTimerRef.current = window.setTimeout(() => {
-        setFocusedCardIndex(getFocusedWorkCardIndex(container));
+        setFocusedCardIndex(
+          logicalProjectIndex(getFocusedWorkCardIndex(container), projects.length),
+        );
       }, 120);
     };
 
@@ -292,7 +312,7 @@ export default function Projects() {
       container.removeEventListener("scroll", updateFocusedIndex);
       window.removeEventListener("resize", updateFocusedIndex);
     };
-  }, [scrollRef, projects.length, pauseCarousel]);
+  }, [scrollRef, loopedProjects.length, pauseCarousel, projects.length]);
 
   const scrollCarouselBy = useCallback(
     (direction: "prev" | "next") => {
@@ -306,19 +326,21 @@ export default function Projects() {
       const currentIndex =
         pinnedCardIndexRef.current ?? getFocusedWorkCardIndex(container);
       const nextIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
-      if (nextIndex < 0 || nextIndex >= projects.length) return;
+      if (nextIndex < 0 || nextIndex >= loopedProjects.length) return;
 
       pinnedCardIndexRef.current = nextIndex;
-      setFocusedCardIndex(nextIndex);
+      setFocusedCardIndex(logicalProjectIndex(nextIndex, projects.length));
       scrollWorkCarouselToIndex(container, nextIndex);
 
       scrollSettleCleanupRef.current = whenWorkCarouselScrollSettles(container, () => {
         pinnedCardIndexRef.current = null;
         scrollSettleCleanupRef.current = null;
-        setFocusedCardIndex(getFocusedWorkCardIndex(container));
+        setFocusedCardIndex(
+          logicalProjectIndex(getFocusedWorkCardIndex(container), projects.length),
+        );
       });
     },
-    [scrollRef, carouselNavDisabled],
+    [scrollRef, carouselNavDisabled, loopedProjects.length, projects.length],
   );
 
   useLayoutEffect(
@@ -459,7 +481,12 @@ export default function Projects() {
       return;
     }
 
-    const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
+    const freshOrigin =
+      measureCardOrigin(
+        project.id,
+        origin.showVideo,
+        origin.carouselInstanceId,
+      ) ?? origin;
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
@@ -567,8 +594,8 @@ export default function Projects() {
           <WorkCarouselNav
             onPrev={() => scrollCarouselBy("prev")}
             onNext={() => scrollCarouselBy("next")}
-            canGoPrev={focusedCardIndex > 0}
-            canGoNext={focusedCardIndex < projects.length - 1}
+            canGoPrev
+            canGoNext
             prevLabel={t.prevProject}
             nextLabel={t.nextProject}
             disabled={carouselNavDisabled}
@@ -589,13 +616,15 @@ export default function Projects() {
             <div
               ref={scrollRef}
               dir="ltr"
+              data-work-loop-size={projects.length}
               className="work-scroll flex items-end gap-4 overflow-x-auto overflow-y-clip overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-8 md:scroll-pl-10 md:pb-32 md:pl-10"
             >
-              {projects.map((project, index) => (
+              {loopedProjects.map(({ project, copyIndex }, index) => (
                 <ProjectCard
-                  key={project.id}
+                  key={`${copyIndex}-${project.id}`}
                   ref={setCardRef(index)}
                   project={project}
+                  loopInstance={`${copyIndex}-${project.id}`}
                   onOpen={openProject}
                   isSharedHidden={sharedHiddenId === project.id}
                   keepVideoAlive={

@@ -11,13 +11,14 @@ import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
 interface ProjectCardProps {
   project: Project;
+  loopInstance?: string;
   onOpen: (project: Project, origin: CardOrigin | null) => void;
   isSharedHidden?: boolean;
   keepVideoAlive?: boolean;
 }
 
 const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
-  { project, onOpen, isSharedHidden = false, keepVideoAlive = false },
+  { project, loopInstance, onOpen, isSharedHidden = false, keepVideoAlive = false },
   ref,
 ) {
   const { locale } = useLocale();
@@ -67,6 +68,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     }
 
     onOpen(project, {
+      carouselInstanceId: loopInstance,
       thumbnail: toRect(visual.getBoundingClientRect()),
       title: toRect(title.getBoundingClientRect()),
       titleFontSize: getComputedStyle(title).fontSize,
@@ -109,6 +111,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     <article
       ref={ref}
       data-project-id={project.id}
+      data-work-instance={loopInstance}
       role="button"
       tabIndex={0}
       onClick={handleOpen}

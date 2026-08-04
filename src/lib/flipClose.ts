@@ -1,4 +1,10 @@
-import { SHARED_TRANSITION_MS, toRect, type ElementRect, type ModalTargets } from "@/lib/motion";
+import {
+  SHARED_TRANSITION_MS,
+  findVisibleProjectCard,
+  toRect,
+  type ElementRect,
+  type ModalTargets,
+} from "@/lib/motion";
 
 export const FLIP_CLOSE_MS = SHARED_TRANSITION_MS;
 export const FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -45,7 +51,7 @@ export function cleanupFlip(el: HTMLElement) {
 }
 
 export function getCardSharedElements(projectId: string) {
-  const card = document.querySelector<HTMLElement>(`[data-project-id="${projectId}"]`);
+  const card = findVisibleProjectCard(projectId);
   if (!card) return null;
 
   const visual = card.querySelector<HTMLElement>(".work-card-visual");

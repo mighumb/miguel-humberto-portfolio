@@ -2,6 +2,7 @@ import {
   registerWorkCarouselMotion,
   stopWorkCarouselMotion,
 } from "@/lib/workDragScroll";
+import { normalizeWorkLoopScroll } from "@/lib/workCarouselLoop";
 
 /** Slow cinematic glide for arrow prev/next (feels composed, not snappy). */
 const ARROW_SCROLL_MIN_MS = 1050;
@@ -116,7 +117,7 @@ export function scrollWorkCarouselToIndex(
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!smooth || reducedMotion) {
-    container.scrollLeft = target;
+    container.scrollLeft = normalizeWorkLoopScroll(container, target);
     return;
   }
 
@@ -147,14 +148,15 @@ export function scrollWorkCarouselToIndex(
 
   const tick = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
-    container.scrollLeft = start + delta * easeInOutSine(progress);
+    const virtualScroll = start + delta * easeInOutSine(progress);
+    container.scrollLeft = normalizeWorkLoopScroll(container, virtualScroll);
 
     if (progress < 1) {
       raf = requestAnimationFrame(tick);
       return;
     }
 
-    container.scrollLeft = target;
+    container.scrollLeft = normalizeWorkLoopScroll(container, target);
     stop();
     // Custom rAF scroll does not always emit scrollend; settle nav pin state.
     container.dispatchEvent(new Event("scrollend"));
