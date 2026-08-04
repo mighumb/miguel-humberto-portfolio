@@ -13,9 +13,13 @@ function getWorkCards(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>("[data-project-id]"));
 }
 
-/** Long ease-in and ease-out so the card floats rather than snaps. */
-function easeInOutQuint(t: number) {
-  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+/**
+ * Starts moving immediately while keeping soft acceleration/deceleration.
+ * The previous quint curve had only travelled 1.6% at t=.25, making card
+ * perspective look frozen until late in the arrow navigation.
+ */
+function easeInOutSine(t: number) {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
 }
 
 /**
@@ -143,7 +147,7 @@ export function scrollWorkCarouselToIndex(
 
   const tick = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
-    container.scrollLeft = start + delta * easeInOutQuint(progress);
+    container.scrollLeft = start + delta * easeInOutSine(progress);
 
     if (progress < 1) {
       raf = requestAnimationFrame(tick);
