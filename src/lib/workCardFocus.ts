@@ -14,10 +14,16 @@ export const MAX_BLUR = 1.15;
 export const MAX_BLUR_MOBILE = 3.1;
 /** Desktop only: cover reads softer than text at the same body blur. */
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
-/** Desktop: soft depth growth rate so cards keep receding past 1 step. */
-const DESKTOP_DEPTH_FALLOFF = 0.9;
+/**
+ * Desktop depth reaches full strength around this many card-steps away,
+ * so neighbor 2 stays clearly deeper / more curved than neighbor 1.
+ */
+const DESKTOP_DEPTH_STEPS = 2.4;
+const DESKTOP_ROTATE_MULT = 1.35;
+const DESKTOP_ROTATE_CAP = 24;
 
 export interface CardPerspective {
+  articleTranslateX: number;
   articleTranslateY: number;
   rotateY: number;
   translateZ: number;
@@ -28,6 +34,7 @@ export interface CardPerspective {
 }
 
 export const FLAT_PERSPECTIVE: CardPerspective = {
+  articleTranslateX: 0,
   articleTranslateY: 0,
   rotateY: 0,
   translateZ: 0,
@@ -50,13 +57,62 @@ function blurFilter(blurPx: number) {
 }
 
 /**
- * Desktop depth curve: keeps growing past one card step with diminishing returns,
- * so card 3 is always farther than card 2 (continuous fan).
- * Mobile stays hard-capped at one step (existing feel).
+ * Approximate projected scale for a translateZ under our perspective.
+ * Used to compensate horizontal drift so visual gaps stay equal.
+ */
+function projectedScale(translateZ: number) {
+  const depth = CARD_PERSPECTIVE - translateZ;
+  if (depth <= 1) return 1;
+  return CARD_PERSPECTIVE / depth;
+}
+
+/**
+ * Desktop: near-linear growth across the first ~2 neighbors so card 3 is
+ * clearly farther / more tilted than card 2. Mobile stays hard-capped at 1.
  */
 function focusAmount(distanceInSteps: number, mobile: boolean) {
   if (mobile) return Math.min(1, distanceInSteps);
-  return 1 - Math.exp(-distanceInSteps * DESKTOP_DEPTH_FALLOFF);
+  const t = Math.min(1, distanceInSteps / DESKTOP_DEPTH_STEPS);
+  // Ease-out: keep early steps readable, still separate 1 vs 2 clearly.
+  return 1 - Math.pow(1 - t, 1.25);
+}
+
+function desktopTranslateZ(distanceInSteps: number) {
+  return focusAmount(distanceInSteps, false) * MAX_TRANSLATE_Z;
+}
+
+function desktopRotateYAbs(distanceInSteps: number) {
+  const amount = focusAmount(distanceInSteps, false);
+  return Math.min(DESKTOP_ROTATE_CAP, amount * MAX_ROTATE_Y * DESKTOP_ROTATE_MULT);
+}
+
+/** Horizontal silhouette scale: perspective shrink × yaw foreshortening. */
+function desktopEffScale(distanceInSteps: number) {
+  const zScale = projectedScale(desktopTranslateZ(distanceInSteps));
+  const yaw = (desktopRotateYAbs(distanceInSteps) * Math.PI) / 180;
+  return zScale * Math.max(0.5, Math.cos(yaw));
+}
+
+/**
+ * Pull cards toward the focused one just enough that projected edge-to-edge
+ * gaps stay equal to the flex gap, while depth / tilt keep increasing.
+ *
+ * Magnitude expands to near-edge half-shrink + full shrink of each nearer card.
+ */
+function desktopGapCompensationX(width: number, distance: number, sign: number) {
+  if (distance < 0.001 || sign === 0 || width <= 0) return 0;
+
+  const scale = desktopEffScale(distance);
+  // Keep this card's near edge from drifting outward as it shrinks.
+  let pull = width * (1 - scale) * 0.5;
+
+  // Close the gap opened by each nearer card's far-edge shrink.
+  const lastPrev = Math.max(0, Math.ceil(distance) - 1);
+  for (let i = 1; i <= lastPrev; i++) {
+    pull += width * (1 - desktopEffScale(i));
+  }
+
+  return sign * pull;
 }
 
 export function computeCardFocus(
@@ -78,6 +134,7 @@ export function computeCardFocus(
 
   if (mobile) {
     return {
+      articleTranslateX: 0,
       articleTranslateY: amount * MAX_SHIFT_Y,
       rotateY: clamp(sign * -amount * MAX_ROTATE_Y, -MAX_ROTATE_Y, MAX_ROTATE_Y),
       translateZ: amount * MAX_TRANSLATE_Z_MOBILE,
@@ -88,10 +145,14 @@ export function computeCardFocus(
   }
 
   // Desktop: continuous curve — farther cards keep gaining depth / tilt / blur.
+  // Horizontal compensation keeps visual gaps equal despite perspective shrink.
+  const translateZ = desktopTranslateZ(distance);
+
   return {
+    articleTranslateX: desktopGapCompensationX(card.offsetWidth, distance, sign),
     articleTranslateY: amount * MAX_SHIFT_Y * 1.15,
-    rotateY: clamp(sign * -amount * MAX_ROTATE_Y * 1.25, -22, 22),
-    translateZ: amount * MAX_TRANSLATE_Z,
+    rotateY: clamp(sign * -desktopRotateYAbs(distance), -DESKTOP_ROTATE_CAP, DESKTOP_ROTATE_CAP),
+    translateZ,
     bodyOpacity: 1 - amount * 0.18,
     blur: amount * MAX_BLUR * 1.15,
     depth: amount,
@@ -106,6 +167,7 @@ export function lerpPerspective(
   const mix = (a: number, b: number) => a + (b - a) * amount;
 
   return {
+    articleTranslateX: mix(from.articleTranslateX, to.articleTranslateX),
     articleTranslateY: mix(from.articleTranslateY, to.articleTranslateY),
     rotateY: mix(from.rotateY, to.rotateY),
     translateZ: mix(from.translateZ, to.translateZ),
@@ -137,7 +199,7 @@ function clearMediaFilters(card: HTMLElement) {
 }
 
 export function applyCardPerspective(card: HTMLElement, perspective: CardPerspective) {
-  card.style.transform = `translateY(${perspective.articleTranslateY}px)`;
+  card.style.transform = `translate(${perspective.articleTranslateX}px, ${perspective.articleTranslateY}px)`;
   card.style.zIndex = `${1000 - Math.round(perspective.depth * 100)}`;
 
   const body = card.querySelector<HTMLElement>(".work-card-body");
