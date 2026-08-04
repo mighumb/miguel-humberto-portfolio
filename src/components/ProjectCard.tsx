@@ -115,7 +115,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[82vw] max-w-[68rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
+      className="work-card-focus group w-[74vw] max-w-[68rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">
