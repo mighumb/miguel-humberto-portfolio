@@ -252,6 +252,14 @@ export default function ProjectSharedFlight({
     setTagsFrame(flight.tags.from);
     setTagsVariant(flight.direction === "open" ? "card" : "modal");
 
+    // Close: the portal mounts at the modal rects above the backdrop. Reveal
+    // the home page only once those flying elements are in the DOM, so there
+    // is never a bare home frame at a mismatched scroll.
+    if (flight.direction === "close") {
+      document.documentElement.classList.add("is-closing-flip");
+      document.documentElement.classList.remove("is-closing-prepare");
+    }
+
     const start = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setThumbFrame(flight.thumbnail.to);

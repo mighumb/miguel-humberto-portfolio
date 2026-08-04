@@ -12,6 +12,26 @@ export function updateSavedScrollPosition(x: number, y: number) {
   savedScrollY = Math.max(0, y);
 }
 
+/**
+ * Programmatic scroll while the modal lock has overflow:hidden. Chromium
+ * ignores scrollBy under that lock, so lift it for the duration of the nudge.
+ */
+export function nudgeScrollWhileLocked(dx: number, dy: number) {
+  if (typeof window === "undefined") return;
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+  const html = document.documentElement;
+  const body = document.body;
+  const prevHtmlOverflow = html.style.overflow;
+  const prevBodyOverflow = body.style.overflow;
+  html.style.overflow = "";
+  body.style.overflow = "";
+  window.scrollBy({ left: dx, top: dy, behavior: "auto" });
+  updateSavedScrollPosition(window.scrollX, window.scrollY);
+  html.style.overflow = prevHtmlOverflow;
+  body.style.overflow = prevBodyOverflow;
+}
+
 export function snapScrollTo(x: number, y: number) {
   if (typeof window === "undefined") return;
 

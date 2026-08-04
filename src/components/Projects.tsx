@@ -17,6 +17,8 @@ import { getWorkLoopStart } from "@/lib/workCarouselLoop";
 import {
   prefersReducedMotion,
   measureCardOrigin,
+  buildCloseFlight,
+  findVisibleProjectCard,
   type CardOrigin,
   type CardPerspective,
   type FlightPair,
@@ -27,7 +29,7 @@ import {
   captureCardPerspectives,
   restoreCardPerspectives,
 } from "@/lib/workCardFocus";
-import { runFlipClose } from "@/lib/flipClose";
+import { alignCardIntoView } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
@@ -411,32 +413,31 @@ export default function Projects() {
       return;
     }
 
+    // Restore home + carousel under the opaque backdrop, then measure the live
+    // card rects and hand the close to the portal flight (same path as open).
+    // In-DOM FLIP had to force overflow:visible on .work-scroll, which resets
+    // scrollLeft to 0 in Chromium and caused the reposition jump.
     restoreFrozenCarousel(scrollRef, savedWorkScrollLeftRef.current, snapshot);
 
-    flipCleanupRef.current?.();
-    flipCleanupRef.current = runFlipClose({
-      projectId: project.id,
-      // Fly back into the very copy that was opened, not merely a copy of the
-      // same project that happens to sit nearest the scroll position.
-      instanceId: activeInstanceRef.current ?? undefined,
-      modalTargets,
-      onComplete: () => {
-        restoreFrozenCarousel(
-          scrollRef,
-          savedWorkScrollLeftRef.current,
-          carouselSnapshotRef.current,
-        );
+    const instanceId = activeInstanceRef.current ?? undefined;
+    const card = findVisibleProjectCard(project.id, instanceId);
+    if (card) alignCardIntoView(card);
 
-        closedViaTransitionRef.current = true;
-        flipCleanupRef.current = null;
-        closeModal();
-      },
-    });
+    const origin = measureCardOrigin(
+      project.id,
+      Boolean(project.hasVideo),
+      instanceId,
+    );
+    if (!origin) {
+      closeModal();
+      return;
+    }
 
-    return () => {
-      flipCleanupRef.current?.();
-      flipCleanupRef.current = null;
-    };
+    setSharedHiddenInstance(origin.carouselInstanceId ?? instanceId ?? null);
+    setFlightShowVideo(origin.showVideo);
+    setFlightVideoTime(origin.videoTime);
+    setFlightVideoPoster(origin.videoPoster);
+    setFlight(buildCloseFlight(modalTargets, origin));
   }, [phase, closeModal, scrollRef]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
@@ -504,6 +505,17 @@ export default function Projects() {
   }, []);
 
   const handleFlightLanding = useCallback((handoffVideoTime?: number) => {
+    if (phaseRef.current === "closing") {
+      restoreFrozenCarousel(
+        scrollRef,
+        savedWorkScrollLeftRef.current,
+        carouselSnapshotRef.current,
+      );
+      closedViaTransitionRef.current = true;
+      closeModal();
+      return;
+    }
+
     if (phaseRef.current !== "opening") return;
 
     if (handoffVideoTime !== undefined) {
@@ -513,7 +525,7 @@ export default function Projects() {
     setPhase("open");
     setSharedHiddenInstance(null);
     setFlight(null);
-  }, []);
+  }, [closeModal, scrollRef]);
 
   const requestClose = useCallback(() => {
     if (!activeProject || prefersReducedMotion()) {
@@ -646,7 +658,7 @@ export default function Projects() {
         />
       )}
 
-      {activeProject && flight?.direction === "open" && (
+      {activeProject && flight && (
         <ProjectSharedFlight
           project={activeProject}
           locale={locale}

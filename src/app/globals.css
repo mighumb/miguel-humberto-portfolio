@@ -191,11 +191,6 @@ html.is-closing-flip .work-scroll-stage {
   z-index: 210;
 }
 
-/* Destination cards near the viewport edge must not clip the FLIP. */
-html.is-closing-flip .work-scroll {
-  overflow: visible !important;
-}
-
 .work-card-visual.work-card-flip-active,
 .work-card-title.work-card-flip-active,
 .work-card-year.work-card-flip-active,

@@ -5,10 +5,21 @@ import {
   type ElementRect,
   type ModalTargets,
 } from "@/lib/motion";
-import { updateSavedScrollPosition } from "@/lib/scrollLock";
+import { nudgeScrollWhileLocked } from "@/lib/scrollLock";
 
 export const FLIP_CLOSE_MS = SHARED_TRANSITION_MS;
 export const FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+/** Scroll the page so the destination card sits fully in view (under the modal cover). */
+export function alignCardIntoView(card: HTMLElement, edge = 24) {
+  const rect = card.getBoundingClientRect();
+  let dy = 0;
+  if (rect.top < edge) dy = rect.top - edge;
+  else if (rect.bottom > window.innerHeight - edge) {
+    dy = rect.bottom - (window.innerHeight - edge);
+  }
+  nudgeScrollWhileLocked(0, dy);
+}
 
 export interface SharedElementFlip {
   el: HTMLElement;
@@ -65,7 +76,10 @@ export function getCardSharedElements(projectId: string, instanceId?: string) {
   return { card, visual, title, year, tags };
 }
 
-function buildFlips(modalTargets: ModalTargets, shared: NonNullable<ReturnType<typeof getCardSharedElements>>) {
+function buildFlips(
+  modalTargets: ModalTargets,
+  shared: NonNullable<ReturnType<typeof getCardSharedElements>>,
+) {
   const { visual, title, year, tags } = shared;
 
   return [
@@ -96,6 +110,7 @@ function buildFlips(modalTargets: ModalTargets, shared: NonNullable<ReturnType<t
   ] satisfies SharedElementFlip[];
 }
 
+/** In-DOM FLIP fallback — prefer portal ProjectSharedFlight close. */
 export function runFlipClose({
   projectId,
   instanceId,
@@ -113,30 +128,7 @@ export function runFlipClose({
     return () => {};
   }
 
-  // Bring the destination card fully into the viewport before measuring. Opening
-  // can leave it clipped under the sticky header or above the fold; FLIP-ing
-  // into a clipped card reads as a cut-off jump. Done while the modal backdrop
-  // still covers the page, so the scroll adjust is invisible. Scroll lock uses
-  // overflow:hidden which blocks scrollBy — lift it briefly for the nudge.
-  const rect = shared.card.getBoundingClientRect();
-  const edge = 24;
-  let dy = 0;
-  if (rect.top < edge) dy = rect.top - edge;
-  else if (rect.bottom > window.innerHeight - edge) {
-    dy = rect.bottom - (window.innerHeight - edge);
-  }
-  if (Math.abs(dy) > 1) {
-    const html = document.documentElement;
-    const body = document.body;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevBodyOverflow = body.style.overflow;
-    html.style.overflow = "";
-    body.style.overflow = "";
-    window.scrollBy({ top: dy, left: 0, behavior: "auto" });
-    updateSavedScrollPosition(window.scrollX, window.scrollY);
-    html.style.overflow = prevHtmlOverflow;
-    body.style.overflow = prevBodyOverflow;
-  }
+  alignCardIntoView(shared.card);
 
   const flips = buildFlips(modalTargets, shared);
   const root = document.documentElement;
@@ -151,10 +143,6 @@ export function runFlipClose({
     shared.card.style.minHeight = "";
     shared.visual.removeEventListener("transitionend", onTransitionEnd);
     window.clearTimeout(timeout);
-    // Do NOT remove is-closing-flip here — onComplete triggers setActiveProject(null)
-    // which is a batched React update. Removing the class synchronously would make
-    // the modal flash back visible before it unmounts. resetTransition defers the
-    // removal to requestAnimationFrame so React commits the unmount first.
     onComplete();
   };
 
@@ -163,10 +151,6 @@ export function runFlipClose({
     finish();
   };
 
-  // Prime the inverted FLIP under the still-opaque backdrop, then reveal by
-  // hiding the modal entirely. The first painted home frame already has the
-  // flying elements at the modal positions — no frame where home sits alone
-  // at a mismatched scroll.
   flips.forEach(applyFlipIn);
   root.classList.add("is-closing-flip");
   root.classList.remove("is-closing-prepare");
