@@ -11,8 +11,8 @@ export const MAX_TRANSLATE_Z = -600;
 export const MAX_TRANSLATE_Z_MOBILE = -130;
 export const MAX_SHIFT_Y = 40;
 export const MAX_BLUR = 1.15;
-/** Stronger on mobile so off-axis peeks read clearly on retina. */
-export const MAX_BLUR_MOBILE = 3.1;
+/** Soft peek blur on mobile — kept near the desktop cover softness. */
+export const MAX_BLUR_MOBILE = 1.6;
 /** Desktop only: cover reads softer than text at the same body blur. */
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
 const DESKTOP_DEPTH_RATE = 0.26;
