@@ -11,7 +11,9 @@ export default function Home() {
     <main>
       <StickyHeader />
       <AmbientBackground />
-      <div className="relative z-[1]">
+      {/* Above the later sections so the manifesto's upward fade band, which
+          reaches 12rem over the carousel, stays behind the cards. */}
+      <div className="relative z-[3]">
         <Hero />
         <Projects />
       </div>

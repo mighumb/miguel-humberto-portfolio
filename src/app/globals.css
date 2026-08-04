@@ -288,6 +288,10 @@ html.modal-main-hidden .ambient-background {
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  /* Cards carry z-index up to 1000 to stack along the depth curve. Confine that
+     range here so the carousel edge gradients still paint above them. iOS got
+     this for free from -webkit-overflow-scrolling; desktop did not. */
+  isolation: isolate;
   /* Native free scroll on touch — no snap / magnetism; 3D focus unchanged */
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
