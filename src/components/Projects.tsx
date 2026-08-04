@@ -13,6 +13,7 @@ import {
   whenWorkCarouselScrollSettles,
 } from "@/lib/workCarouselNav";
 import { stopWorkCarouselMotion } from "@/lib/workDragScroll";
+import { attachWorkCardPointer } from "@/lib/workCardPointer";
 import { getWorkLoopStart } from "@/lib/workCarouselLoop";
 import {
   prefersReducedMotion,
@@ -204,6 +205,13 @@ export default function Projects() {
   );
   const [endGutterWidth, setEndGutterWidth] = useState(24);
   const shouldAnchorStartRef = useRef(true);
+
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    return attachWorkCardPointer(container);
+  }, [scrollRef]);
 
   useLayoutEffect(() => {
     const container = scrollRef.current;

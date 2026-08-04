@@ -309,19 +309,27 @@ html.modal-main-hidden .ambient-background {
   overflow-anchor: none;
 }
 
-/* Desktop: empty carousel chrome reads as draggable; cards stay clickable. */
+/* Desktop: empty carousel chrome reads as draggable; only the painted card
+   surface reads as clickable. `is-over-card` comes from workCardPointer, which
+   tests the pointer against the transformed card bounds. */
 @media (hover: hover) and (pointer: fine) {
-  .work-scroll {
-    cursor: grab;
+  /* !important because cards carry role="button", which the global affordance
+     rule already styles as pointer. */
+  .work-scroll,
+  .work-scroll * {
+    cursor: grab !important;
   }
 
-  .work-scroll-gutter,
-  .work-scroll-end-gutter {
-    cursor: grab;
+  .work-scroll.is-over-card,
+  .work-scroll.is-over-card * {
+    cursor: pointer !important;
   }
 
-  .work-scroll .work-card-focus {
-    cursor: pointer;
+  .work-scroll.is-pressing,
+  .work-scroll.is-pressing *,
+  .work-scroll.is-dragging,
+  .work-scroll.is-dragging * {
+    cursor: grabbing !important;
   }
 }
 
@@ -352,10 +360,6 @@ html.modal-main-hidden .ambient-background {
 .work-scroll.is-pressing .work-scroll-gutter,
 .work-scroll.is-dragging .work-scroll-gutter {
   cursor: grabbing !important;
-}
-
-.work-scroll .work-card-focus {
-  cursor: pointer;
 }
 
 .work-scroll::-webkit-scrollbar {
@@ -424,7 +428,9 @@ html.modal-main-hidden .ambient-background {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .work-card-focus:hover .work-card-cta,
+  /* is-hovered, not :hover — :hover also covers the empty space that the card's
+     untransformed layout box leaves above and beside the painted card. */
+  .work-card-focus.is-hovered .work-card-cta,
   .work-card-focus:focus-visible .work-card-cta {
     opacity: 1;
     transform: translate3d(0, 0, 0);
