@@ -8,6 +8,14 @@ import {
   type ElementRect,
   type FlightPair,
 } from "@/lib/motion";
+import {
+  FLAT_PERSPECTIVE,
+  flightFilterStyle,
+  flightTransformStyle,
+  lerpPerspective,
+  perspectiveEase,
+  type CardPerspective,
+} from "@/lib/workCardFocus";
 import { type Project, projectCoverUrl } from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
@@ -19,6 +27,8 @@ interface ProjectSharedFlightProps {
   showVideo: boolean;
   videoTime: number;
   videoPoster?: string;
+  /** Close only: target carousel curve for the flying thumb (flat → this). */
+  closePerspective?: CardPerspective | null;
   onLanding: (handoffVideoTime?: number) => void;
 }
 
@@ -37,12 +47,14 @@ function FlightThumbnail({
   frame,
   videoTime,
   videoPoster,
+  perspective,
 }: {
   project: Project;
   showVideo: boolean;
   frame: ElementRect;
   videoTime: number;
   videoPoster?: string;
+  perspective: CardPerspective;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
@@ -83,12 +95,30 @@ function FlightThumbnail({
     return () => video.removeEventListener("canplay", onCanPlay);
   }, [useLiveVideo, videoTime, project.videoUrl]);
 
+  const curved =
+    Math.abs(perspective.rotateY) > 0.05 ||
+    Math.abs(perspective.translateZ) > 0.5 ||
+    Math.abs(perspective.articleTranslateX) > 0.5 ||
+    Math.abs(perspective.articleTranslateY) > 0.5;
+
+  // Article translate lives in `transform` (not top/left) so the CSS top/left
+  // flight transition is not restarted every rAF when the curve lerps.
+  const transform = curved
+    ? `translate(${perspective.articleTranslateX}px, ${perspective.articleTranslateY}px) ${flightTransformStyle(perspective)}`
+    : undefined;
+
   return (
     <div
       className={`project-shared-flight-thumb relative overflow-hidden rounded-xl ${
         coverUrl ? "bg-bg-secondary" : "project-placeholder-gradient"
       }`}
-      style={frameStyle(frame)}
+      style={{
+        ...frameStyle(frame),
+        transformOrigin: "center bottom",
+        transform,
+        filter: curved ? flightFilterStyle(perspective) : undefined,
+        opacity: perspective.bodyOpacity,
+      }}
     >
       {useLiveVideo ? (
         <>
@@ -138,15 +168,26 @@ function FlightTitle({
   title,
   frame,
   fontSize,
+  perspective = FLAT_PERSPECTIVE,
 }: {
   title: string;
   frame: ElementRect;
   fontSize: string;
+  perspective?: CardPerspective;
 }) {
+  const shift =
+    Math.abs(perspective.articleTranslateX) > 0.5 ||
+    Math.abs(perspective.articleTranslateY) > 0.5;
   return (
     <div
       className="project-shared-flight-title font-medium tracking-tight text-text-primary"
-      style={{ ...frameStyle(frame), fontSize }}
+      style={{
+        ...frameStyle(frame),
+        fontSize,
+        transform: shift
+          ? `translate(${perspective.articleTranslateX}px, ${perspective.articleTranslateY}px)`
+          : undefined,
+      }}
     >
       {title}
     </div>
@@ -157,15 +198,26 @@ function FlightYear({
   year,
   frame,
   fontSize,
+  perspective = FLAT_PERSPECTIVE,
 }: {
   year: string;
   frame: ElementRect;
   fontSize: string;
+  perspective?: CardPerspective;
 }) {
+  const shift =
+    Math.abs(perspective.articleTranslateX) > 0.5 ||
+    Math.abs(perspective.articleTranslateY) > 0.5;
   return (
     <div
       className="project-shared-flight-year shrink-0 text-text-secondary"
-      style={{ ...frameStyle(frame), fontSize }}
+      style={{
+        ...frameStyle(frame),
+        fontSize,
+        transform: shift
+          ? `translate(${perspective.articleTranslateX}px, ${perspective.articleTranslateY}px)`
+          : undefined,
+      }}
     >
       {year}
     </div>
@@ -176,19 +228,29 @@ function FlightTags({
   tags,
   frame,
   variant,
+  perspective = FLAT_PERSPECTIVE,
 }: {
   tags: string[];
   frame: ElementRect;
   variant: "card" | "modal";
+  perspective?: CardPerspective;
 }) {
   const isCard = variant === "card";
+  const shift =
+    Math.abs(perspective.articleTranslateX) > 0.5 ||
+    Math.abs(perspective.articleTranslateY) > 0.5;
 
   return (
     <div
       className={`project-shared-flight-tags flex flex-wrap items-center ${
         isCard ? "gap-1.5" : "gap-2"
       }`}
-      style={frameStyle(frame)}
+      style={{
+        ...frameStyle(frame),
+        transform: shift
+          ? `translate(${perspective.articleTranslateX}px, ${perspective.articleTranslateY}px)`
+          : undefined,
+      }}
     >
       {tags.map((tag) => (
         <span
@@ -211,6 +273,7 @@ export default function ProjectSharedFlight({
   showVideo,
   videoTime,
   videoPoster,
+  closePerspective = null,
   onLanding,
 }: ProjectSharedFlightProps) {
   const [thumbFrame, setThumbFrame] = useState(flight.thumbnail.from);
@@ -222,6 +285,8 @@ export default function ProjectSharedFlight({
   const [tagsVariant, setTagsVariant] = useState<"card" | "modal">(
     flight.direction === "open" ? "card" : "modal",
   );
+  const [flightPerspective, setFlightPerspective] =
+    useState<CardPerspective>(FLAT_PERSPECTIVE);
   const completedRef = useRef(false);
   const thumbRef = useRef<HTMLDivElement>(null);
   const onLandingRef = useRef(onLanding);
@@ -251,6 +316,7 @@ export default function ProjectSharedFlight({
     setYearFontSize(flight.year.fromFontSize);
     setTagsFrame(flight.tags.from);
     setTagsVariant(flight.direction === "open" ? "card" : "modal");
+    setFlightPerspective(FLAT_PERSPECTIVE);
 
     // Close: the portal mounts at the modal rects above the backdrop. Reveal
     // the home page only once those flying elements are in the DOM, so there
@@ -272,15 +338,35 @@ export default function ProjectSharedFlight({
       });
     });
 
+    // Close: curve the flying thumb in lockstep with position so the handoff
+    // to the real card is not a one-frame flat → trapezoid pop.
+    let perspectiveRaf = 0;
+    const targetPerspective =
+      flight.direction === "close" ? closePerspective : null;
+    if (targetPerspective) {
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        const amount = perspectiveEase((now - t0) / SHARED_TRANSITION_MS);
+        setFlightPerspective(lerpPerspective(FLAT_PERSPECTIVE, targetPerspective, amount));
+        if (amount < 1) perspectiveRaf = requestAnimationFrame(tick);
+        else setFlightPerspective(targetPerspective);
+      };
+      perspectiveRaf = requestAnimationFrame(tick);
+    }
+
     const timeout = window.setTimeout(finish, SHARED_TRANSITION_MS + 80);
 
     return () => {
       cancelAnimationFrame(start);
+      if (perspectiveRaf) cancelAnimationFrame(perspectiveRaf);
       window.clearTimeout(timeout);
     };
-  }, [flight, finish]);
+  }, [flight, finish, closePerspective]);
 
   if (typeof document === "undefined") return null;
+
+  const metaPerspective =
+    flight.direction === "close" ? flightPerspective : FLAT_PERSPECTIVE;
 
   return createPortal(
     <div
@@ -302,14 +388,26 @@ export default function ProjectSharedFlight({
           frame={thumbFrame}
           videoTime={videoTime}
           videoPoster={videoPoster}
+          perspective={flightPerspective}
         />
         <FlightTitle
           title={project.title[locale]}
           frame={titleFrame}
           fontSize={titleFontSize}
+          perspective={metaPerspective}
         />
-        <FlightYear year={project.year} frame={yearFrame} fontSize={yearFontSize} />
-        <FlightTags tags={project.tags} frame={tagsFrame} variant={tagsVariant} />
+        <FlightYear
+          year={project.year}
+          frame={yearFrame}
+          fontSize={yearFontSize}
+          perspective={metaPerspective}
+        />
+        <FlightTags
+          tags={project.tags}
+          frame={tagsFrame}
+          variant={tagsVariant}
+          perspective={metaPerspective}
+        />
       </div>
     </div>,
     document.body,

@@ -397,6 +397,16 @@ export function applySnapshotPerspective(
 }
 
 /**
+ * Gentle ease-out for perspective restores. The shared-element position easing
+ * (cubic-bezier 0.22,1,0.36,1) front-loads progress so hard that a rotateY
+ * lerp looks like a one-frame snap — use this instead for 3D settle.
+ */
+export function perspectiveEase(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return 1 - (1 - clamped) ** 3;
+}
+
+/**
  * Ease matching shared-element flight: cubic-bezier(0.22, 1, 0.36, 1).
  * Samples the Y of the unit bezier at progress t (0..1).
  */
@@ -461,7 +471,7 @@ export function animateCardPerspectives({
 
   const tick = (now: number) => {
     if (cancelled) return;
-    const amount = flightEase((now - start) / durationMs);
+    const amount = perspectiveEase((now - start) / durationMs);
     cards.forEach(({ el, target }) => {
       applyCardPerspective(el, lerpPerspective(from, target, amount));
     });

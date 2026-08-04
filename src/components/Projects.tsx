@@ -171,6 +171,9 @@ export default function Projects() {
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const [flightVideoTime, setFlightVideoTime] = useState(0);
   const [flightVideoPoster, setFlightVideoPoster] = useState<string | undefined>(undefined);
+  const [closeFlightPerspective, setCloseFlightPerspective] = useState<CardPerspective | null>(
+    null,
+  );
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -250,6 +253,7 @@ export default function Projects() {
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
+    setCloseFlightPerspective(null);
     carouselSnapshotRef.current = null;
 
     const container = scrollRef.current;
@@ -392,6 +396,7 @@ export default function Projects() {
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
+    setCloseFlightPerspective(null);
     closeTargetsRef.current = null;
     openFlightRef.current = null;
   }, []);
@@ -417,15 +422,25 @@ export default function Projects() {
       return;
     }
 
-    // Restore home + carousel under the opaque backdrop, then measure the live
-    // card rects and hand the close to the portal flight (same path as open).
-    // In-DOM FLIP had to force overflow:visible on .work-scroll, which resets
-    // scrollLeft to 0 in Chromium and caused the reposition jump.
-    restoreFrozenCarousel(scrollRef, savedWorkScrollLeftRef.current, snapshot);
+    // Restore home scroll under the opaque backdrop, flatten cards, then measure
+    // FLAT rects for the flight. Measuring while curved made the portal land on
+    // an AABB that didn't match the real trapezoid — and the portal itself stayed
+    // flat, so the handoff read as a one-frame flat → curved pop.
+    restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
+
+    const container = scrollRef.current;
+    if (container) {
+      applySnapshotPerspective(container, snapshot, FLAT_PERSPECTIVE);
+    }
 
     const instanceId = activeInstanceRef.current ?? undefined;
     const card = findVisibleProjectCard(project.id, instanceId);
     if (card) alignCardIntoView(card);
+
+    // Re-flatten after scroll nudge (align can change which cards are nearby).
+    if (container) {
+      applySnapshotPerspective(container, snapshot, FLAT_PERSPECTIVE);
+    }
 
     const origin = measureCardOrigin(
       project.id,
@@ -437,13 +452,9 @@ export default function Projects() {
       return;
     }
 
-    // Measure happened on the curved snapshot so flight destinations match the
-    // final carousel. Flatten now (still under the opaque backdrop), then lerp
-    // flat → curve in lockstep with the shared-element flight — avoids the
-    // instant "pop" back into 3D when the portal lands.
-    const container = scrollRef.current;
+    // Lerp sibling cards + the opened card's real transforms while the portal
+    // flies. Portal gets the same curve target so it lands matching the card.
     if (container) {
-      applySnapshotPerspective(container, snapshot, FLAT_PERSPECTIVE);
       flipCleanupRef.current?.();
       flipCleanupRef.current = animateCardPerspectives({
         container,
@@ -453,6 +464,7 @@ export default function Projects() {
       });
     }
 
+    setCloseFlightPerspective(origin.perspective);
     setSharedHiddenInstance(origin.carouselInstanceId ?? instanceId ?? null);
     setFlightShowVideo(origin.showVideo);
     setFlightVideoTime(origin.videoTime);
@@ -689,6 +701,9 @@ export default function Projects() {
           showVideo={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}
+          closePerspective={
+            flight.direction === "close" ? closeFlightPerspective : null
+          }
           onLanding={handleFlightLanding}
         />
       )}
