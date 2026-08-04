@@ -2,7 +2,8 @@ import { getCardIdealScroll } from "@/lib/workCarouselNav";
 
 export const CARD_PERSPECTIVE = 1100;
 export const MAX_ROTATE_Y = 17;
-export const MAX_TRANSLATE_Z = -280;
+/** Desktop asymptote; every farther card still approaches it progressively. */
+export const MAX_TRANSLATE_Z = -600;
 /**
  * Mobile: pushing side cards this far back shrinks them enough that their left
  * edge drifts inward, reading as a much wider gap than the flex gap actually is.
@@ -14,13 +15,12 @@ export const MAX_BLUR = 1.15;
 export const MAX_BLUR_MOBILE = 3.1;
 /** Desktop only: cover reads softer than text at the same body blur. */
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
-/**
- * Desktop depth reaches full strength around this many card-steps away,
- * so neighbor 2 stays clearly deeper / more curved than neighbor 1.
- */
-const DESKTOP_DEPTH_STEPS = 2.4;
-const DESKTOP_ROTATE_MULT = 1.35;
-const DESKTOP_ROTATE_CAP = 24;
+const DESKTOP_DEPTH_RATE = 0.26;
+const DESKTOP_TILT_RATE = 0.36;
+const DESKTOP_ROTATE_CAP = 38;
+const DESKTOP_SHIFT_Y_LIMIT = 72;
+const DESKTOP_BLUR_LIMIT = 2.2;
+const DESKTOP_OPACITY_REDUCTION = 0.3;
 
 export interface CardPerspective {
   articleTranslateX: number;
@@ -76,23 +76,20 @@ function projectedEdgeX(localX: number, translateZ: number, rotateYDeg: number) 
 }
 
 /**
- * Desktop: near-linear growth across the first ~2 neighbors so card 3 is
- * clearly farther / more tilted than card 2. Mobile stays hard-capped at 1.
+ * An exponential approach never reaches its limit at a finite card distance.
+ * Cards 4–6 therefore remain progressively deeper and more tilted instead of
+ * sharing the old hard cap, while the diminishing increments avoid a harsh fan.
  */
-function focusAmount(distanceInSteps: number, mobile: boolean) {
-  if (mobile) return Math.min(1, distanceInSteps);
-  const t = Math.min(1, distanceInSteps / DESKTOP_DEPTH_STEPS);
-  // Ease-out: keep early steps readable, still separate 1 vs 2 clearly.
-  return 1 - Math.pow(1 - t, 1.25);
+function desktopCurve(distanceInSteps: number, rate: number) {
+  return 1 - Math.exp(-Math.max(0, distanceInSteps) * rate);
 }
 
 function desktopTranslateZ(distanceInSteps: number) {
-  return focusAmount(distanceInSteps, false) * MAX_TRANSLATE_Z;
+  return desktopCurve(distanceInSteps, DESKTOP_DEPTH_RATE) * MAX_TRANSLATE_Z;
 }
 
 function desktopRotateYAbs(distanceInSteps: number) {
-  const amount = focusAmount(distanceInSteps, false);
-  return Math.min(DESKTOP_ROTATE_CAP, amount * MAX_ROTATE_Y * DESKTOP_ROTATE_MULT);
+  return desktopCurve(distanceInSteps, DESKTOP_TILT_RATE) * DESKTOP_ROTATE_CAP;
 }
 
 /**
@@ -148,9 +145,9 @@ export function computeCardFocus(
   const distance = step === 0 ? 0 : Math.abs(delta) / step;
   const sign = delta === 0 ? 0 : Math.sign(delta);
   const mobile = isMobileViewport();
-  const amount = focusAmount(distance, mobile);
 
   if (mobile) {
+    const amount = Math.min(1, distance);
     return {
       articleTranslateX: 0,
       articleTranslateY: amount * MAX_SHIFT_Y,
@@ -164,16 +161,18 @@ export function computeCardFocus(
 
   // Desktop: continuous curve — farther cards keep gaining depth / tilt / blur.
   // Horizontal compensation keeps visual gaps equal despite perspective shrink.
+  const depthAmount = desktopCurve(distance, DESKTOP_DEPTH_RATE);
+  const tiltAmount = desktopCurve(distance, DESKTOP_TILT_RATE);
   const translateZ = desktopTranslateZ(distance);
 
   return {
     articleTranslateX: desktopGapCompensationX(card.offsetWidth, distance, sign),
-    articleTranslateY: amount * MAX_SHIFT_Y * 1.15,
+    articleTranslateY: depthAmount * DESKTOP_SHIFT_Y_LIMIT,
     rotateY: clamp(sign * -desktopRotateYAbs(distance), -DESKTOP_ROTATE_CAP, DESKTOP_ROTATE_CAP),
     translateZ,
-    bodyOpacity: 1 - amount * 0.18,
-    blur: amount * MAX_BLUR * 1.15,
-    depth: amount,
+    bodyOpacity: 1 - tiltAmount * DESKTOP_OPACITY_REDUCTION,
+    blur: tiltAmount * DESKTOP_BLUR_LIMIT,
+    depth: depthAmount,
   };
 }
 
