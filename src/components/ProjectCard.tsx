@@ -1,11 +1,11 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
 import type { Project } from "@/lib/projects";
-import { projectThumbnailUrl } from "@/lib/projects";
+import { projectThumbnailUrl, projectVideoPosterUrl } from "@/lib/projects";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
@@ -26,14 +26,60 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const videoRef = useRef<HTMLVideoElement>(null);
   const visualRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const cardRef = useRef<HTMLElement | null>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [isNearViewport, setIsNearViewport] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
+  const videoPosterUrl = projectVideoPosterUrl(project);
   const videoIsHero = project.hasVideo && !!project.videoUrl && !thumbnailUrl;
+  const videoIsLive = videoIsHero && (isNearViewport || keepVideoAlive);
+
+  const setCardNode = useCallback(
+    (node: HTMLElement | null) => {
+      cardRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    },
+    [ref],
+  );
+
+  // The carousel repeats every project several times to loop seamlessly. Loading
+  // and playing every copy would split bandwidth across dozens of videos, so
+  // offscreen copies stay on their poster until they approach the viewport.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setIsNearViewport(entries.some((entry) => entry.isIntersecting));
+      },
+      { rootMargin: "150% 0px" },
+    );
+    observer.observe(card);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!videoIsHero || !videoRef.current) return;
-    videoRef.current.play().catch(() => {});
-  }, [videoIsHero]);
+    const video = videoRef.current;
+    if (!video || !videoIsHero) return;
+
+    if (videoIsLive) {
+      video.play().catch(() => {});
+      return;
+    }
+
+    video.pause();
+  }, [videoIsHero, videoIsLive]);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -109,7 +155,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   return (
     <article
-      ref={ref}
+      ref={setCardNode}
       data-project-id={project.id}
       data-work-instance={loopInstance}
       role="button"
@@ -137,7 +183,9 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                     isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
                   }`}
                 />
-              ) : !videoIsHero ? (
+              ) : !videoIsHero || !videoPosterUrl ? (
+                // Also sits under poster-less hero videos so the cover is never
+                // an empty hole while the video has no decoded frame.
                 <div
                   className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
                     isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
@@ -156,11 +204,12 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                 <video
                   ref={videoRef}
                   src={project.videoUrl}
-                  autoPlay={videoIsHero}
+                  poster={videoPosterUrl ?? undefined}
+                  autoPlay={videoIsLive}
                   muted
                   loop
                   playsInline
-                  preload={videoIsHero ? "auto" : "metadata"}
+                  preload={videoIsLive ? "auto" : "none"}
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
                     videoIsHero || isHovering ? "opacity-100" : "opacity-0"
                   }`}

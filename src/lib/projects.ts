@@ -30,6 +30,12 @@ export interface Project {
   thumbnail?: string;
   /** Optional local cover still/loop poster; falls back to `thumbnail` when absent. */
   cover?: string;
+  /**
+   * Still shown by the Work card video before it has a decoded frame. Cards
+   * whose cover *is* a video would otherwise render empty until enough bytes
+   * arrive, which offscreen carousel copies never do eagerly.
+   */
+  videoPoster?: string;
   tools: string[];
   links: {
     notion?: string;
@@ -77,6 +83,11 @@ export function projectCoverUrl(project: Project) {
   return projectFileUrl(project, project.cover ?? project.thumbnail);
 }
 
+/** Work card video poster; falls back to the card still when there is one. */
+export function projectVideoPosterUrl(project: Project) {
+  return projectFileUrl(project, project.videoPoster ?? project.thumbnail);
+}
+
 export const projects: Project[] = [
   {
     id: "01",
@@ -94,6 +105,7 @@ export const projects: Project[] = [
     // ?v=2 busts browser media caches (iOS keeps serving the old bytes for a
     // previously-fetched URL); bump it whenever this file is replaced.
     videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=2",
+    videoPoster: "poster-cover-ai-cgi-station-f.jpg",
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
     links: {
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
@@ -121,6 +133,7 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=2",
+    videoPoster: "poster-cover-big-flo-oli-colors-show.jpg",
     tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
     links: {
       instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
