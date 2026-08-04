@@ -627,7 +627,7 @@ export default function Projects() {
       <h2 className="sr-only">{t.projects}</h2>
 
       <div className="flex flex-col">
-        <div className="order-2 mt-4 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
+        <div className="order-2 mt-4 flex items-center justify-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:justify-start md:px-10">
           <WorkCarouselNav
             onPrev={() => scrollCarouselBy("prev")}
             onNext={() => scrollCarouselBy("next")}
