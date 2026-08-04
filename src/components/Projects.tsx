@@ -59,8 +59,9 @@ function WorkCarouselNav({
   nextLabel: string;
   disabled?: boolean;
 }) {
+  // Touch has no hover, so the buttons carry a resting surface on mobile.
   const buttonClass =
-    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35";
+    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-border bg-bg-secondary/70 text-text-primary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35 md:border-transparent md:bg-transparent md:text-text-secondary";
 
   return (
     <div className="flex items-center gap-2" aria-label="Carousel navigation">
@@ -559,7 +560,7 @@ export default function Projects() {
       <h2 className="sr-only">{t.projects}</h2>
 
       <div className="flex flex-col">
-        <div className="order-2 mt-2 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
+        <div className="order-2 mt-4 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
           <span className="text-xs tracking-widest text-text-secondary uppercase tabular-nums">
             {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
             {String(projects.length).padStart(2, "0")}
