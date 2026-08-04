@@ -167,7 +167,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
           </div>
         </div>
 
-        <div className="work-card-meta relative mt-5 space-y-2">
+        <div className="work-card-meta relative mt-2.5 space-y-1 md:mt-5 md:space-y-2">
           <h3
             ref={titleRef}
             className={`work-card-title text-lg font-medium tracking-tight text-text-primary md:text-xl ${hiddenClass}`}
