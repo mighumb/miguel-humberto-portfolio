@@ -57,13 +57,22 @@ function blurFilter(blurPx: number) {
 }
 
 /**
- * Approximate projected scale for a translateZ under our perspective.
- * Used to compensate horizontal drift so visual gaps stay equal.
+ * Screen offset of a card edge under `perspective(P) translateZ(z) rotateY(a)`.
+ * `localX` is measured from the card centre, which is also the projection centre
+ * (transform-origin is `center bottom`).
+ *
+ * Per the CSS transform matrix, a positive rotateY sends +x away from the
+ * viewer, so the near edge stays close to its unrotated position while the far
+ * edge shrinks hard. Modelling both edges separately is what keeps the
+ * compensation honest.
  */
-function projectedScale(translateZ: number) {
-  const depth = CARD_PERSPECTIVE - translateZ;
-  if (depth <= 1) return 1;
-  return CARD_PERSPECTIVE / depth;
+function projectedEdgeX(localX: number, translateZ: number, rotateYDeg: number) {
+  const angle = (rotateYDeg * Math.PI) / 180;
+  const rotatedX = localX * Math.cos(angle);
+  const rotatedZ = translateZ - localX * Math.sin(angle);
+  const depth = CARD_PERSPECTIVE - rotatedZ;
+  if (depth <= 1) return localX;
+  return (rotatedX * CARD_PERSPECTIVE) / depth;
 }
 
 /**
@@ -86,30 +95,39 @@ function desktopRotateYAbs(distanceInSteps: number) {
   return Math.min(DESKTOP_ROTATE_CAP, amount * MAX_ROTATE_Y * DESKTOP_ROTATE_MULT);
 }
 
-/** Horizontal silhouette scale: perspective shrink × yaw foreshortening. */
-function desktopEffScale(distanceInSteps: number) {
-  const zScale = projectedScale(desktopTranslateZ(distanceInSteps));
-  const yaw = (desktopRotateYAbs(distanceInSteps) * Math.PI) / 180;
-  return zScale * Math.max(0.5, Math.cos(yaw));
+/**
+ * How far each edge of an off-axis card drifts inward, in px.
+ * `toward` is the edge facing the focused card, `away` the outer one.
+ */
+function desktopEdgeDrift(width: number, distanceInSteps: number) {
+  const half = width / 2;
+  const translateZ = desktopTranslateZ(distanceInSteps);
+  const rotateY = desktopRotateYAbs(distanceInSteps);
+
+  return {
+    toward: half - Math.abs(projectedEdgeX(-half, translateZ, rotateY)),
+    away: half - Math.abs(projectedEdgeX(half, translateZ, rotateY)),
+  };
 }
 
 /**
  * Pull cards toward the focused one just enough that projected edge-to-edge
  * gaps stay equal to the flex gap, while depth / tilt keep increasing.
  *
- * Magnitude expands to near-edge half-shrink + full shrink of each nearer card.
+ * Each gap widens by the outer drift of the nearer card plus the inner drift of
+ * the farther one, so pulls accumulate along the fan:
+ *   T(n) = T(n-1) + away(n-1) + toward(n)
  */
 function desktopGapCompensationX(width: number, distance: number, sign: number) {
   if (distance < 0.001 || sign === 0 || width <= 0) return 0;
 
-  const scale = desktopEffScale(distance);
-  // Keep this card's near edge from drifting outward as it shrinks.
-  let pull = width * (1 - scale) * 0.5;
+  let pull = desktopEdgeDrift(width, distance).toward;
 
-  // Close the gap opened by each nearer card's far-edge shrink.
-  const lastPrev = Math.max(0, Math.ceil(distance) - 1);
-  for (let i = 1; i <= lastPrev; i++) {
-    pull += width * (1 - desktopEffScale(i));
+  // Nearer cards sit exactly one step apart in distance, so walking back by
+  // whole steps from `distance` keeps the pull continuous while scrolling.
+  for (let prev = distance - 1; prev > 0.001; prev -= 1) {
+    const drift = desktopEdgeDrift(width, prev);
+    pull += drift.away + drift.toward;
   }
 
   return sign * pull;
