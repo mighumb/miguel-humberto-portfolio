@@ -63,11 +63,12 @@ export function normalizeWorkLoopScroll(
 }
 
 /**
- * Silently re-centres into the middle cycle. Call this only when the carousel
- * is idle: writing scrollLeft during a native inertial fling (touch, wheel,
- * trackpad) cancels the fling, which reads as the scroll snapping to a stop.
- * The extra cycles on each side give a single gesture enough runway to never
- * reach a real DOM edge before it settles.
+ * Silently re-centres into the middle cycle. Only safe when no native inertial
+ * fling is running: writing scrollLeft mid-fling (touch, wheel, trackpad)
+ * cancels it, which reads as the scroll snapping to a stop. The two safe moments
+ * are when the carousel is idle and the instant a finger lands, since the touch
+ * itself has already killed the momentum. Re-centring at both means every
+ * gesture starts with the full runway of extra cycles on each side.
  */
 export function recenterWorkLoopScroll(container: HTMLElement) {
   const normalized = normalizeWorkLoopScroll(container);
@@ -84,11 +85,10 @@ export function getWorkLoopStart(container: HTMLElement) {
 /**
  * Last-resort wrap while the carousel is still moving.
  *
- * Chained fast swipes never leave an idle gap, so the position can keep
- * travelling until it runs off the rendered strip and leaves empty space where
- * cards should be. Wrapping this close to the edge costs at most a hitch in the
- * current scroll animation, and only after many cycles without a pause, whereas
- * wrapping at every cycle boundary would fight inertia constantly.
+ * Re-centring on idle and on touch-down normally keeps every gesture well
+ * inside the strip. This is the backstop for anything that still travels
+ * further: running out of cards and showing empty space is worse than the hitch
+ * a mid-fling wrap costs.
  *
  * The margin is measured from the real DOM edges of the strip. Using
  * `2 × cycleWidth` previously overlapped the middle-cycle resting position

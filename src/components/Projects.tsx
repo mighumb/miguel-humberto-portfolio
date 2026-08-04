@@ -41,9 +41,10 @@ import ProjectSharedFlight from "./ProjectSharedFlight";
 
 /**
  * Odd number of copies so the viewport rests in the exact middle cycle. Two
- * cycles of slack on each side is all the loop needs: `enforceWorkLoopBounds`
- * wraps before the strip can run out, whatever the scroll speed. Keeping the
- * count low matters because opening a card snapshots every copy.
+ * cycles of slack on each side is all the loop needs: the scroll re-centres on
+ * touch-down and on idle, so no single gesture can travel far enough to run the
+ * strip out, whatever the fling speed. Keeping the count low matters because
+ * opening a card snapshots every copy.
  */
 const WORK_LOOP_COPIES = 5;
 
