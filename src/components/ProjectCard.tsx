@@ -1,23 +1,24 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
 import type { Project } from "@/lib/projects";
-import { projectThumbnailUrl } from "@/lib/projects";
+import { projectThumbnailUrl, projectVideoPosterUrl } from "@/lib/projects";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
 interface ProjectCardProps {
   project: Project;
+  loopInstance?: string;
   onOpen: (project: Project, origin: CardOrigin | null) => void;
   isSharedHidden?: boolean;
   keepVideoAlive?: boolean;
 }
 
 const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
-  { project, onOpen, isSharedHidden = false, keepVideoAlive = false },
+  { project, loopInstance, onOpen, isSharedHidden = false, keepVideoAlive = false },
   ref,
 ) {
   const { locale } = useLocale();
@@ -25,14 +26,55 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const videoRef = useRef<HTMLVideoElement>(null);
   const visualRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const cardRef = useRef<HTMLElement | null>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [isNearViewport, setIsNearViewport] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
+  const videoPosterUrl = projectVideoPosterUrl(project);
   const videoIsHero = project.hasVideo && !!project.videoUrl && !thumbnailUrl;
+  const coverStillUrl = thumbnailUrl ?? videoPosterUrl;
+  const isVideoMounted = isNearViewport || keepVideoAlive;
+
+  const setCardNode = useCallback(
+    (node: HTMLElement | null) => {
+      cardRef.current = node;
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        ref.current = node;
+      }
+    },
+    [ref],
+  );
+
+  // The carousel repeats every project many times to loop seamlessly, so only
+  // copies approaching the viewport get a video element at all.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    if (typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        setIsNearViewport(entries.some((entry) => entry.isIntersecting));
+      },
+      { rootMargin: "150% 0px" },
+    );
+    observer.observe(card);
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!videoIsHero || !videoRef.current) return;
-    videoRef.current.play().catch(() => {});
-  }, [videoIsHero]);
+    const video = videoRef.current;
+    if (!video || !videoIsHero || !isVideoMounted) return;
+
+    video.play().catch(() => {});
+  }, [videoIsHero, isVideoMounted]);
 
   const handleMouseEnter = () => {
     setIsHovering(true);
@@ -67,6 +109,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     }
 
     onOpen(project, {
+      carouselInstanceId: loopInstance,
       thumbnail: toRect(visual.getBoundingClientRect()),
       title: toRect(title.getBoundingClientRect()),
       titleFontSize: getComputedStyle(title).fontSize,
@@ -107,15 +150,16 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   return (
     <article
-      ref={ref}
+      ref={setCardNode}
       data-project-id={project.id}
+      data-work-instance={loopInstance}
       role="button"
       tabIndex={0}
       onClick={handleOpen}
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[88vw] max-w-[68rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[85vw] lg:w-[82vw]"
+      className="work-card-focus group w-[62vw] max-w-[44rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[56vw] lg:w-[50vw]"
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">
@@ -125,16 +169,21 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
         >
           <div className="work-card-media relative h-full w-full">
             <div className="absolute inset-0">
-              {thumbnailUrl ? (
+              {/* A still always sits under the video: the cover then shows the
+                  instant a card scrolls into view, with no video bytes needed.
+                  Hero covers hide it only once the video is actually playing. */}
+              {coverStillUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={thumbnailUrl}
+                  src={coverStillUrl}
                   alt=""
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
-                    isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
+                    isHovering && project.hasVideo && thumbnailUrl
+                      ? "opacity-0"
+                      : "opacity-100"
                   }`}
                 />
-              ) : !videoIsHero ? (
+              ) : (
                 <div
                   className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
                     isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
@@ -147,17 +196,21 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                     </span>
                   </div>
                 </div>
-              ) : null}
+              )}
 
-              {project.hasVideo && project.videoUrl && (
+              {/* Mounted near the viewport only: the loop repeats every project
+                  many times, and dozens of video elements would compete for
+                  bandwidth and decoders. */}
+              {project.hasVideo && project.videoUrl && isVideoMounted && (
                 <video
                   ref={videoRef}
                   src={project.videoUrl}
+                  poster={videoPosterUrl ?? undefined}
                   autoPlay={videoIsHero}
                   muted
                   loop
                   playsInline
-                  preload={videoIsHero ? "auto" : "metadata"}
+                  preload="auto"
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
                     videoIsHero || isHovering ? "opacity-100" : "opacity-0"
                   }`}
@@ -167,20 +220,27 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
           </div>
         </div>
 
-        <div className="work-card-meta mt-5 space-y-2">
-          <div className="flex items-baseline justify-between gap-4">
-            <h3
-              ref={titleRef}
-              className={`work-card-title text-lg font-medium tracking-tight text-text-primary md:text-xl ${hiddenClass}`}
-            >
-              {project.title[locale]}
-            </h3>
-            <span className={`work-card-year shrink-0 text-xs text-text-secondary ${hiddenClass}`}>
-              {project.year}
-            </span>
-          </div>
+        <div className="work-card-meta relative mt-2.5 space-y-1 md:mt-5 md:space-y-2">
+          <h3
+            ref={titleRef}
+            className={`work-card-title text-lg font-medium tracking-tight text-text-primary md:text-xl ${hiddenClass}`}
+          >
+            {project.title[locale]}
+          </h3>
 
-          <div className={`work-card-tags flex flex-wrap gap-1.5 ${hiddenClass}`}>
+          {/* Year and tags are hidden on the home carousel but stay mounted:
+              the shared-element flight measures them to fly into the modal. */}
+          <span
+            className={`work-card-year pointer-events-none absolute right-0 top-0 shrink-0 text-xs text-text-secondary opacity-0 ${hiddenClass}`}
+            aria-hidden
+          >
+            {project.year}
+          </span>
+
+          <div
+            className={`work-card-tags pointer-events-none absolute inset-x-0 top-7 flex flex-wrap gap-1.5 opacity-0 ${hiddenClass}`}
+            aria-hidden
+          >
             {project.tags.map((tag) => (
               <span
                 key={tag}

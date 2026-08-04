@@ -13,9 +13,12 @@ import {
   whenWorkCarouselScrollSettles,
 } from "@/lib/workCarouselNav";
 import { stopWorkCarouselMotion } from "@/lib/workDragScroll";
+import { getWorkLoopStart } from "@/lib/workCarouselLoop";
 import {
   prefersReducedMotion,
   measureCardOrigin,
+  buildCloseFlight,
+  findVisibleProjectCard,
   type CardOrigin,
   type CardPerspective,
   type FlightPair,
@@ -26,10 +29,18 @@ import {
   captureCardPerspectives,
   restoreCardPerspectives,
 } from "@/lib/workCardFocus";
-import { runFlipClose } from "@/lib/flipClose";
+import { alignCardIntoView } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
+
+/**
+ * Odd number of copies so the viewport rests in the exact middle cycle. Two
+ * cycles of slack on each side is all the loop needs: `enforceWorkLoopBounds`
+ * wraps before the strip can run out, whatever the scroll speed. Keeping the
+ * count low matters because opening a card snapshots every copy.
+ */
+const WORK_LOOP_COPIES = 5;
 
 function EndScrollGutter({ width }: { width: number }) {
   return (
@@ -60,7 +71,7 @@ function WorkCarouselNav({
   disabled?: boolean;
 }) {
   const buttonClass =
-    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35";
+    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-primary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35 md:text-text-secondary md:hover:text-text-primary";
 
   return (
     <div className="flex items-center gap-2" aria-label="Carousel navigation">
@@ -135,12 +146,23 @@ export default function Projects() {
   const { mode } = useTheme();
   const t = translations[locale];
   const projects = useMemo(() => projectsForTrack(mode), [mode]);
+  const loopedProjects = useMemo(
+    () =>
+      Array.from({ length: WORK_LOOP_COPIES }, (_, copyIndex) =>
+        projects.map((project) => ({
+          project,
+          copyIndex,
+        })),
+      ).flat(),
+    [projects],
+  );
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [phase, setPhase] = useState<TransitionPhase>("idle");
   const [cardOrigin, setCardOrigin] = useState<CardOrigin | null>(null);
   const [flight, setFlight] = useState<FlightPair | null>(null);
-  const [sharedHiddenId, setSharedHiddenId] = useState<string | null>(null);
+  const [sharedHiddenInstance, setSharedHiddenInstance] = useState<string | null>(null);
+  const [activeInstanceId, setActiveInstanceId] = useState<string | null>(null);
   const [sharedContentVisible, setSharedContentVisible] = useState(false);
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const [flightVideoTime, setFlightVideoTime] = useState(0);
@@ -156,11 +178,10 @@ export default function Projects() {
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
+  const activeInstanceRef = useRef<string | null>(null);
   const closedViaTransitionRef = useRef(false);
-  const [focusedCardIndex, setFocusedCardIndex] = useState(0);
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
-  const scrollSettleTimerRef = useRef(0);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -170,7 +191,7 @@ export default function Projects() {
         : false;
 
   const { scrollRef, setCardRef } = useWorkScrollFocus(
-    projects.length,
+    loopedProjects.length,
     pauseCarousel,
     carouselSnapshotRef,
   );
@@ -188,8 +209,7 @@ export default function Projects() {
       // Keep the first card flush left after layout/gutter measurement settles.
       if (shouldAnchorStartRef.current && pinnedCardIndexRef.current === null) {
         stopWorkCarouselMotion(container);
-        container.scrollTo({ left: 0, behavior: "auto" });
-        setFocusedCardIndex(0);
+        container.scrollTo({ left: getWorkLoopStart(container), behavior: "auto" });
       }
     };
 
@@ -206,13 +226,12 @@ export default function Projects() {
       observer.disconnect();
       window.removeEventListener("resize", updateEndGutter);
     };
-  }, [scrollRef, projects.length, mode]);
+  }, [scrollRef, loopedProjects.length, mode]);
 
   useEffect(() => {
     shouldAnchorStartRef.current = true;
     setActiveProject(null);
     setActiveIndex(0);
-    setFocusedCardIndex(0);
     pinnedCardIndexRef.current = null;
     scrollSettleCleanupRef.current?.();
     scrollSettleCleanupRef.current = null;
@@ -222,7 +241,8 @@ export default function Projects() {
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
+    setActiveInstanceId(null);
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
@@ -231,7 +251,7 @@ export default function Projects() {
     const container = scrollRef.current;
     if (container) {
       stopWorkCarouselMotion(container);
-      container.scrollLeft = 0;
+      container.scrollLeft = getWorkLoopStart(container);
     }
   }, [mode, scrollRef]);
 
@@ -250,7 +270,7 @@ export default function Projects() {
     const anchorStart = () => {
       if (!shouldAnchorStartRef.current) return;
       stopWorkCarouselMotion(container);
-      container.scrollTo({ left: 0, behavior: "auto" });
+      container.scrollTo({ left: getWorkLoopStart(container), behavior: "auto" });
     };
     const raf1 = window.requestAnimationFrame(() => {
       anchorStart();
@@ -266,33 +286,9 @@ export default function Projects() {
       window.cancelAnimationFrame(raf1);
       window.clearTimeout(timer);
     };
-  }, [scrollRef, mode, projects.length]);
+  }, [scrollRef, mode, loopedProjects.length]);
 
   const carouselNavDisabled = activeProject !== null;
-
-  useLayoutEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const updateFocusedIndex = () => {
-      if (pinnedCardIndexRef.current !== null) return;
-
-      window.clearTimeout(scrollSettleTimerRef.current);
-      scrollSettleTimerRef.current = window.setTimeout(() => {
-        setFocusedCardIndex(getFocusedWorkCardIndex(container));
-      }, 120);
-    };
-
-    updateFocusedIndex();
-    container.addEventListener("scroll", updateFocusedIndex, { passive: true });
-    window.addEventListener("resize", updateFocusedIndex);
-
-    return () => {
-      window.clearTimeout(scrollSettleTimerRef.current);
-      container.removeEventListener("scroll", updateFocusedIndex);
-      window.removeEventListener("resize", updateFocusedIndex);
-    };
-  }, [scrollRef, projects.length, pauseCarousel]);
 
   const scrollCarouselBy = useCallback(
     (direction: "prev" | "next") => {
@@ -306,19 +302,17 @@ export default function Projects() {
       const currentIndex =
         pinnedCardIndexRef.current ?? getFocusedWorkCardIndex(container);
       const nextIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
-      if (nextIndex < 0 || nextIndex >= projects.length) return;
+      if (nextIndex < 0 || nextIndex >= loopedProjects.length) return;
 
       pinnedCardIndexRef.current = nextIndex;
-      setFocusedCardIndex(nextIndex);
       scrollWorkCarouselToIndex(container, nextIndex);
 
       scrollSettleCleanupRef.current = whenWorkCarouselScrollSettles(container, () => {
         pinnedCardIndexRef.current = null;
         scrollSettleCleanupRef.current = null;
-        setFocusedCardIndex(getFocusedWorkCardIndex(container));
       });
     },
-    [scrollRef, carouselNavDisabled],
+    [scrollRef, carouselNavDisabled, loopedProjects.length],
   );
 
   useLayoutEffect(
@@ -333,6 +327,7 @@ export default function Projects() {
   phaseRef.current = phase;
   cardOriginRef.current = cardOrigin;
   activeProjectRef.current = activeProject;
+  activeInstanceRef.current = activeInstanceId;
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -341,19 +336,19 @@ export default function Projects() {
     } else {
       root.classList.remove("modal-main-hidden");
     }
-    // Remove is-closing-flip when reaching idle so it's cleared even if we
-    // skipped the "closing" phase (e.g. measureRef returned null).
+    // Clear close-transition classes when reaching idle so they're gone even
+    // if we skipped the "closing" phase (e.g. measureRef returned null).
     if (phase === "idle") {
-      root.classList.remove("is-closing-flip");
+      root.classList.remove("is-closing-flip", "is-closing-prepare");
     }
 
     return () => {
       root.classList.remove("modal-main-hidden");
-      // Remove is-closing-flip when leaving "closing". This cleanup runs
-      // after React's DOM mutations (modal already unmounted) but before
-      // paint — guaranteeing the class is gone before the next frame.
+      // Remove close-transition classes when leaving "closing". This cleanup
+      // runs after React's DOM mutations (modal already unmounted) but before
+      // paint — guaranteeing the classes are gone before the next frame.
       if (phase === "closing") {
-        root.classList.remove("is-closing-flip");
+        root.classList.remove("is-closing-flip", "is-closing-prepare");
       }
     };
   }, [phase]);
@@ -388,7 +383,8 @@ export default function Projects() {
     setPhase("idle");
     setCardOrigin(null);
     setFlight(null);
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
+    setActiveInstanceId(null);
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
@@ -417,29 +413,31 @@ export default function Projects() {
       return;
     }
 
+    // Restore home + carousel under the opaque backdrop, then measure the live
+    // card rects and hand the close to the portal flight (same path as open).
+    // In-DOM FLIP had to force overflow:visible on .work-scroll, which resets
+    // scrollLeft to 0 in Chromium and caused the reposition jump.
     restoreFrozenCarousel(scrollRef, savedWorkScrollLeftRef.current, snapshot);
 
-    flipCleanupRef.current?.();
-    flipCleanupRef.current = runFlipClose({
-      projectId: project.id,
-      modalTargets,
-      onComplete: () => {
-        restoreFrozenCarousel(
-          scrollRef,
-          savedWorkScrollLeftRef.current,
-          carouselSnapshotRef.current,
-        );
+    const instanceId = activeInstanceRef.current ?? undefined;
+    const card = findVisibleProjectCard(project.id, instanceId);
+    if (card) alignCardIntoView(card);
 
-        closedViaTransitionRef.current = true;
-        flipCleanupRef.current = null;
-        closeModal();
-      },
-    });
+    const origin = measureCardOrigin(
+      project.id,
+      Boolean(project.hasVideo),
+      instanceId,
+    );
+    if (!origin) {
+      closeModal();
+      return;
+    }
 
-    return () => {
-      flipCleanupRef.current?.();
-      flipCleanupRef.current = null;
-    };
+    setSharedHiddenInstance(origin.carouselInstanceId ?? instanceId ?? null);
+    setFlightShowVideo(origin.showVideo);
+    setFlightVideoTime(origin.videoTime);
+    setFlightVideoPoster(origin.videoPoster);
+    setFlight(buildCloseFlight(modalTargets, origin));
   }, [phase, closeModal, scrollRef]);
 
   const openProject = useCallback((project: Project, origin: CardOrigin | null) => {
@@ -452,6 +450,7 @@ export default function Projects() {
 
     setActiveIndex(index);
     setActiveProject(project);
+    setActiveInstanceId(origin?.carouselInstanceId ?? null);
 
     if (!origin || prefersReducedMotion()) {
       setSharedContentVisible(true);
@@ -459,13 +458,19 @@ export default function Projects() {
       return;
     }
 
-    const freshOrigin = measureCardOrigin(project.id, origin.showVideo) ?? origin;
+    const freshOrigin =
+      measureCardOrigin(
+        project.id,
+        origin.showVideo,
+        origin.carouselInstanceId,
+      ) ?? origin;
 
     setCardOrigin(freshOrigin);
     setFlightShowVideo(freshOrigin.showVideo);
     setFlightVideoTime(freshOrigin.videoTime);
     setFlightVideoPoster(freshOrigin.videoPoster);
-    setSharedHiddenId(project.id);
+    setActiveInstanceId(freshOrigin.carouselInstanceId ?? null);
+    setSharedHiddenInstance(freshOrigin.carouselInstanceId ?? null);
     setSharedContentVisible(false);
     setPhase("opening");
   }, [scrollRef, projects]);
@@ -500,6 +505,17 @@ export default function Projects() {
   }, []);
 
   const handleFlightLanding = useCallback((handoffVideoTime?: number) => {
+    if (phaseRef.current === "closing") {
+      restoreFrozenCarousel(
+        scrollRef,
+        savedWorkScrollLeftRef.current,
+        carouselSnapshotRef.current,
+      );
+      closedViaTransitionRef.current = true;
+      closeModal();
+      return;
+    }
+
     if (phaseRef.current !== "opening") return;
 
     if (handoffVideoTime !== undefined) {
@@ -507,9 +523,9 @@ export default function Projects() {
     }
     setSharedContentVisible(true);
     setPhase("open");
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
     setFlight(null);
-  }, []);
+  }, [closeModal, scrollRef]);
 
   const requestClose = useCallback(() => {
     if (!activeProject || prefersReducedMotion()) {
@@ -517,21 +533,25 @@ export default function Projects() {
       return;
     }
 
-    // Hide the modal before measuring so neither the modal-header background
-    // nor a scroll-to-top flash is ever painted. getBoundingClientRect still
-    // returns correct layout positions with visibility:hidden.
-    document.documentElement.classList.remove("modal-main-hidden");
-    document.documentElement.classList.add("is-closing-flip");
+    // Keep the opaque backdrop over the home page while we (1) hide modal
+    // content, (2) snap the modal scroll to top for measurement, and (3) restore
+    // the home/carousel scroll. is-closing-flip is applied only once the FLIP
+    // is primed, so the first revealed home frame already has the flying
+    // elements parked at the modal rects — no scroll-mismatch jump.
+    const root = document.documentElement;
+    root.classList.remove("modal-main-hidden");
+    root.classList.add("is-closing-prepare");
 
     const modalTargets = measureRef.current?.();
     if (!modalTargets) {
+      root.classList.remove("is-closing-prepare");
       closeModal();
       return;
     }
 
     closeTargetsRef.current = modalTargets;
     setSharedContentVisible(false);
-    setSharedHiddenId(null);
+    setSharedHiddenInstance(null);
     setPhase("closing");
   }, [activeProject, closeModal]);
 
@@ -544,6 +564,9 @@ export default function Projects() {
     setFlightVideoTime(0);
     setActiveIndex(newIndex);
     setActiveProject(projects[newIndex]);
+    // Different project than the card we came from: let the close flight pick
+    // the copy nearest the carousel instead of the stale one.
+    setActiveInstanceId(null);
   };
 
   const registerMeasure = useCallback((fn: (() => ModalTargets | null) | null) => {
@@ -553,58 +576,63 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="relative z-10 -mt-10 pb-8 md:-mt-12 md:pb-10"
+      className="relative z-10"
       aria-label={t.projects}
     >
       <h2 className="sr-only">{t.projects}</h2>
 
-      <div className="mb-2 flex items-center gap-4 px-6 md:mb-3 md:px-10">
-        <span className="text-xs tracking-widest text-text-secondary uppercase tabular-nums">
-          {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
-          {String(projects.length).padStart(2, "0")}
-        </span>
-        <WorkCarouselNav
-          onPrev={() => scrollCarouselBy("prev")}
-          onNext={() => scrollCarouselBy("next")}
-          canGoPrev={focusedCardIndex > 0}
-          canGoNext={focusedCardIndex < projects.length - 1}
-          prevLabel={t.prevProject}
-          nextLabel={t.nextProject}
-          disabled={carouselNavDisabled}
-        />
-      </div>
+      <div className="flex flex-col">
+        <div className="order-2 mt-4 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
+          <WorkCarouselNav
+            onPrev={() => scrollCarouselBy("prev")}
+            onNext={() => scrollCarouselBy("next")}
+            canGoPrev
+            canGoNext
+            prevLabel={t.prevProject}
+            nextLabel={t.nextProject}
+            disabled={carouselNavDisabled}
+          />
+        </div>
 
-      <div className="relative">
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-bg-primary to-transparent md:w-12"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
-          aria-hidden
-        />
-
-        <div className="work-scroll-stage relative">
+        <div className="relative order-1 md:order-2">
           <div
-            ref={scrollRef}
-            dir="ltr"
-            className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-10 md:scroll-pl-10 md:pb-14 md:pl-10"
-          >
-            {projects.map((project, index) => (
-              <ProjectCard
-                key={project.id}
-                ref={setCardRef(index)}
-                project={project}
-                onOpen={openProject}
-                isSharedHidden={sharedHiddenId === project.id}
-                keepVideoAlive={
-                  sharedHiddenId === project.id ||
-                  (activeProject?.id === project.id &&
-                    (phase === "opening" || phase === "closing"))
-                }
-              />
-            ))}
-            <EndScrollGutter width={endGutterWidth} />
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-bg-primary to-transparent md:w-12"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
+            aria-hidden
+          />
+
+          <div className="work-scroll-stage relative">
+            <div
+              ref={scrollRef}
+              dir="ltr"
+              data-work-loop-size={projects.length}
+              data-work-loop-copies={WORK_LOOP_COPIES}
+              className="work-scroll flex items-end gap-4 overflow-x-auto overflow-y-clip overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-8 md:scroll-pl-10 md:pb-32 md:pl-10"
+            >
+              {loopedProjects.map(({ project, copyIndex }, index) => (
+                <ProjectCard
+                  key={`${copyIndex}-${project.id}`}
+                  ref={setCardRef(index)}
+                  project={project}
+                  loopInstance={`${copyIndex}-${project.id}`}
+                  onOpen={openProject}
+                  // Scoped to the exact copy that was opened: matching on the
+                  // project id alone would hide every copy of it and keep them
+                  // all decoding video during the flight.
+                  isSharedHidden={sharedHiddenInstance === `${copyIndex}-${project.id}`}
+                  keepVideoAlive={
+                    activeInstanceId === `${copyIndex}-${project.id}` &&
+                    (sharedHiddenInstance !== null ||
+                      phase === "opening" ||
+                      phase === "closing")
+                  }
+                />
+              ))}
+              <EndScrollGutter width={endGutterWidth} />
+            </div>
           </div>
         </div>
       </div>
@@ -619,7 +647,9 @@ export default function Projects() {
           total={projects.length}
           sharedContentVisible={sharedContentVisible}
           awaitingFlightTargets={phase === "opening"}
-          backdropVisible={phase === "opening" || phase === "open"}
+          backdropVisible={
+            phase === "opening" || phase === "open" || phase === "closing"
+          }
           videoPlaying={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}
@@ -628,7 +658,7 @@ export default function Projects() {
         />
       )}
 
-      {activeProject && flight?.direction === "open" && (
+      {activeProject && flight && (
         <ProjectSharedFlight
           project={activeProject}
           locale={locale}

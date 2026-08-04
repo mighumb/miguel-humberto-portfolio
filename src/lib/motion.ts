@@ -2,6 +2,7 @@ import {
   type CardPerspective,
   computeCardFocus,
 } from "@/lib/workCardFocus";
+import { getCardIdealScroll } from "@/lib/workCarouselNav";
 
 export type { CardPerspective };
 
@@ -13,6 +14,7 @@ export interface ElementRect {
 }
 
 export interface CardOrigin {
+  carouselInstanceId?: string;
   thumbnail: ElementRect;
   title: ElementRect;
   titleFontSize: string;
@@ -68,8 +70,44 @@ export function toRect(domRect: DOMRect): ElementRect {
   };
 }
 
-export function measureCardOrigin(projectId: string, showVideo = false): CardOrigin | null {
-  const card = document.querySelector<HTMLElement>(`[data-project-id="${projectId}"]`);
+export function findVisibleProjectCard(
+  projectId: string,
+  carouselInstanceId?: string,
+) {
+  if (carouselInstanceId) {
+    const exact = document.querySelector<HTMLElement>(
+      `[data-work-instance="${carouselInstanceId}"]`,
+    );
+    if (exact) return exact;
+  }
+
+  const cards = Array.from(
+    document.querySelectorAll<HTMLElement>(`[data-project-id="${projectId}"]`),
+  );
+  return cards.reduce<HTMLElement | null>((best, candidate) => {
+    const container = candidate.closest<HTMLElement>(".work-scroll");
+    if (!container) return best;
+    if (!best) return candidate;
+
+    const bestContainer = best.closest<HTMLElement>(".work-scroll");
+    const candidateDistance = Math.abs(
+      container.scrollLeft - getCardIdealScroll(container, candidate),
+    );
+    const bestDistance = bestContainer
+      ? Math.abs(
+          bestContainer.scrollLeft - getCardIdealScroll(bestContainer, best),
+        )
+      : Infinity;
+    return candidateDistance < bestDistance ? candidate : best;
+  }, null);
+}
+
+export function measureCardOrigin(
+  projectId: string,
+  showVideo = false,
+  carouselInstanceId?: string,
+): CardOrigin | null {
+  const card = findVisibleProjectCard(projectId, carouselInstanceId);
   const visual = card?.querySelector<HTMLElement>(".work-card-visual");
   const title = card?.querySelector<HTMLElement>(".work-card-title");
   const year = card?.querySelector<HTMLElement>(".work-card-year");
@@ -112,6 +150,7 @@ export function measureCardOrigin(projectId: string, showVideo = false): CardOri
   }
 
   return {
+    carouselInstanceId: card.dataset.workInstance,
     thumbnail: toRect(visual.getBoundingClientRect()),
     title: toRect(title.getBoundingClientRect()),
     titleFontSize: getComputedStyle(title).fontSize,

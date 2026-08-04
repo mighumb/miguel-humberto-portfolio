@@ -1,7 +1,25 @@
-import { SHARED_TRANSITION_MS, toRect, type ElementRect, type ModalTargets } from "@/lib/motion";
+import {
+  SHARED_TRANSITION_MS,
+  findVisibleProjectCard,
+  toRect,
+  type ElementRect,
+  type ModalTargets,
+} from "@/lib/motion";
+import { nudgeScrollWhileLocked } from "@/lib/scrollLock";
 
 export const FLIP_CLOSE_MS = SHARED_TRANSITION_MS;
 export const FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+/** Scroll the page so the destination card sits fully in view (under the modal cover). */
+export function alignCardIntoView(card: HTMLElement, edge = 24) {
+  const rect = card.getBoundingClientRect();
+  let dy = 0;
+  if (rect.top < edge) dy = rect.top - edge;
+  else if (rect.bottom > window.innerHeight - edge) {
+    dy = rect.bottom - (window.innerHeight - edge);
+  }
+  nudgeScrollWhileLocked(0, dy);
+}
 
 export interface SharedElementFlip {
   el: HTMLElement;
@@ -44,8 +62,8 @@ export function cleanupFlip(el: HTMLElement) {
   el.style.fontSize = "";
 }
 
-export function getCardSharedElements(projectId: string) {
-  const card = document.querySelector<HTMLElement>(`[data-project-id="${projectId}"]`);
+export function getCardSharedElements(projectId: string, instanceId?: string) {
+  const card = findVisibleProjectCard(projectId, instanceId);
   if (!card) return null;
 
   const visual = card.querySelector<HTMLElement>(".work-card-visual");
@@ -58,7 +76,10 @@ export function getCardSharedElements(projectId: string) {
   return { card, visual, title, year, tags };
 }
 
-function buildFlips(modalTargets: ModalTargets, shared: NonNullable<ReturnType<typeof getCardSharedElements>>) {
+function buildFlips(
+  modalTargets: ModalTargets,
+  shared: NonNullable<ReturnType<typeof getCardSharedElements>>,
+) {
   const { visual, title, year, tags } = shared;
 
   return [
@@ -89,20 +110,25 @@ function buildFlips(modalTargets: ModalTargets, shared: NonNullable<ReturnType<t
   ] satisfies SharedElementFlip[];
 }
 
+/** In-DOM FLIP fallback — prefer portal ProjectSharedFlight close. */
 export function runFlipClose({
   projectId,
+  instanceId,
   modalTargets,
   onComplete,
 }: {
   projectId: string;
+  instanceId?: string;
   modalTargets: ModalTargets;
   onComplete: () => void;
 }) {
-  const shared = getCardSharedElements(projectId);
+  const shared = getCardSharedElements(projectId, instanceId);
   if (!shared) {
     onComplete();
     return () => {};
   }
+
+  alignCardIntoView(shared.card);
 
   const flips = buildFlips(modalTargets, shared);
   const root = document.documentElement;
@@ -117,10 +143,6 @@ export function runFlipClose({
     shared.card.style.minHeight = "";
     shared.visual.removeEventListener("transitionend", onTransitionEnd);
     window.clearTimeout(timeout);
-    // Do NOT remove is-closing-flip here — onComplete triggers setActiveProject(null)
-    // which is a batched React update. Removing the class synchronously would make
-    // the modal flash back visible before it unmounts. resetTransition defers the
-    // removal to requestAnimationFrame so React commits the unmount first.
     onComplete();
   };
 
@@ -129,8 +151,9 @@ export function runFlipClose({
     finish();
   };
 
-  root.classList.add("is-closing-flip");
   flips.forEach(applyFlipIn);
+  root.classList.add("is-closing-flip");
+  root.classList.remove("is-closing-prepare");
 
   const raf = requestAnimationFrame(() => {
     requestAnimationFrame(() => {

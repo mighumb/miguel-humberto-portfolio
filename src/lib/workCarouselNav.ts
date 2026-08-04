@@ -2,6 +2,7 @@ import {
   registerWorkCarouselMotion,
   stopWorkCarouselMotion,
 } from "@/lib/workDragScroll";
+import { normalizeWorkLoopScroll } from "@/lib/workCarouselLoop";
 
 /** Slow cinematic glide for arrow prev/next (feels composed, not snappy). */
 const ARROW_SCROLL_MIN_MS = 1050;
@@ -13,9 +14,13 @@ function getWorkCards(container: HTMLElement) {
   return Array.from(container.querySelectorAll<HTMLElement>("[data-project-id]"));
 }
 
-/** Long ease-in and ease-out so the card floats rather than snaps. */
-function easeInOutQuint(t: number) {
-  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+/**
+ * Starts moving immediately while keeping soft acceleration/deceleration.
+ * The previous quint curve had only travelled 1.6% at t=.25, making card
+ * perspective look frozen until late in the arrow navigation.
+ */
+function easeInOutSine(t: number) {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
 }
 
 /**
@@ -112,7 +117,7 @@ export function scrollWorkCarouselToIndex(
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!smooth || reducedMotion) {
-    container.scrollLeft = target;
+    container.scrollLeft = normalizeWorkLoopScroll(container, target);
     return;
   }
 
@@ -143,14 +148,15 @@ export function scrollWorkCarouselToIndex(
 
   const tick = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
-    container.scrollLeft = start + delta * easeInOutQuint(progress);
+    const virtualScroll = start + delta * easeInOutSine(progress);
+    container.scrollLeft = normalizeWorkLoopScroll(container, virtualScroll);
 
     if (progress < 1) {
       raf = requestAnimationFrame(tick);
       return;
     }
 
-    container.scrollLeft = target;
+    container.scrollLeft = normalizeWorkLoopScroll(container, target);
     stop();
     // Custom rAF scroll does not always emit scrollend; settle nav pin state.
     container.dispatchEvent(new Event("scrollend"));

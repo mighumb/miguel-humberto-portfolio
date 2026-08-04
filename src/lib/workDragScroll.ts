@@ -1,3 +1,5 @@
+import { normalizeWorkLoopScroll } from "@/lib/workCarouselLoop";
+
 const DRAG_THRESHOLD_PX = 8;
 const DRAG_SUPPRESS_MS = 400;
 const VELOCITY_SAMPLE_MS = 120;
@@ -110,7 +112,7 @@ export function attachWorkDragScroll(container: HTMLElement) {
     if (nextScroll === container.scrollLeft && Math.abs(delta) > 0.5) {
       scrollVelocity = 0;
     } else {
-      container.scrollLeft = nextScroll;
+      container.scrollLeft = normalizeWorkLoopScroll(container, nextScroll);
       scrollVelocity *= Math.pow(MOMENTUM_FRICTION, dt / 16);
     }
 
@@ -158,7 +160,10 @@ export function attachWorkDragScroll(container: HTMLElement) {
     }
 
     event.preventDefault();
-    container.scrollLeft = clampScroll(startScrollLeft - deltaX);
+    container.scrollLeft = normalizeWorkLoopScroll(
+      container,
+      clampScroll(startScrollLeft - deltaX),
+    );
   };
 
   const endDrag = (event: PointerEvent) => {

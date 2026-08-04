@@ -169,6 +169,13 @@ button:disabled {
   visibility: hidden;
 }
 
+/* Hide modal content while measuring / restoring home scroll, but keep the
+   opaque backdrop so the home page never flashes underneath. */
+html.is-closing-prepare .project-modal-scroll {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 html.is-closing-flip .project-modal {
   visibility: hidden;
   pointer-events: none;
@@ -177,11 +184,6 @@ html.is-closing-flip .project-modal {
 html.is-closing-flip .project-modal-backdrop {
   opacity: 0 !important;
   transition: none !important;
-}
-
-html.is-closing-flip .work-scroll-stage {
-  position: relative;
-  z-index: 210;
 }
 
 .work-card-visual.work-card-flip-active,
@@ -222,13 +224,16 @@ html.modal-main-hidden .ambient-background {
 }
 
 
+/* Fades the starfield into the solid section. Kept short enough to live inside
+   the carousel's bottom padding: a taller ramp reads as a flat plate behind the
+   cards and visually splits them from the hero. */
 .manifesto-section::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  top: -12rem;
-  height: 12rem;
+  top: -6rem;
+  height: 6rem;
   background: linear-gradient(
     to bottom,
     transparent 0%,
@@ -285,31 +290,13 @@ html.modal-main-hidden .ambient-background {
   .process-pile-card-mount { animation: none !important; }
 }
 
-@keyframes hero-arrow-shimmer {
-  0%, 68%, 100% { opacity: 1; }
-  76% { opacity: 0.2; }
-  88% { opacity: 0.8; }
-}
-
-.hero-arrow-chevron {
-  transition: transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
-  animation: hero-arrow-shimmer 5s ease-in-out infinite;
-}
-
-.hero-arrow:hover .hero-arrow-chevron {
-  transform: translateY(5px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-arrow-chevron {
-    animation: none;
-    transition: none;
-  }
-}
-
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  /* Cards carry z-index up to 1000 to stack along the depth curve. Confine that
+     range here so the carousel edge gradients still paint above them. iOS got
+     this for free from -webkit-overflow-scrolling; desktop did not. */
+  isolation: isolate;
   /* Native free scroll on touch — no snap / magnetism; 3D focus unchanged */
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
@@ -411,6 +398,12 @@ html.modal-main-hidden .ambient-background {
     transform: none !important;
     opacity: 1 !important;
     filter: none !important;
+  }
+
+  .work-card-visual,
+  .work-card-meta {
+    filter: none !important;
+    transform-style: preserve-3d !important;
   }
 }
 
