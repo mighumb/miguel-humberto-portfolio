@@ -115,7 +115,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[62vw] max-w-[56rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[70vw] lg:w-[64vw]"
+      className="work-card-focus group w-[62vw] max-w-[44rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[56vw] lg:w-[50vw]"
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">
@@ -167,20 +167,27 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
           </div>
         </div>
 
-        <div className="work-card-meta mt-5 space-y-2">
-          <div className="flex items-baseline justify-between gap-4">
-            <h3
-              ref={titleRef}
-              className={`work-card-title text-lg font-medium tracking-tight text-text-primary md:text-xl ${hiddenClass}`}
-            >
-              {project.title[locale]}
-            </h3>
-            <span className={`work-card-year shrink-0 text-xs text-text-secondary ${hiddenClass}`}>
-              {project.year}
-            </span>
-          </div>
+        <div className="work-card-meta relative mt-5 space-y-2">
+          <h3
+            ref={titleRef}
+            className={`work-card-title text-lg font-medium tracking-tight text-text-primary md:text-xl ${hiddenClass}`}
+          >
+            {project.title[locale]}
+          </h3>
 
-          <div className={`work-card-tags flex flex-wrap gap-1.5 ${hiddenClass}`}>
+          {/* Year and tags are hidden on the home carousel but stay mounted:
+              the shared-element flight measures them to fly into the modal. */}
+          <span
+            className={`work-card-year pointer-events-none absolute right-0 top-0 shrink-0 text-xs text-text-secondary opacity-0 ${hiddenClass}`}
+            aria-hidden
+          >
+            {project.year}
+          </span>
+
+          <div
+            className={`work-card-tags pointer-events-none absolute inset-x-0 top-7 flex flex-wrap gap-1.5 opacity-0 ${hiddenClass}`}
+            aria-hidden
+          >
             {project.tags.map((tag) => (
               <span
                 key={tag}
