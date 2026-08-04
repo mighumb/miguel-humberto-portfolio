@@ -8,7 +8,7 @@ export const MAX_BLUR = 1.15;
 /** Stronger on mobile so off-axis peeks read clearly on retina. */
 export const MAX_BLUR_MOBILE = 3.1;
 /** Desktop only: cover reads softer than text at the same body blur. */
-export const DESKTOP_COVER_BLUR_MULT = 1.4;
+export const DESKTOP_COVER_BLUR_MULT = 2.1;
 
 export interface CardPerspective {
   articleTranslateY: number;
