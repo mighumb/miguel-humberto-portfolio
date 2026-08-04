@@ -558,53 +558,55 @@ export default function Projects() {
     >
       <h2 className="sr-only">{t.projects}</h2>
 
-      <div className="mb-2 flex items-center gap-4 px-6 md:mb-3 md:px-10">
-        <span className="text-xs tracking-widest text-text-secondary uppercase tabular-nums">
-          {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
-          {String(projects.length).padStart(2, "0")}
-        </span>
-        <WorkCarouselNav
-          onPrev={() => scrollCarouselBy("prev")}
-          onNext={() => scrollCarouselBy("next")}
-          canGoPrev={focusedCardIndex > 0}
-          canGoNext={focusedCardIndex < projects.length - 1}
-          prevLabel={t.prevProject}
-          nextLabel={t.nextProject}
-          disabled={carouselNavDisabled}
-        />
-      </div>
+      <div className="flex flex-col">
+        <div className="order-2 mt-2 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
+          <span className="text-xs tracking-widest text-text-secondary uppercase tabular-nums">
+            {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
+            {String(projects.length).padStart(2, "0")}
+          </span>
+          <WorkCarouselNav
+            onPrev={() => scrollCarouselBy("prev")}
+            onNext={() => scrollCarouselBy("next")}
+            canGoPrev={focusedCardIndex > 0}
+            canGoNext={focusedCardIndex < projects.length - 1}
+            prevLabel={t.prevProject}
+            nextLabel={t.nextProject}
+            disabled={carouselNavDisabled}
+          />
+        </div>
 
-      <div className="relative">
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-bg-primary to-transparent md:w-12"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
-          aria-hidden
-        />
-
-        <div className="work-scroll-stage relative">
+        <div className="relative order-1 md:order-2">
           <div
-            ref={scrollRef}
-            dir="ltr"
-            className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-10 md:scroll-pl-10 md:pb-14 md:pl-10"
-          >
-            {projects.map((project, index) => (
-              <ProjectCard
-                key={project.id}
-                ref={setCardRef(index)}
-                project={project}
-                onOpen={openProject}
-                isSharedHidden={sharedHiddenId === project.id}
-                keepVideoAlive={
-                  sharedHiddenId === project.id ||
-                  (activeProject?.id === project.id &&
-                    (phase === "opening" || phase === "closing"))
-                }
-              />
-            ))}
-            <EndScrollGutter width={endGutterWidth} />
+            className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-bg-primary to-transparent md:w-12"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-bg-primary to-transparent md:w-12"
+            aria-hidden
+          />
+
+          <div className="work-scroll-stage relative">
+            <div
+              ref={scrollRef}
+              dir="ltr"
+              className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-4 pl-6 pt-0 md:gap-10 md:scroll-pl-10 md:pb-14 md:pl-10"
+            >
+              {projects.map((project, index) => (
+                <ProjectCard
+                  key={project.id}
+                  ref={setCardRef(index)}
+                  project={project}
+                  onOpen={openProject}
+                  isSharedHidden={sharedHiddenId === project.id}
+                  keepVideoAlive={
+                    sharedHiddenId === project.id ||
+                    (activeProject?.id === project.id &&
+                      (phase === "opening" || phase === "closing"))
+                  }
+                />
+              ))}
+              <EndScrollGutter width={endGutterWidth} />
+            </div>
           </div>
         </div>
       </div>
