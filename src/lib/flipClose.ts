@@ -115,8 +115,9 @@ export function runFlipClose({
 
   // Bring the destination card fully into the viewport before measuring. Opening
   // can leave it clipped under the sticky header or above the fold; FLIP-ing
-  // into a clipped card reads as a cut-off jump. Done while the modal still
-  // covers the page, so the scroll adjust is invisible.
+  // into a clipped card reads as a cut-off jump. Done while the modal backdrop
+  // still covers the page, so the scroll adjust is invisible. Scroll lock uses
+  // overflow:hidden which blocks scrollBy — lift it briefly for the nudge.
   const rect = shared.card.getBoundingClientRect();
   const edge = 24;
   let dy = 0;
@@ -125,8 +126,16 @@ export function runFlipClose({
     dy = rect.bottom - (window.innerHeight - edge);
   }
   if (Math.abs(dy) > 1) {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.style.overflow = "";
+    body.style.overflow = "";
     window.scrollBy({ top: dy, left: 0, behavior: "auto" });
     updateSavedScrollPosition(window.scrollX, window.scrollY);
+    html.style.overflow = prevHtmlOverflow;
+    body.style.overflow = prevBodyOverflow;
   }
 
   const flips = buildFlips(modalTargets, shared);
