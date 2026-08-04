@@ -405,79 +405,30 @@ html.modal-main-hidden .ambient-background {
   overflow: hidden;
 }
 
-@keyframes work-card-glitch-flash {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  25% {
-    transform: translate3d(1px, -1px, 0);
-  }
-  50% {
-    transform: translate3d(-1px, 1px, 0);
-  }
-  75% {
-    transform: translate3d(1px, 0, 0);
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
+/* "View project" is hidden by default; desktop hover / focus and mobile hold
+   reveal it. Keeps the meta row reserved so the layout does not jump. */
+.work-card-cta {
+  opacity: 0;
+  transform: translate3d(0, 0.25rem, 0);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    color 0.22s ease;
+  pointer-events: none;
 }
 
-@keyframes work-card-grain-flash {
-  0% {
-    opacity: 0;
-  }
-  18% {
-    opacity: 0.4;
-  }
-  42% {
-    opacity: 0.22;
-  }
-  100% {
-    opacity: 0;
-  }
+.work-card-focus.is-cta-visible .work-card-cta {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  color: var(--text-primary);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  @media (prefers-reduced-motion: no-preference) {
-    /* Grain layer for the entrance glitch. Scoped to hover-capable pointers so
-       it never adds a blended layer on touch, where it cannot be triggered. */
-    .work-card-visual::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      pointer-events: none;
-      z-index: 2;
-      opacity: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-      background-size: 120px 120px;
-      mix-blend-mode: overlay;
-    }
-
-    .work-card-focus:hover .work-card-media {
-      filter: url(#work-card-chromatic);
-    }
-
-    .work-card-focus.is-glitching .work-card-media {
-      animation: work-card-glitch-flash 160ms steps(2, jump-none);
-    }
-
-    .work-card-focus.is-glitching .work-card-visual::after {
-      animation: work-card-grain-flash 160ms ease-out;
-    }
-
-    /* Dragging owns the pointer — no hover FX while the strip is being thrown. */
-    .work-scroll.is-dragging .work-card-focus:hover .work-card-media,
-    .work-scroll.is-dragging .work-card-focus.is-glitching .work-card-media {
-      filter: none !important;
-      animation: none !important;
-    }
-
-    .work-scroll.is-dragging .work-card-focus.is-glitching .work-card-visual::after {
-      animation: none !important;
-      opacity: 0 !important;
-    }
+  .work-card-focus:hover .work-card-cta,
+  .work-card-focus:focus-visible .work-card-cta {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    color: var(--text-primary);
   }
 }
 
@@ -502,15 +453,9 @@ html.modal-main-hidden .ambient-background {
     transform-style: preserve-3d !important;
   }
 
-  .work-card-focus:hover .work-card-media,
-  .work-card-focus.is-glitching .work-card-media {
-    filter: none !important;
-    animation: none !important;
-  }
-
-  .work-card-focus.is-glitching .work-card-visual::after {
-    animation: none !important;
-    opacity: 0 !important;
+  .work-card-cta {
+    transition: none;
+    transform: none;
   }
 }
 

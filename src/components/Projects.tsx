@@ -640,40 +640,6 @@ export default function Projects() {
           />
 
           <div className="work-scroll-stage relative">
-            {/* Shared SVG filter for desktop cover chromatic aberration (~1px RGB split). */}
-            <svg
-              aria-hidden
-              width="0"
-              height="0"
-              className="pointer-events-none absolute"
-              style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}
-            >
-              <filter
-                id="work-card-chromatic"
-                x="-2%"
-                y="-2%"
-                width="104%"
-                height="104%"
-                colorInterpolationFilters="sRGB"
-              >
-                <feOffset in="SourceGraphic" dx="1" dy="0" result="redShift" />
-                <feOffset in="SourceGraphic" dx="-1" dy="0" result="blueShift" />
-                <feComponentTransfer in="redShift" result="red">
-                  <feFuncG type="linear" slope="0" />
-                  <feFuncB type="linear" slope="0" />
-                </feComponentTransfer>
-                <feComponentTransfer in="blueShift" result="blue">
-                  <feFuncR type="linear" slope="0" />
-                  <feFuncG type="linear" slope="0" />
-                </feComponentTransfer>
-                <feComponentTransfer in="SourceGraphic" result="green">
-                  <feFuncR type="linear" slope="0" />
-                  <feFuncB type="linear" slope="0" />
-                </feComponentTransfer>
-                <feBlend in="red" in2="green" mode="screen" result="redGreen" />
-                <feBlend in="redGreen" in2="blue" mode="screen" />
-              </filter>
-            </svg>
             <div
               ref={scrollRef}
               dir="ltr"
