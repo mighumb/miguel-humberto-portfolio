@@ -553,7 +553,7 @@ export default function Projects() {
   return (
     <section
       id="projects"
-      className="relative z-10 pb-8 md:pb-0"
+      className="relative z-10"
       aria-label={t.projects}
     >
       <h2 className="sr-only">{t.projects}</h2>
@@ -589,7 +589,7 @@ export default function Projects() {
             <div
               ref={scrollRef}
               dir="ltr"
-              className="work-scroll flex items-end gap-4 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-4 pl-6 pt-0 md:gap-8 md:scroll-pl-10 md:pb-24 md:pl-10"
+              className="work-scroll flex items-end gap-4 overflow-x-auto overflow-y-clip overscroll-x-contain scroll-pl-6 pb-12 pl-6 pt-0 md:gap-8 md:scroll-pl-10 md:pb-32 md:pl-10"
             >
               {projects.map((project, index) => (
                 <ProjectCard

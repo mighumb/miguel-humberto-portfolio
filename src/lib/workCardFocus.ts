@@ -17,7 +17,12 @@ export const MAX_BLUR_MOBILE = 3.1;
 export const DESKTOP_COVER_BLUR_MULT = 2.1;
 const DESKTOP_DEPTH_RATE = 0.26;
 const DESKTOP_TILT_RATE = 0.36;
-const DESKTOP_ROTATE_CAP = 38;
+/**
+ * The tilt sets how steeply each card's top edge slopes, and the next card must
+ * clear that slope to keep descending. A steeper cap pushed far cards hundreds
+ * of pixels down, past the carousel's padding, so keep it moderate.
+ */
+const DESKTOP_ROTATE_CAP = 26;
 /**
  * Desired descent of the visible top-edge envelope. Perspective compensation
  * below adds the extra Y needed to prevent each new trapezoid from stepping up.
