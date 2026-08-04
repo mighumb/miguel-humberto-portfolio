@@ -589,7 +589,7 @@ export default function Projects() {
             <div
               ref={scrollRef}
               dir="ltr"
-              className="work-scroll flex items-end gap-6 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-4 pl-6 pt-0 md:gap-10 md:scroll-pl-10 md:pb-14 md:pl-10"
+              className="work-scroll flex items-end gap-4 overflow-x-auto overflow-y-visible overscroll-x-contain scroll-pl-6 pb-4 pl-6 pt-0 md:gap-10 md:scroll-pl-10 md:pb-14 md:pl-10"
             >
               {projects.map((project, index) => (
                 <ProjectCard
