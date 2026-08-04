@@ -38,11 +38,6 @@ import ProjectSharedFlight from "./ProjectSharedFlight";
  */
 const WORK_LOOP_COPIES = 5;
 
-function logicalProjectIndex(renderedIndex: number, projectCount: number) {
-  if (projectCount < 1) return 0;
-  return ((renderedIndex % projectCount) + projectCount) % projectCount;
-}
-
 function EndScrollGutter({ width }: { width: number }) {
   return (
     <div
@@ -179,10 +174,8 @@ export default function Projects() {
   const cardOriginRef = useRef(cardOrigin);
   const activeProjectRef = useRef(activeProject);
   const closedViaTransitionRef = useRef(false);
-  const [focusedCardIndex, setFocusedCardIndex] = useState(0);
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
-  const scrollSettleTimerRef = useRef(0);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -211,7 +204,6 @@ export default function Projects() {
       if (shouldAnchorStartRef.current && pinnedCardIndexRef.current === null) {
         stopWorkCarouselMotion(container);
         container.scrollTo({ left: getWorkLoopStart(container), behavior: "auto" });
-        setFocusedCardIndex(0);
       }
     };
 
@@ -234,7 +226,6 @@ export default function Projects() {
     shouldAnchorStartRef.current = true;
     setActiveProject(null);
     setActiveIndex(0);
-    setFocusedCardIndex(0);
     pinnedCardIndexRef.current = null;
     scrollSettleCleanupRef.current?.();
     scrollSettleCleanupRef.current = null;
@@ -292,32 +283,6 @@ export default function Projects() {
 
   const carouselNavDisabled = activeProject !== null;
 
-  useLayoutEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const updateFocusedIndex = () => {
-      if (pinnedCardIndexRef.current !== null) return;
-
-      window.clearTimeout(scrollSettleTimerRef.current);
-      scrollSettleTimerRef.current = window.setTimeout(() => {
-        setFocusedCardIndex(
-          logicalProjectIndex(getFocusedWorkCardIndex(container), projects.length),
-        );
-      }, 120);
-    };
-
-    updateFocusedIndex();
-    container.addEventListener("scroll", updateFocusedIndex, { passive: true });
-    window.addEventListener("resize", updateFocusedIndex);
-
-    return () => {
-      window.clearTimeout(scrollSettleTimerRef.current);
-      container.removeEventListener("scroll", updateFocusedIndex);
-      window.removeEventListener("resize", updateFocusedIndex);
-    };
-  }, [scrollRef, loopedProjects.length, pauseCarousel, projects.length]);
-
   const scrollCarouselBy = useCallback(
     (direction: "prev" | "next") => {
       const container = scrollRef.current;
@@ -333,18 +298,14 @@ export default function Projects() {
       if (nextIndex < 0 || nextIndex >= loopedProjects.length) return;
 
       pinnedCardIndexRef.current = nextIndex;
-      setFocusedCardIndex(logicalProjectIndex(nextIndex, projects.length));
       scrollWorkCarouselToIndex(container, nextIndex);
 
       scrollSettleCleanupRef.current = whenWorkCarouselScrollSettles(container, () => {
         pinnedCardIndexRef.current = null;
         scrollSettleCleanupRef.current = null;
-        setFocusedCardIndex(
-          logicalProjectIndex(getFocusedWorkCardIndex(container), projects.length),
-        );
       });
     },
-    [scrollRef, carouselNavDisabled, loopedProjects.length, projects.length],
+    [scrollRef, carouselNavDisabled, loopedProjects.length],
   );
 
   useLayoutEffect(
@@ -591,10 +552,6 @@ export default function Projects() {
 
       <div className="flex flex-col">
         <div className="order-2 mt-4 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
-          <span className="text-xs tracking-widest text-text-primary uppercase tabular-nums md:text-text-secondary">
-            {String(focusedCardIndex + 1).padStart(2, "0")} /{" "}
-            {String(projects.length).padStart(2, "0")}
-          </span>
           <WorkCarouselNav
             onPrev={() => scrollCarouselBy("prev")}
             onNext={() => scrollCarouselBy("next")}
