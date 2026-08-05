@@ -427,6 +427,10 @@ html.modal-main-hidden .ambient-background {
   color: var(--text-primary);
 }
 
+.work-card-focus.is-cta-visible .work-card-title {
+  color: var(--text-primary);
+}
+
 @media (hover: hover) and (pointer: fine) {
   /* is-hovered, not :hover — :hover also covers the empty space that the card's
      untransformed layout box leaves above and beside the painted card. */
@@ -434,6 +438,11 @@ html.modal-main-hidden .ambient-background {
   .work-card-focus:focus-visible .work-card-cta {
     opacity: 1;
     transform: translate3d(0, 0, 0);
+    color: var(--text-primary);
+  }
+
+  .work-card-focus.is-hovered .work-card-title,
+  .work-card-focus:focus-visible .work-card-title {
     color: var(--text-primary);
   }
 }

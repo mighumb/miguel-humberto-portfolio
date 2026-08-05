@@ -38,6 +38,8 @@ export interface Project {
    * arrive, which offscreen carousel copies never do eagerly.
    */
   videoPoster?: string;
+  /** Start the modal hero unmuted once the open transition lands. */
+  unmuteOnOpen?: boolean;
   tools: string[];
   links: {
     notion?: string;
@@ -108,10 +110,10 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    // ?v=2 busts browser media caches (iOS keeps serving the old bytes for a
-    // previously-fetched URL); bump it whenever this file is replaced.
-    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=2",
+    // ?v=3 busts browser media caches after the 5 Mbps + audio re-upload.
+    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=3",
     videoPoster: "poster-cover-ai-cgi-station-f.jpg",
+    unmuteOnOpen: true,
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
     links: {
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
@@ -120,9 +122,9 @@ export const projects: Project[] = [
     },
     deliverableCount: 3,
     deliverables: [
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4?v=2" },
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4?v=2" },
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4?v=2" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4?v=3" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4?v=3" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4?v=3" },
     ],
   },
   {
@@ -143,8 +145,9 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=2",
+    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=3",
     videoPoster: "poster-cover-big-flo-oli-colors-show.jpg",
+    unmuteOnOpen: true,
     tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
     links: {
       instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
@@ -152,13 +155,13 @@ export const projects: Project[] = [
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
     processItems: [
-      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4?v=2" },
+      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4?v=3" },
       {
         type: "image",
         file: "process/process-magnific-big-flo-oli-colors-show.png",
         fullBleed: true,
       },
-      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=4" },
+      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=5" },
     ],
   },
   {
@@ -181,6 +184,8 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/superman-save-minneapolis/cover-video-superman-save-minneapolis.mp4",
+    videoPoster: "poster-cover-superman-save-minneapolis.jpg",
+    unmuteOnOpen: true,
     tools: ["Google Flow", "Midjourney", "Mito AI", "Figma Weave", "Higgsfield"],
     links: {
       youtube: "https://www.youtube.com/watch?v=HdKtbmCcnrI",
@@ -188,7 +193,16 @@ export const projects: Project[] = [
     },
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
-    processItems: [],
+    processItems: [
+      { type: "loop", file: "process/workflow-1-mito-ai-superman-save-minneapolis.mp4?v=2" },
+      {
+        type: "image",
+        file: "process/workflow-2-figma-superman-save-minneapolis.png?v=2",
+        fullBleed: true,
+      },
+      { type: "loop", file: "process/workflow-3-figma-weave-superman-save-minneapolis.mp4?v=2" },
+      { type: "loop", file: "process/workflow-4-higgsfield-superman-save-minneapolis.mp4?v=2" },
+    ],
   },
   {
     id: "04",
