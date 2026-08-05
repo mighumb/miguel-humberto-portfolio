@@ -181,6 +181,7 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/superman-save-minneapolis/cover-video-superman-save-minneapolis.mp4",
+    videoPoster: "poster-cover-superman-save-minneapolis.jpg",
     tools: ["Google Flow", "Midjourney", "Mito AI", "Figma Weave", "Higgsfield"],
     links: {
       youtube: "https://www.youtube.com/watch?v=HdKtbmCcnrI",
@@ -188,7 +189,16 @@ export const projects: Project[] = [
     },
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
-    processItems: [],
+    processItems: [
+      { type: "loop", file: "process/workflow-1-mito-ai-superman-save-minneapolis.mp4" },
+      {
+        type: "image",
+        file: "process/workflow-2-figma-superman-save-minneapolis.png",
+        fullBleed: true,
+      },
+      { type: "loop", file: "process/workflow-3-figma-weave-superman-save-minneapolis.mp4" },
+      { type: "loop", file: "process/workflow-4-higgsfield-superman-save-minneapolis.mp4" },
+    ],
   },
   {
     id: "04",
