@@ -35,4 +35,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.tmp-frames/
+.tmp-frames*/
+
+# high-bitrate source exports kept out of the repo
+/.local-masters/
