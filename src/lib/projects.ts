@@ -38,6 +38,8 @@ export interface Project {
    * arrive, which offscreen carousel copies never do eagerly.
    */
   videoPoster?: string;
+  /** Start the modal hero unmuted once the open transition lands. */
+  unmuteOnOpen?: boolean;
   tools: string[];
   links: {
     notion?: string;
@@ -112,6 +114,7 @@ export const projects: Project[] = [
     // previously-fetched URL); bump it whenever this file is replaced.
     videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=2",
     videoPoster: "poster-cover-ai-cgi-station-f.jpg",
+    unmuteOnOpen: true,
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
     links: {
       youtube: "https://www.youtube.com/watch?v=uZgAkpXHltE",
@@ -145,6 +148,7 @@ export const projects: Project[] = [
     hasVideo: true,
     videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=2",
     videoPoster: "poster-cover-big-flo-oli-colors-show.jpg",
+    unmuteOnOpen: true,
     tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
     links: {
       instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
@@ -182,6 +186,7 @@ export const projects: Project[] = [
     hasVideo: true,
     videoUrl: "/projects/ai/superman-save-minneapolis/cover-video-superman-save-minneapolis.mp4",
     videoPoster: "poster-cover-superman-save-minneapolis.jpg",
+    unmuteOnOpen: true,
     tools: ["Google Flow", "Midjourney", "Mito AI", "Figma Weave", "Higgsfield"],
     links: {
       youtube: "https://www.youtube.com/watch?v=HdKtbmCcnrI",

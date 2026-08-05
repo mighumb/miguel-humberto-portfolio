@@ -531,7 +531,7 @@ export default function ProjectModal({
     () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
   );
   const [touchControls, setTouchControls] = useState(false);
-  const unmuteOnOpen = project.slug === "big-flo-oli-colors-show";
+  const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroUnmuted = unmuteOnOpen && sharedContentVisible;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
