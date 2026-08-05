@@ -110,9 +110,8 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    // ?v=2 busts browser media caches (iOS keeps serving the old bytes for a
-    // previously-fetched URL); bump it whenever this file is replaced.
-    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=2",
+    // ?v=3 busts browser media caches after the 5 Mbps + audio re-upload.
+    videoUrl: "/projects/ai/ai-cgi-station-f/cover-video-ai-cgi-station-f.mp4?v=3",
     videoPoster: "poster-cover-ai-cgi-station-f.jpg",
     unmuteOnOpen: true,
     tools: ["Figma Weave", "Nano Banana", "Kling", "Premiere Pro", "After Effects", "Figma"],
@@ -123,9 +122,9 @@ export const projects: Project[] = [
     },
     deliverableCount: 3,
     deliverables: [
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4?v=2" },
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4?v=2" },
-      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4?v=2" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4?v=3" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4?v=3" },
+      { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4?v=3" },
     ],
   },
   {
@@ -195,14 +194,14 @@ export const projects: Project[] = [
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
     processItems: [
-      { type: "loop", file: "process/workflow-1-mito-ai-superman-save-minneapolis.mp4" },
+      { type: "loop", file: "process/workflow-1-mito-ai-superman-save-minneapolis.mp4?v=2" },
       {
         type: "image",
-        file: "process/workflow-2-figma-superman-save-minneapolis.png",
+        file: "process/workflow-2-figma-superman-save-minneapolis.png?v=2",
         fullBleed: true,
       },
-      { type: "loop", file: "process/workflow-3-figma-weave-superman-save-minneapolis.mp4" },
-      { type: "loop", file: "process/workflow-4-higgsfield-superman-save-minneapolis.mp4" },
+      { type: "loop", file: "process/workflow-3-figma-weave-superman-save-minneapolis.mp4?v=2" },
+      { type: "loop", file: "process/workflow-4-higgsfield-superman-save-minneapolis.mp4?v=2" },
     ],
   },
   {
