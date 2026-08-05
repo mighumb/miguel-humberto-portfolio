@@ -13,7 +13,7 @@ export default function Home() {
       <AmbientBackground />
       {/* Above the later sections so the manifesto's upward fade band, which
           reaches 12rem over the carousel, stays behind the cards. */}
-      <div className="relative z-[3]">
+      <div className="relative z-[3] pt-[3svh] md:pt-0">
         <Hero />
         <Projects />
       </div>
