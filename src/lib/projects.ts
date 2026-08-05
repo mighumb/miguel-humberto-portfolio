@@ -183,7 +183,8 @@ export const projects: Project[] = [
     year: "2026",
     type: "Video",
     hasVideo: true,
-    videoUrl: "/projects/ai/superman-save-minneapolis/cover-video-superman-save-minneapolis.mp4",
+    // ?v=2 busts browser media caches after the higher-bitrate re-upload.
+    videoUrl: "/projects/ai/superman-save-minneapolis/cover-video-superman-save-minneapolis.mp4?v=2",
     videoPoster: "poster-cover-superman-save-minneapolis.jpg",
     unmuteOnOpen: true,
     tools: ["Google Flow", "Midjourney", "Mito AI", "Figma Weave", "Higgsfield"],
