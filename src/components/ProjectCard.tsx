@@ -17,6 +17,29 @@ interface ProjectCardProps {
   keepVideoAlive?: boolean;
 }
 
+/** Reveal "View project" on touch after this hold. */
+const HOLD_MS = 200;
+/** Any finger travel beyond this cancels hold and blocks open-on-release. */
+const MOVE_CANCEL_PX = 10;
+
+type PressState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  held: boolean;
+  cancelled: boolean;
+  timer: number | null;
+};
+
+function isTouchLikePointer(event: React.PointerEvent) {
+  if (event.pointerType === "touch" || event.pointerType === "pen") return true;
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(hover: none)").matches ||
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
 const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCard(
   { project, loopInstance, onOpen, isSharedHidden = false, keepVideoAlive = false },
   ref,
@@ -27,7 +50,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const visualRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const cardRef = useRef<HTMLElement | null>(null);
+  const pressRef = useRef<PressState | null>(null);
+  const suppressClickRef = useRef(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [isCtaVisible, setIsCtaVisible] = useState(false);
   const [isNearViewport, setIsNearViewport] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
   const videoPosterUrl = projectVideoPosterUrl(project);
@@ -46,6 +72,27 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     },
     [ref],
   );
+
+  const pauseHoverVideo = useCallback(() => {
+    if (videoIsHero || keepVideoAlive || !videoRef.current) return;
+    videoRef.current.pause();
+    videoRef.current.currentTime = 0;
+  }, [keepVideoAlive, videoIsHero]);
+
+  const clearPressTimer = () => {
+    const press = pressRef.current;
+    if (press?.timer != null) {
+      window.clearTimeout(press.timer);
+      press.timer = null;
+    }
+  };
+
+  const armClickSuppress = () => {
+    suppressClickRef.current = true;
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 400);
+  };
 
   // The carousel repeats every project many times to loop seamlessly, so only
   // copies approaching the viewport get a video element at all.
@@ -76,6 +123,28 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
     video.play().catch(() => {});
   }, [videoIsHero, isVideoMounted]);
 
+  // Native mobile carousel scroll often skips pointermove; cancel hold on scroll.
+  useEffect(() => {
+    const card = cardRef.current;
+    const scroll = card?.closest(".work-scroll");
+    if (!scroll) return;
+
+    const onScroll = () => {
+      const press = pressRef.current;
+      if (!press) return;
+      press.cancelled = true;
+      clearPressTimer();
+      setIsCtaVisible(false);
+      if (press.held) {
+        setIsHovering(false);
+        pauseHoverVideo();
+      }
+    };
+
+    scroll.addEventListener("scroll", onScroll, { passive: true });
+    return () => scroll.removeEventListener("scroll", onScroll);
+  }, [pauseHoverVideo]);
+
   const handleMouseEnter = () => {
     setIsHovering(true);
     if (project.hasVideo && videoRef.current) {
@@ -85,9 +154,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   const handleMouseLeave = () => {
     setIsHovering(false);
-    if (videoIsHero || keepVideoAlive || !videoRef.current) return;
-    videoRef.current.pause();
-    videoRef.current.currentTime = 0;
+    pauseHoverVideo();
   };
 
   const openFromCard = () => {
@@ -125,15 +192,18 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       // Without this, tapping such a card on mobile always reported
       // showVideo:false, and the flight thumbnail fell through to the
       // numbered placeholder since there's no cover/thumbnail image either.
-      showVideo: (isHovering || videoIsHero) && !!project.hasVideo,
+      showVideo: (isHovering || isCtaVisible || videoIsHero) && !!project.hasVideo,
       videoTime:
-        (isHovering || videoIsHero) && project.hasVideo && videoRef.current
+        (isHovering || isCtaVisible || videoIsHero) &&
+        project.hasVideo &&
+        videoRef.current
           ? videoRef.current.currentTime
           : 0,
     });
   };
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
+    if (suppressClickRef.current) return;
     if (shouldIgnoreWorkCardClick(event.currentTarget)) return;
     openFromCard();
   };
@@ -144,6 +214,97 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       if (shouldIgnoreWorkCardClick(event.currentTarget)) return;
       openFromCard();
     }
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+    // Desktop mouse uses CSS :hover for the CTA; hold is a touch affordance.
+    if (event.pointerType === "mouse" && !isTouchLikePointer(event)) return;
+
+    clearPressTimer();
+    const timer = window.setTimeout(() => {
+      const press = pressRef.current;
+      if (!press || press.cancelled) return;
+      press.held = true;
+      setIsCtaVisible(true);
+      setIsHovering(true);
+      if (project.hasVideo && videoRef.current) {
+        videoRef.current.play().catch(() => {});
+      }
+    }, HOLD_MS);
+
+    pressRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      held: false,
+      cancelled: false,
+      timer,
+    };
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
+    const press = pressRef.current;
+    if (!press || press.pointerId !== event.pointerId || press.cancelled) return;
+
+    const dx = event.clientX - press.startX;
+    const dy = event.clientY - press.startY;
+    if (Math.hypot(dx, dy) < MOVE_CANCEL_PX) return;
+
+    press.cancelled = true;
+    clearPressTimer();
+    setIsCtaVisible(false);
+    if (press.held) {
+      setIsHovering(false);
+      pauseHoverVideo();
+    }
+  };
+
+  const finishPress = (event: React.PointerEvent<HTMLElement>, forceCancel = false) => {
+    const press = pressRef.current;
+    if (!press || press.pointerId !== event.pointerId) return;
+
+    clearPressTimer();
+    const { held, cancelled } = press;
+    pressRef.current = null;
+
+    if (forceCancel || cancelled) {
+      setIsCtaVisible(false);
+      if (held) {
+        setIsHovering(false);
+        pauseHoverVideo();
+      }
+      armClickSuppress();
+      return;
+    }
+
+    const stillOnCard = (() => {
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      return !!(hit && cardRef.current?.contains(hit));
+    })();
+
+    if (held) {
+      setIsCtaVisible(false);
+      armClickSuppress();
+      if (stillOnCard) {
+        openFromCard();
+      } else {
+        setIsHovering(false);
+        pauseHoverVideo();
+      }
+      return;
+    }
+
+    // Quick tap: leave opening to the click handler.
+    setIsCtaVisible(false);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLElement>) => {
+    finishPress(event, false);
+  };
+
+  const handlePointerCancel = (event: React.PointerEvent<HTMLElement>) => {
+    finishPress(event, true);
   };
 
   const hiddenClass = isSharedHidden ? "is-shared-hidden" : "";
@@ -159,7 +320,13 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       onKeyDown={handleKeyDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="work-card-focus group w-[62vw] max-w-[44rem] shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[56vw] lg:w-[50vw]"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      className={`work-card-focus group w-[62vw] max-w-[44rem] shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent md:w-[56vw] lg:w-[50vw]${
+        isCtaVisible ? " is-cta-visible" : ""
+      }`}
       aria-label={`${t.viewProject}: ${project.title[locale]}`}
     >
       <div className="work-card-body">
@@ -251,7 +418,10 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
             ))}
           </div>
 
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary transition-colors group-hover:text-text-primary">
+          <span
+            className="work-card-cta inline-flex items-center gap-1.5 text-sm font-medium text-text-secondary"
+            aria-hidden={!isCtaVisible}
+          >
             {t.viewProject}
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
               <path

@@ -13,12 +13,14 @@ import {
   whenWorkCarouselScrollSettles,
 } from "@/lib/workCarouselNav";
 import { stopWorkCarouselMotion } from "@/lib/workDragScroll";
+import { attachWorkCardPointer } from "@/lib/workCardPointer";
 import { getWorkLoopStart } from "@/lib/workCarouselLoop";
 import {
   prefersReducedMotion,
   measureCardOrigin,
   buildCloseFlight,
   findVisibleProjectCard,
+  SHARED_TRANSITION_MS,
   type CardOrigin,
   type CardPerspective,
   type FlightPair,
@@ -26,7 +28,10 @@ import {
 } from "@/lib/motion";
 import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
 import {
+  animateCardPerspectives,
+  applySnapshotPerspective,
   captureCardPerspectives,
+  FLAT_PERSPECTIVE,
   restoreCardPerspectives,
 } from "@/lib/workCardFocus";
 import { alignCardIntoView } from "@/lib/flipClose";
@@ -36,9 +41,10 @@ import ProjectSharedFlight from "./ProjectSharedFlight";
 
 /**
  * Odd number of copies so the viewport rests in the exact middle cycle. Two
- * cycles of slack on each side is all the loop needs: `enforceWorkLoopBounds`
- * wraps before the strip can run out, whatever the scroll speed. Keeping the
- * count low matters because opening a card snapshots every copy.
+ * cycles of slack on each side is all the loop needs: the scroll re-centres on
+ * touch-down and on idle, so no single gesture can travel far enough to run the
+ * strip out, whatever the fling speed. Keeping the count low matters because
+ * opening a card snapshots every copy.
  */
 const WORK_LOOP_COPIES = 5;
 
@@ -70,8 +76,9 @@ function WorkCarouselNav({
   nextLabel: string;
   disabled?: boolean;
 }) {
+  // Same resting tone as the theme toggle in the header nav.
   const buttonClass =
-    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-primary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35 md:text-text-secondary md:hover:text-text-primary";
+    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-35";
 
   return (
     <div className="flex items-center gap-2" aria-label="Carousel navigation">
@@ -167,6 +174,9 @@ export default function Projects() {
   const [flightShowVideo, setFlightShowVideo] = useState(false);
   const [flightVideoTime, setFlightVideoTime] = useState(0);
   const [flightVideoPoster, setFlightVideoPoster] = useState<string | undefined>(undefined);
+  const [closeFlightPerspective, setCloseFlightPerspective] = useState<CardPerspective | null>(
+    null,
+  );
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -197,6 +207,13 @@ export default function Projects() {
   );
   const [endGutterWidth, setEndGutterWidth] = useState(24);
   const shouldAnchorStartRef = useRef(true);
+
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    return attachWorkCardPointer(container);
+  }, [scrollRef]);
 
   useLayoutEffect(() => {
     const container = scrollRef.current;
@@ -246,6 +263,7 @@ export default function Projects() {
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
+    setCloseFlightPerspective(null);
     carouselSnapshotRef.current = null;
 
     const container = scrollRef.current;
@@ -388,6 +406,7 @@ export default function Projects() {
     setSharedContentVisible(false);
     setFlightShowVideo(false);
     setFlightVideoTime(0);
+    setCloseFlightPerspective(null);
     closeTargetsRef.current = null;
     openFlightRef.current = null;
   }, []);
@@ -413,15 +432,25 @@ export default function Projects() {
       return;
     }
 
-    // Restore home + carousel under the opaque backdrop, then measure the live
-    // card rects and hand the close to the portal flight (same path as open).
-    // In-DOM FLIP had to force overflow:visible on .work-scroll, which resets
-    // scrollLeft to 0 in Chromium and caused the reposition jump.
-    restoreFrozenCarousel(scrollRef, savedWorkScrollLeftRef.current, snapshot);
+    // Restore home scroll under the opaque backdrop, flatten cards, then measure
+    // FLAT rects for the flight. Measuring while curved made the portal land on
+    // an AABB that didn't match the real trapezoid — and the portal itself stayed
+    // flat, so the handoff read as a one-frame flat → curved pop.
+    restoreWorkScroll(scrollRef, savedWorkScrollLeftRef.current);
+
+    const container = scrollRef.current;
+    if (container) {
+      applySnapshotPerspective(container, snapshot, FLAT_PERSPECTIVE);
+    }
 
     const instanceId = activeInstanceRef.current ?? undefined;
     const card = findVisibleProjectCard(project.id, instanceId);
     if (card) alignCardIntoView(card);
+
+    // Re-flatten after scroll nudge (align can change which cards are nearby).
+    if (container) {
+      applySnapshotPerspective(container, snapshot, FLAT_PERSPECTIVE);
+    }
 
     const origin = measureCardOrigin(
       project.id,
@@ -433,6 +462,19 @@ export default function Projects() {
       return;
     }
 
+    // Lerp sibling cards + the opened card's real transforms while the portal
+    // flies. Portal gets the same curve target so it lands matching the card.
+    if (container) {
+      flipCleanupRef.current?.();
+      flipCleanupRef.current = animateCardPerspectives({
+        container,
+        to: snapshot,
+        from: FLAT_PERSPECTIVE,
+        durationMs: SHARED_TRANSITION_MS,
+      });
+    }
+
+    setCloseFlightPerspective(origin.perspective);
     setSharedHiddenInstance(origin.carouselInstanceId ?? instanceId ?? null);
     setFlightShowVideo(origin.showVideo);
     setFlightVideoTime(origin.videoTime);
@@ -506,6 +548,9 @@ export default function Projects() {
 
   const handleFlightLanding = useCallback((handoffVideoTime?: number) => {
     if (phaseRef.current === "closing") {
+      // Finish the perspective lerp at its end state before tearing down.
+      flipCleanupRef.current?.();
+      flipCleanupRef.current = null;
       restoreFrozenCarousel(
         scrollRef,
         savedWorkScrollLeftRef.current,
@@ -582,7 +627,7 @@ export default function Projects() {
       <h2 className="sr-only">{t.projects}</h2>
 
       <div className="flex flex-col">
-        <div className="order-2 mt-4 flex items-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:px-10">
+        <div className="order-2 mt-4 flex items-center justify-center gap-4 px-6 md:order-1 md:mb-3 md:mt-0 md:justify-start md:px-10">
           <WorkCarouselNav
             onPrev={() => scrollCarouselBy("prev")}
             onNext={() => scrollCarouselBy("next")}
@@ -666,6 +711,9 @@ export default function Projects() {
           showVideo={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}
+          closePerspective={
+            flight.direction === "close" ? closeFlightPerspective : null
+          }
           onLanding={handleFlightLanding}
         />
       )}

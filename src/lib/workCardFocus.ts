@@ -383,6 +383,115 @@ export function restoreCardPerspectives(
   });
 }
 
+/** Apply one perspective to every card present in the snapshot map. */
+export function applySnapshotPerspective(
+  container: HTMLElement,
+  snapshot: Map<string, CardPerspective>,
+  perspective: CardPerspective,
+): void {
+  container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
+    const id = cardKey(card);
+    if (!id || !snapshot.has(id)) return;
+    applyCardPerspective(card, perspective);
+  });
+}
+
+/**
+ * Gentle ease-out for perspective restores. The shared-element position easing
+ * (cubic-bezier 0.22,1,0.36,1) front-loads progress so hard that a rotateY
+ * lerp looks like a one-frame snap — use this instead for 3D settle.
+ */
+export function perspectiveEase(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  return 1 - (1 - clamped) ** 3;
+}
+
+/**
+ * Ease matching shared-element flight: cubic-bezier(0.22, 1, 0.36, 1).
+ * Samples the Y of the unit bezier at progress t (0..1).
+ */
+export function flightEase(t: number): number {
+  const clamped = Math.min(1, Math.max(0, t));
+  // Cubic bezier P0=(0,0) P1=(0.22,1) P2=(0.36,1) P3=(1,1)
+  // Solve x(u)=t for u, then return y(u). Newton works well for this curve.
+  let u = clamped;
+  for (let i = 0; i < 5; i++) {
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const x = 3 * 0.22 * (u - 2 * u2 + u3) + 3 * 0.36 * (u2 - u3) + u3;
+    const dx =
+      3 * 0.22 * (1 - 4 * u + 3 * u2) + 3 * 0.36 * (2 * u - 3 * u2) + 3 * u2;
+    if (Math.abs(dx) < 1e-6) break;
+    u -= (x - clamped) / dx;
+    u = Math.min(1, Math.max(0, u));
+  }
+  const u2 = u * u;
+  const u3 = u2 * u;
+  return 3 * 1 * (u - 2 * u2 + u3) + 3 * 1 * (u2 - u3) + u3;
+}
+
+/**
+ * Lerp every snapshotted card from `from` (default flat) to its target
+ * perspective over `durationMs`. Returns a cancel function that jumps to the
+ * end state when `commit` is true, or leaves the current frame when false.
+ */
+export function animateCardPerspectives({
+  container,
+  to,
+  from = FLAT_PERSPECTIVE,
+  durationMs,
+  onComplete,
+}: {
+  container: HTMLElement;
+  to: Map<string, CardPerspective>;
+  from?: CardPerspective;
+  durationMs: number;
+  onComplete?: () => void;
+}): () => void {
+  const cards: { el: HTMLElement; target: CardPerspective }[] = [];
+  container.querySelectorAll<HTMLElement>("[data-project-id]").forEach((card) => {
+    const id = cardKey(card);
+    if (!id) return;
+    const target = to.get(id);
+    if (!target) return;
+    cards.push({ el: card, target });
+  });
+
+  cards.forEach(({ el }) => applyCardPerspective(el, from));
+
+  if (durationMs <= 0 || cards.length === 0) {
+    cards.forEach(({ el, target }) => applyCardPerspective(el, target));
+    onComplete?.();
+    return () => {};
+  }
+
+  let raf = 0;
+  let cancelled = false;
+  const start = performance.now();
+
+  const tick = (now: number) => {
+    if (cancelled) return;
+    const amount = perspectiveEase((now - start) / durationMs);
+    cards.forEach(({ el, target }) => {
+      applyCardPerspective(el, lerpPerspective(from, target, amount));
+    });
+    if (amount >= 1) {
+      cards.forEach(({ el, target }) => applyCardPerspective(el, target));
+      onComplete?.();
+      return;
+    }
+    raf = requestAnimationFrame(tick);
+  };
+
+  raf = requestAnimationFrame(tick);
+
+  return () => {
+    cancelled = true;
+    if (raf) cancelAnimationFrame(raf);
+    cards.forEach(({ el, target }) => applyCardPerspective(el, target));
+  };
+}
+
 export function resetCardPerspective(card: HTMLElement) {
   card.style.transform = "";
   card.style.zIndex = "";

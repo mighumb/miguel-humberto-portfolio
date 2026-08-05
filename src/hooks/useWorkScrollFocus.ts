@@ -64,14 +64,24 @@ export function useWorkScrollFocus(
 
     let raf = 0;
     let idleTimer = 0;
+    let touching = false;
 
     const update = () => {
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
 
-      // Never let the scroll reach the end of the rendered strip: past it there
-      // are no cards left to show.
-      enforceWorkLoopBounds(container);
+      if (touching) {
+        // Finger down: the browser drives the pan from the live scroll offset and
+        // there is no momentum to cancel, so the loop can be wrapped every frame
+        // for free. Keeping the position pinned inside the middle cycle for the
+        // whole drag means the fling that follows always starts with two cycles
+        // of cards on each side — that is what makes the scroll endless.
+        recenterWorkLoopScroll(container);
+      } else {
+        // Momentum is running: only step in within one viewport of a real DOM
+        // edge, where cutting the fling short beats running out of cards.
+        enforceWorkLoopBounds(container);
+      }
 
       // The loop renders many offscreen copies. Only cards that could be seen
       // get the perspective pass; the cutoff sits well beyond the visible span
@@ -97,7 +107,7 @@ export function useWorkScrollFocus(
       });
     };
 
-    // Re-centre into the middle cycle only once the scroll has settled. Doing it
+    // Re-centre into the middle cycle once the scroll has settled. Doing it
     // mid-scroll would rewrite scrollLeft during a native fling and kill the
     // inertia — the loop boundary sits on a card, so that read as snapping to it.
     const scheduleRecenter = () => {
@@ -118,6 +128,18 @@ export function useWorkScrollFocus(
       });
     };
 
+    // A finger landing on the scroller has already cancelled any running momentum,
+    // so re-centring is free from here until the touch ends.
+    const onTouchStart = () => {
+      touching = true;
+      window.clearTimeout(idleTimer);
+      recenterWorkLoopScroll(container);
+    };
+
+    const onTouchEnd = () => {
+      touching = false;
+    };
+
     if (hadSnapshot) {
       requestAnimationFrame(() => {
         requestAnimationFrame(update);
@@ -128,12 +150,18 @@ export function useWorkScrollFocus(
     }
 
     container.addEventListener("scroll", scheduleUpdate, { passive: true });
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchend", onTouchEnd, { passive: true });
+    container.addEventListener("touchcancel", onTouchEnd, { passive: true });
     window.addEventListener("resize", scheduleUpdate);
 
     return () => {
       if (raf) cancelAnimationFrame(raf);
       window.clearTimeout(idleTimer);
       container.removeEventListener("scroll", scheduleUpdate);
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchend", onTouchEnd);
+      container.removeEventListener("touchcancel", onTouchEnd);
       window.removeEventListener("resize", scheduleUpdate);
     };
   }, [itemCount, pauseMode, snapshotRef]);
