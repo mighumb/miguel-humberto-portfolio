@@ -823,10 +823,10 @@ export default function ProjectModal({
                 >
                   {project.tags.map((tag) => (
                     <span
-                      key={tag}
+                      key={tag.en}
                       className="rounded-full bg-chip px-3 py-1 text-xs text-chip-text"
                     >
-                      {tag}
+                      {tag[locale]}
                     </span>
                   ))}
                 </div>
@@ -994,6 +994,9 @@ export default function ProjectModal({
                 {mt.links}
               </h3>
               <div className="flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:gap-x-8 sm:gap-y-3">
+                {project.links.youtube && (
+                  <ResourceLink href={project.links.youtube}>{mt.youtube}</ResourceLink>
+                )}
                 {project.links.notion && (
                   <ResourceLink href={project.links.notion}>{mt.notion}</ResourceLink>
                 )}
