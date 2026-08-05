@@ -184,6 +184,7 @@ export const projects: Project[] = [
     tools: ["Google Flow", "Midjourney", "Mito AI", "Figma Weave", "Higgsfield"],
     links: {
       youtube: "https://www.youtube.com/watch?v=HdKtbmCcnrI",
+      instagram: "https://www.instagram.com/reel/DVs5qDijP-Y/",
     },
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
