@@ -1,5 +1,7 @@
 export type ProjectTrack = "ai" | "craft";
 
+export type LocalizedCopy = { en: string; fr: string };
+
 export type Deliverable =
   | { type: "video"; url: string }
   | { type: "instagram"; url: string }
@@ -15,10 +17,10 @@ export interface Project {
   /** Folder name under public/projects/{track}/ */
   slug: string;
   track: ProjectTrack;
-  title: { en: string; fr: string };
+  title: LocalizedCopy;
   /** Modal Context section. Falls back to a generic placeholder when omitted. */
-  context?: { en: string; fr: string };
-  tags: string[];
+  context?: LocalizedCopy;
+  tags: LocalizedCopy[];
   year: string;
   type: string;
   hasVideo: boolean;
@@ -52,7 +54,7 @@ export interface Project {
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
   processItems?: ProcessItem[];
   /** Overrides the "Process" section heading for this project. */
-  processTitle?: { en: string; fr: string };
+  processTitle?: LocalizedCopy;
   /** Shows the interactive Ekara UI Kit section in the modal. */
   uiKit?: boolean;
 }
@@ -98,7 +100,11 @@ export const projects: Project[] = [
       en: "Station F is the world's largest startup campus, in Paris, home to hundreds of startups backed by Meta, Microsoft and Google. Its iconic clay sculpture became the starting point of this CGI project. Using AI, I transformed it into a series of iconic tech logos.",
       fr: "Station F est le plus grand campus de startups au monde, à Paris, accueillant des centaines d'entreprises soutenues par Meta, Microsoft et Google. Sa sculpture d'argile emblématique est devenue le point de départ de ce projet CGI. À l'aide de l'IA, je l'ai transformée en une série de logos iconiques du monde de la tech.",
     },
-    tags: ["CGI", "Social", "Viral"],
+    tags: [
+      { en: "CGI", fr: "CGI" },
+      { en: "Social", fr: "Social" },
+      { en: "Viral", fr: "Viral" },
+    ],
     year: "2025",
     type: "Video",
     hasVideo: true,
@@ -128,7 +134,12 @@ export const projects: Project[] = [
       en: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) is a live music series shot against a flat backdrop, and a global visual reference. Big Flo & Oli had never been invited: their [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25) video, filmed in an Airbus hangar in Toulouse, reignited the debate. I turned that scene into a real COLORS Show, with a pink set as a nod to Toulouse, known as the Pink City.",
       fr: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) est une série de lives musicaux filmés sur fond uni, devenue une référence visuelle mondiale. Big Flo & Oli n’y avaient jamais été invités : leur clip de [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25), tourné dans un hangar Airbus à Toulouse, a relancé le débat. J’ai transformé cette scène en un vrai COLORS Show, rose en clin d’œil à Toulouse, appelée la ville rose.",
     },
-    tags: ["VFX", "Music", "Social", "Viral"],
+    tags: [
+      { en: "VFX", fr: "VFX" },
+      { en: "Music", fr: "Musique" },
+      { en: "Social", fr: "Social" },
+      { en: "Viral", fr: "Viral" },
+    ],
     year: "2025",
     type: "Video",
     hasVideo: true,
@@ -152,24 +163,42 @@ export const projects: Project[] = [
   },
   {
     id: "03",
-    slug: "prompt-engineering-tutorial-series",
+    slug: "superman-save-minneapolis",
     track: "ai",
-    title: { en: "Prompt Engineering Tutorial Series", fr: "Série de tutoriels prompting" },
-    tags: ["Tutorial", "YouTube", "Education"],
-    year: "2024",
-    type: "Social",
+    title: {
+      en: "Superman save Minneapolis",
+      fr: "Superman sauve Minneapolis",
+    },
+    context: {
+      en: "During the winter of 2025–2026, a large ICE enforcement surge in Minneapolis sparked protests, unrest, and nationwide attention. I made a short film that uses Superman as a symbol of hope, imagining a moment where conflict gives way to reconciliation.",
+      fr: "Pendant l’hiver 2025–2026, un vaste déploiement de l’ICE à Minneapolis a déclenché manifestations, tensions et une forte attention médiatique. J’ai réalisé un court-métrage qui s’appuie sur Superman comme figure d’espoir, pour imaginer un instant où le conflit cède la place à la réconciliation.",
+    },
+    tags: [
+      { en: "Short film", fr: "Court-métrage" },
+      { en: "Social", fr: "Social" },
+    ],
+    year: "2026",
+    type: "Video",
     hasVideo: true,
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
-    tools: ["Midjourney", "DaVinci Resolve", "Notion"],
-    links: { youtube: "#", notion: "#" },
-    deliverableCount: 6,
+    videoUrl: "/projects/ai/superman-save-minneapolis/cover-video-superman-save-minneapolis.mp4",
+    tools: ["Google Flow", "Midjourney", "Mito AI", "Figma Weave", "Higgsfield"],
+    links: {
+      youtube: "https://www.youtube.com/watch?v=HdKtbmCcnrI",
+    },
+    deliverableCount: 0,
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [],
   },
   {
     id: "04",
     slug: "generative-visual-identity",
     track: "ai",
     title: { en: "Generative Visual Identity", fr: "Identité visuelle générative" },
-    tags: ["Client", "Branding", "Motion"],
+    tags: [
+      { en: "Client", fr: "Client" },
+      { en: "Branding", fr: "Branding" },
+      { en: "Motion", fr: "Motion" },
+    ],
     year: "2024",
     type: "Client",
     hasVideo: true,
@@ -183,7 +212,11 @@ export const projects: Project[] = [
     slug: "tiktok-ai-art-experiments",
     track: "ai",
     title: { en: "TikTok AI Art Experiments", fr: "Expériences art IA TikTok" },
-    tags: ["Social", "TikTok", "Experimental"],
+    tags: [
+      { en: "Social", fr: "Social" },
+      { en: "TikTok", fr: "TikTok" },
+      { en: "Experimental", fr: "Expérimental" },
+    ],
     year: "2025",
     type: "Social",
     hasVideo: true,
@@ -197,7 +230,11 @@ export const projects: Project[] = [
     slug: "audio-visual-ai-installation",
     track: "ai",
     title: { en: "Audio-Visual AI Installation", fr: "Installation audio-visuelle IA" },
-    tags: ["Audio", "Installation", "Experimental"],
+    tags: [
+      { en: "Audio", fr: "Audio" },
+      { en: "Installation", fr: "Installation" },
+      { en: "Experimental", fr: "Expérimental" },
+    ],
     year: "2024",
     type: "Audio",
     hasVideo: false,
@@ -214,7 +251,11 @@ export const projects: Project[] = [
       en: "[Ekara](https://ip-label.com/fr/) needed a new shared UI language for its new interfaces. I designed a modular system: components, spacing, and states, for clear, consistent screens.",
       fr: "[Ekara](https://ip-label.com/fr/) avait besoin d'un nouveau langage UI commun pour ses nouvelles interfaces. J'ai conçu un système modulaire : composants, espacements et états, pour des écrans clairs et cohérents.",
     },
-    tags: ["UI", "Design System", "Product"],
+    tags: [
+      { en: "UI", fr: "UI" },
+      { en: "Design System", fr: "Design System" },
+      { en: "Product", fr: "Produit" },
+    ],
     year: "2025",
     type: "Craft",
     hasVideo: false,
@@ -245,7 +286,11 @@ export const projects: Project[] = [
     slug: "motion-brand-language",
     track: "craft",
     title: { en: "Motion Brand Language", fr: "Langage motion de marque" },
-    tags: ["Motion", "Branding", "After Effects"],
+    tags: [
+      { en: "Motion", fr: "Motion" },
+      { en: "Branding", fr: "Branding" },
+      { en: "After Effects", fr: "After Effects" },
+    ],
     year: "2025",
     type: "Craft",
     hasVideo: false,
@@ -258,7 +303,11 @@ export const projects: Project[] = [
     slug: "3d-product-visualization",
     track: "craft",
     title: { en: "3D Product Visualization", fr: "Visualisation produit 3D" },
-    tags: ["3D", "Product", "Lookdev"],
+    tags: [
+      { en: "3D", fr: "3D" },
+      { en: "Product", fr: "Produit" },
+      { en: "Lookdev", fr: "Lookdev" },
+    ],
     year: "2024",
     type: "Craft",
     hasVideo: false,
@@ -271,7 +320,11 @@ export const projects: Project[] = [
     slug: "editorial-web-experience",
     track: "craft",
     title: { en: "Editorial Web Experience", fr: "Expérience web éditoriale" },
-    tags: ["UI", "Editorial", "Web"],
+    tags: [
+      { en: "UI", fr: "UI" },
+      { en: "Editorial", fr: "Éditorial" },
+      { en: "Web", fr: "Web" },
+    ],
     year: "2024",
     type: "Craft",
     hasVideo: false,
@@ -284,7 +337,11 @@ export const projects: Project[] = [
     slug: "app-onboarding-flows",
     track: "craft",
     title: { en: "App Onboarding Flows", fr: "Parcours d'onboarding app" },
-    tags: ["UX", "Mobile", "UI"],
+    tags: [
+      { en: "UX", fr: "UX" },
+      { en: "Mobile", fr: "Mobile" },
+      { en: "UI", fr: "UI" },
+    ],
     year: "2025",
     type: "Craft",
     hasVideo: false,
@@ -297,7 +354,11 @@ export const projects: Project[] = [
     slug: "spatial-interface-concept",
     track: "craft",
     title: { en: "Spatial Interface Concept", fr: "Concept d'interface spatiale" },
-    tags: ["3D", "UI", "Concept"],
+    tags: [
+      { en: "3D", fr: "3D" },
+      { en: "UI", fr: "UI" },
+      { en: "Concept", fr: "Concept" },
+    ],
     year: "2024",
     type: "Craft",
     hasVideo: false,

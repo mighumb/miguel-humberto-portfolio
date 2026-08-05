@@ -16,7 +16,7 @@ import {
   perspectiveEase,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { type Project, projectCoverUrl } from "@/lib/projects";
+import { type Project, projectCoverUrl, type LocalizedCopy } from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
@@ -226,11 +226,13 @@ function FlightYear({
 
 function FlightTags({
   tags,
+  locale,
   frame,
   variant,
   perspective = FLAT_PERSPECTIVE,
 }: {
-  tags: string[];
+  tags: LocalizedCopy[];
+  locale: Locale;
   frame: ElementRect;
   variant: "card" | "modal";
   perspective?: CardPerspective;
@@ -254,12 +256,12 @@ function FlightTags({
     >
       {tags.map((tag) => (
         <span
-          key={tag}
+          key={tag.en}
           className={`rounded-full bg-chip text-chip-text ${
             isCard ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-xs"
           }`}
         >
-          {tag}
+          {tag[locale]}
         </span>
       ))}
     </div>
@@ -404,6 +406,7 @@ export default function ProjectSharedFlight({
         />
         <FlightTags
           tags={project.tags}
+          locale={locale}
           frame={tagsFrame}
           variant={tagsVariant}
           perspective={metaPerspective}

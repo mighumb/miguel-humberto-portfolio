@@ -823,10 +823,10 @@ export default function ProjectModal({
                 >
                   {project.tags.map((tag) => (
                     <span
-                      key={tag}
+                      key={tag.en}
                       className="rounded-full bg-chip px-3 py-1 text-xs text-chip-text"
                     >
-                      {tag}
+                      {tag[locale]}
                     </span>
                   ))}
                 </div>
