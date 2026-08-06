@@ -187,7 +187,8 @@ export const projects: Project[] = [
     tools: ["Figma Weave", "Magnific"],
     // VS Good product URL - wire when available.
     links: { template: "#" },
-    deliverableCount: 0,
+    // Production / Scene / Worn — replace placeholders once files are uploaded.
+    deliverableCount: 3,
     processTitle: { en: "Workflow", fr: "Workflow" },
     processItems: [],
   },
