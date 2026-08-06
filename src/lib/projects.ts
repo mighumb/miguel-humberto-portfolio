@@ -12,7 +12,7 @@ export type Deliverable =
 export type ProcessItem =
   | { type: "loop"; file: string }
   | { type: "image"; file: string; fullBleed?: boolean }
-  | { type: "linkedin"; url: string };
+  | { type: "player"; file: string; poster: string };
 
 export interface Project {
   id: string;
@@ -321,8 +321,9 @@ export const projects: Project[] = [
         fullBleed: true,
       },
       {
-        type: "linkedin",
-        url: "https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7391647776704450560?compact=1",
+        type: "player",
+        file: "process/process-linkedin-verdio.mp4",
+        poster: "process/poster-linkedin-verdio.jpg",
       },
       {
         type: "image",

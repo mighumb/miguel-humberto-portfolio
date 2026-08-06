@@ -175,42 +175,44 @@ function ProcessSilentLoop({ src }: { src: string }) {
   );
 }
 
-function ProcessLinkedInEmbed({ src }: { src: string }) {
-  const [active, setActive] = useState(false);
+function ProcessClickPlayer({ src, poster }: { src: string; poster: string }) {
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handlePlay = () => {
+    setPlaying(true);
+    videoRef.current?.play().catch(() => {});
+  };
 
   return (
-    <div className="relative mx-auto aspect-[504/399] w-full max-w-3xl overflow-hidden rounded-xl bg-bg-secondary">
-      {active ? (
-        <iframe
-          src={src}
-          title="LinkedIn post"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          allowFullScreen
-          className="h-full w-full border-0"
-        />
-      ) : (
+    <div className="group relative mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-xl bg-bg-secondary">
+      <video
+        ref={videoRef}
+        src={src}
+        poster={poster}
+        controls={playing}
+        playsInline
+        preload="metadata"
+        className="h-full w-full object-cover"
+      />
+      {!playing && (
         <button
           type="button"
-          onClick={() => setActive(true)}
-          className="group absolute inset-0 flex cursor-pointer items-center justify-center border-0 bg-bg-secondary text-text-primary"
-          aria-label="Play LinkedIn post"
+          onClick={handlePlay}
+          className="absolute inset-0 cursor-pointer border-0 bg-transparent"
+          aria-label="Play video"
         >
           <span
-            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,255,255,0.08),transparent_58%)]"
+            className="absolute inset-0 bg-bg-primary/15 transition-colors group-hover:bg-bg-primary/5"
             aria-hidden
           />
-          <span className="relative flex flex-col items-center gap-5">
-            <span className="text-sm font-medium tracking-[0.16em] text-text-secondary uppercase">
-              LinkedIn
-            </span>
-            <span
-              className="flex h-14 w-14 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
-              aria-hidden
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
-                <path d="M8 5.14v13.72L19 12 8 5.14z" />
-              </svg>
-            </span>
+          <span
+            className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+            aria-hidden
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+              <path d="M8 5.14v13.72L19 12 8 5.14z" />
+            </svg>
           </span>
         </button>
       )}
@@ -228,8 +230,14 @@ function ProcessWorkflowStack({
   return (
     <div className="space-y-10 md:space-y-14">
       {items.map((item, index) => {
-        if (item.type === "linkedin") {
-          return <ProcessLinkedInEmbed key={`${item.url}-${index}`} src={item.url} />;
+        if (item.type === "player") {
+          return (
+            <ProcessClickPlayer
+              key={`${item.file}-${index}`}
+              src={`${assetBase}/${item.file}`}
+              poster={`${assetBase}/${item.poster}`}
+            />
+          );
         }
 
         const src = `${assetBase}/${item.file}`;
@@ -375,29 +383,29 @@ function DeliverablesBento({
 
 const CATEGORY_BENTO_FOUR = [
   [
-    "col-span-5 col-start-1 row-start-1",
-    "col-span-3 col-start-6 row-start-1 mt-[8vw]",
-    "col-span-2 col-start-9 row-start-1 mt-[2vw]",
-    "col-span-2 col-start-11 row-start-1 mt-[10vw]",
+    "col-span-2 col-start-1 row-span-2 row-start-1 aspect-square",
+    "col-span-2 col-start-3 row-start-1 aspect-[2/1]",
+    "col-span-1 col-start-3 row-start-2 aspect-square",
+    "col-span-1 col-start-4 row-start-2 aspect-square",
   ],
   [
-    "col-span-5 col-start-8 row-start-1",
-    "col-span-2 col-start-1 row-start-1 mt-[8vw]",
-    "col-span-2 col-start-3 row-start-1 mt-[2vw]",
-    "col-span-3 col-start-5 row-start-1 mt-[10vw]",
+    "col-span-2 col-start-3 row-span-2 row-start-1 aspect-square",
+    "col-span-2 col-start-1 row-start-1 aspect-[2/1]",
+    "col-span-1 col-start-1 row-start-2 aspect-square",
+    "col-span-1 col-start-2 row-start-2 aspect-square",
   ],
 ] as const;
 
 const CATEGORY_BENTO_THREE = [
   [
-    "col-span-5 col-start-1 row-start-1",
-    "col-span-3 col-start-6 row-start-1 mt-[9vw]",
-    "col-span-4 col-start-9 row-start-1 mt-[3vw]",
+    "col-span-2 col-start-1 row-span-2 row-start-1 aspect-square",
+    "col-span-1 col-start-3 row-span-2 row-start-1 aspect-[1/2]",
+    "col-span-1 col-start-4 row-span-2 row-start-1 aspect-[1/2]",
   ],
   [
-    "col-span-5 col-start-8 row-start-1",
-    "col-span-3 col-start-1 row-start-1 mt-[9vw]",
-    "col-span-4 col-start-4 row-start-1 mt-[3vw]",
+    "col-span-2 col-start-3 row-span-2 row-start-1 aspect-square",
+    "col-span-1 col-start-1 row-span-2 row-start-1 aspect-[1/2]",
+    "col-span-1 col-start-2 row-span-2 row-start-1 aspect-[1/2]",
   ],
 ] as const;
 
@@ -458,20 +466,20 @@ function DeliverablesCategoryBento({
         })}
       </div>
 
-      <div className="hidden space-y-[3vw] md:block">
+      <div className="hidden space-y-2 md:block">
         {groups.map(([group, items], groupIndex) => {
           const layouts =
             items.length === 4 ? CATEGORY_BENTO_FOUR : CATEGORY_BENTO_THREE;
           const layout = layouts[groupIndex % 2];
           return (
-            <div key={group} className="grid grid-cols-12 items-start gap-3">
+            <div key={group} className="grid grid-cols-4 items-start gap-2">
               {items.map((deliverable, index) => (
                 <DeliverablePicture
                   key={deliverable.url}
                   deliverable={deliverable}
                   assetBase={assetBase}
                   alt={alt(imageIndex++)}
-                  className={`aspect-square ${layout[index]}`}
+                  className={layout[index]}
                 />
               ))}
             </div>
