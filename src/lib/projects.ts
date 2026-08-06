@@ -184,6 +184,7 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/goodies-factory/cover-video-goodies-factory.mp4",
+    unmuteOnOpen: true,
     tools: ["Figma Weave", "Magnific"],
     // VS Good product URL - wire when available.
     links: { template: "#" },
