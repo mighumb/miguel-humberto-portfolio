@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -280,14 +288,16 @@ function DeliverablePicture({
   assetBase,
   alt,
   className = "",
+  style,
 }: {
   deliverable: ImageDeliverable;
   assetBase: string;
   alt: string;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
-    <picture className={`block overflow-hidden ${className}`}>
+    <picture className={`block overflow-hidden ${className}`} style={style}>
       <source srcSet={`${assetBase}/${deliverable.url}`} type="image/webp" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -381,33 +391,91 @@ function DeliverablesBento({
   );
 }
 
-const CATEGORY_BENTO_FOUR = [
-  [
-    "col-span-2 col-start-1 row-span-2 row-start-1 aspect-square",
-    "col-span-2 col-start-3 row-start-1 aspect-[2/1]",
-    "col-span-1 col-start-3 row-start-2 aspect-square",
-    "col-span-1 col-start-4 row-start-2 aspect-square",
-  ],
-  [
-    "col-span-2 col-start-3 row-span-2 row-start-1 aspect-square",
-    "col-span-2 col-start-1 row-start-1 aspect-[2/1]",
-    "col-span-1 col-start-1 row-start-2 aspect-square",
-    "col-span-1 col-start-2 row-start-2 aspect-square",
-  ],
-] as const;
+/**
+ * One continuous grid. Separate per-category grids left empty track space under
+ * row-span + aspect-ratio cells, so the visual gap between categories looked larger
+ * even when every CSS gap was 8px.
+ */
+function categoryBentoPlacements(groups: ImageDeliverable[][]) {
+  const desktop: { deliverable: ImageDeliverable; style: CSSProperties }[] = [];
+  const mobile: { deliverable: ImageDeliverable; className: string }[] = [];
+  let desktopRow = 1;
 
-const CATEGORY_BENTO_THREE = [
-  [
-    "col-span-2 col-start-1 row-span-2 row-start-1 aspect-square",
-    "col-span-1 col-start-3 row-span-2 row-start-1 aspect-[1/2]",
-    "col-span-1 col-start-4 row-span-2 row-start-1 aspect-[1/2]",
-  ],
-  [
-    "col-span-2 col-start-3 row-span-2 row-start-1 aspect-square",
-    "col-span-1 col-start-1 row-span-2 row-start-1 aspect-[1/2]",
-    "col-span-1 col-start-2 row-span-2 row-start-1 aspect-[1/2]",
-  ],
-] as const;
+  groups.forEach((items, groupIndex) => {
+    const flip = groupIndex % 2 === 1;
+
+    if (items.length === 4) {
+      desktop.push(
+        {
+          deliverable: items[0],
+          style: {
+            gridColumn: flip ? "3 / span 2" : "1 / span 2",
+            gridRow: `${desktopRow} / span 2`,
+          },
+        },
+        {
+          deliverable: items[1],
+          style: {
+            gridColumn: flip ? "1 / span 2" : "3 / span 2",
+            gridRow: `${desktopRow}`,
+          },
+        },
+        {
+          deliverable: items[2],
+          style: {
+            gridColumn: flip ? "1" : "3",
+            gridRow: `${desktopRow + 1}`,
+          },
+        },
+        {
+          deliverable: items[3],
+          style: {
+            gridColumn: flip ? "2" : "4",
+            gridRow: `${desktopRow + 1}`,
+          },
+        },
+      );
+      desktopRow += 2;
+      items.forEach((deliverable) => {
+        mobile.push({ deliverable, className: "aspect-square" });
+      });
+      return;
+    }
+
+    desktop.push(
+      {
+        deliverable: items[0],
+        style: {
+          gridColumn: flip ? "3 / span 2" : "1 / span 2",
+          gridRow: `${desktopRow} / span 2`,
+        },
+      },
+      {
+        deliverable: items[1],
+        style: {
+          gridColumn: flip ? "1" : "3",
+          gridRow: `${desktopRow} / span 2`,
+        },
+      },
+      {
+        deliverable: items[2],
+        style: {
+          gridColumn: flip ? "2" : "4",
+          gridRow: `${desktopRow} / span 2`,
+        },
+      },
+    );
+    desktopRow += 2;
+    items.forEach((deliverable, index) => {
+      mobile.push({
+        deliverable,
+        className: index === 0 ? "col-span-2 aspect-[2/1]" : "aspect-square",
+      });
+    });
+  });
+
+  return { desktop, mobile };
+}
 
 function DeliverablesCategoryBento({
   deliverables,
@@ -426,6 +494,7 @@ function DeliverablesCategoryBento({
       map.set(key, group);
       return map;
     }, new Map<string, ImageDeliverable[]>()),
+    ([, items]) => items,
   );
 
   const alt = (index: number) =>
@@ -433,49 +502,36 @@ function DeliverablesCategoryBento({
       ? `Packshot cosmétique Verdio ${index + 1}`
       : `Verdio cosmetics packshot ${index + 1}`;
 
-  let imageIndex = 0;
+  const { desktop, mobile } = categoryBentoPlacements(groups);
 
   return (
     <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden">
-      <div className="flex flex-col gap-2 md:hidden">
-        {groups.map(([group, items]) => (
-          <div key={group} className="grid grid-cols-2 gap-2">
-            {items.map((deliverable, index) => (
-              <DeliverablePicture
-                key={deliverable.url}
-                deliverable={deliverable}
-                assetBase={assetBase}
-                alt={alt(imageIndex++)}
-                className={
-                  items.length === 3 && index === 0
-                    ? "col-span-2 aspect-[2/1]"
-                    : "aspect-square"
-                }
-              />
-            ))}
-          </div>
+      <div className="grid grid-cols-2 gap-2 md:hidden">
+        {mobile.map(({ deliverable, className }, index) => (
+          <DeliverablePicture
+            key={deliverable.url}
+            deliverable={deliverable}
+            assetBase={assetBase}
+            alt={alt(index)}
+            className={className}
+          />
         ))}
       </div>
 
-      <div className="hidden flex-col gap-2 md:flex">
-        {groups.map(([group, items], groupIndex) => {
-          const layouts =
-            items.length === 4 ? CATEGORY_BENTO_FOUR : CATEGORY_BENTO_THREE;
-          const layout = layouts[groupIndex % 2];
-          return (
-            <div key={group} className="grid grid-cols-4 items-start gap-2">
-              {items.map((deliverable, index) => (
-                <DeliverablePicture
-                  key={deliverable.url}
-                  deliverable={deliverable}
-                  assetBase={assetBase}
-                  alt={alt(imageIndex++)}
-                  className={layout[index]}
-                />
-              ))}
-            </div>
-          );
-        })}
+      <div
+        className="hidden grid-cols-4 gap-2 md:grid"
+        style={{ gridAutoRows: "calc((100vw - 1.5rem) / 4)" }}
+      >
+        {desktop.map(({ deliverable, style }, index) => (
+          <DeliverablePicture
+            key={deliverable.url}
+            deliverable={deliverable}
+            assetBase={assetBase}
+            alt={alt(index)}
+            className="min-h-0 h-full w-full"
+            style={style}
+          />
+        ))}
       </div>
     </div>
   );
