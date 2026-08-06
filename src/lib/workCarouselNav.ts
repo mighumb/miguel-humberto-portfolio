@@ -3,6 +3,7 @@ import {
   stopWorkCarouselMotion,
 } from "@/lib/workDragScroll";
 import { normalizeWorkLoopScroll } from "@/lib/workCarouselLoop";
+import { runWorkFocusPass } from "@/lib/workFocusSync";
 
 /** Slow cinematic glide for arrow prev/next (feels composed, not snappy). */
 const ARROW_SCROLL_MIN_MS = 1050;
@@ -118,6 +119,7 @@ export function scrollWorkCarouselToIndex(
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!smooth || reducedMotion) {
     container.scrollLeft = normalizeWorkLoopScroll(container, target);
+    runWorkFocusPass(container);
     return;
   }
 
@@ -146,17 +148,29 @@ export function scrollWorkCarouselToIndex(
 
   const unregister = registerWorkCarouselMotion(container, stop);
 
+  // A wrap moves the scroll by a whole cycle, so the perspective pass cannot wait
+  // for the scroll event's frame: that frame would paint the cards with the
+  // styling of the position they just left.
+  let lastScroll = start;
+  const applyScroll = (value: number) => {
+    const next = normalizeWorkLoopScroll(container, value);
+    const wrapped = Math.abs(next - lastScroll) > container.clientWidth;
+    container.scrollLeft = next;
+    lastScroll = next;
+    if (wrapped) runWorkFocusPass(container);
+  };
+
   const tick = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
     const virtualScroll = start + delta * easeInOutSine(progress);
-    container.scrollLeft = normalizeWorkLoopScroll(container, virtualScroll);
+    applyScroll(virtualScroll);
 
     if (progress < 1) {
       raf = requestAnimationFrame(tick);
       return;
     }
 
-    container.scrollLeft = normalizeWorkLoopScroll(container, target);
+    applyScroll(target);
     stop();
     // Custom rAF scroll does not always emit scrollend; settle nav pin state.
     container.dispatchEvent(new Event("scrollend"));

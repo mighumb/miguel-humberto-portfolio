@@ -1,3 +1,5 @@
+import { runWorkFocusPass } from "@/lib/workFocusSync";
+
 interface WorkLoopMetrics {
   start: number;
   end: number;
@@ -74,6 +76,7 @@ export function recenterWorkLoopScroll(container: HTMLElement) {
   const normalized = normalizeWorkLoopScroll(container);
   if (Math.abs(normalized - container.scrollLeft) > 0.5) {
     container.scrollLeft = normalized;
+    runWorkFocusPass(container);
   }
   return normalized;
 }
@@ -109,5 +112,6 @@ export function enforceWorkLoopBounds(container: HTMLElement) {
   if (Math.abs(normalized - scrollLeft) < 0.5) return false;
 
   container.scrollLeft = normalized;
+  runWorkFocusPass(container);
   return true;
 }

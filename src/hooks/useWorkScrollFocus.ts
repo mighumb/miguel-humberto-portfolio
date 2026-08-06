@@ -13,6 +13,7 @@ import {
   enforceWorkLoopBounds,
   recenterWorkLoopScroll,
 } from "@/lib/workCarouselLoop";
+import { registerWorkFocusPass } from "@/lib/workFocusSync";
 
 export type CarouselPauseMode = false | "open" | "closing" | "flight";
 
@@ -66,22 +67,10 @@ export function useWorkScrollFocus(
     let idleTimer = 0;
     let touching = false;
 
-    const update = () => {
+    // Styling only: the loop wrap calls this back, so it must not wrap again.
+    const applyFocusStyles = () => {
       const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
       if (!cards.length) return;
-
-      if (touching) {
-        // Finger down: the browser drives the pan from the live scroll offset and
-        // there is no momentum to cancel, so the loop can be wrapped every frame
-        // for free. Keeping the position pinned inside the middle cycle for the
-        // whole drag means the fling that follows always starts with two cycles
-        // of cards on each side — that is what makes the scroll endless.
-        recenterWorkLoopScroll(container);
-      } else {
-        // Momentum is running: only step in within one viewport of a real DOM
-        // edge, where cutting the fling short beats running out of cards.
-        enforceWorkLoopBounds(container);
-      }
 
       // The loop renders many offscreen copies. Only cards that could be seen
       // get the perspective pass; the cutoff sits well beyond the visible span
@@ -105,6 +94,28 @@ export function useWorkScrollFocus(
 
         applyCardPerspective(card, computeCardFocus(card, container));
       });
+    };
+
+    const unregisterFocusPass = registerWorkFocusPass(container, applyFocusStyles);
+
+    const update = () => {
+      const cards = cardRefs.current.filter(Boolean) as HTMLElement[];
+      if (!cards.length) return;
+
+      if (touching) {
+        // Finger down: the browser drives the pan from the live scroll offset and
+        // there is no momentum to cancel, so the loop can be wrapped every frame
+        // for free. Keeping the position pinned inside the middle cycle for the
+        // whole drag means the fling that follows always starts with two cycles
+        // of cards on each side — that is what makes the scroll endless.
+        recenterWorkLoopScroll(container);
+      } else {
+        // Momentum is running: only step in within one viewport of a real DOM
+        // edge, where cutting the fling short beats running out of cards.
+        enforceWorkLoopBounds(container);
+      }
+
+      applyFocusStyles();
     };
 
     // Re-centre into the middle cycle once the scroll has settled. Doing it
@@ -156,6 +167,7 @@ export function useWorkScrollFocus(
     window.addEventListener("resize", scheduleUpdate);
 
     return () => {
+      unregisterFocusPass();
       if (raf) cancelAnimationFrame(raf);
       window.clearTimeout(idleTimer);
       container.removeEventListener("scroll", scheduleUpdate);
