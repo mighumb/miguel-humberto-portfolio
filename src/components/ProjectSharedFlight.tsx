@@ -16,7 +16,12 @@ import {
   perspectiveEase,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { type Project, projectCoverUrl, type LocalizedCopy } from "@/lib/projects";
+import {
+  type Project,
+  projectCoverUrl,
+  projectVideoPosterUrl,
+  type LocalizedCopy,
+} from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
@@ -58,7 +63,9 @@ function FlightThumbnail({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
-  const coverUrl = projectCoverUrl(project);
+  // Video-only projects have no cover still of their own; their card poster is
+  // the frame the flight has to keep showing instead of the numbered gradient.
+  const coverUrl = projectCoverUrl(project) ?? projectVideoPosterUrl(project);
 
   // Touch devices get a frozen flight: mounting a fresh <video> mid-transition
   // means a decode race that mobile Safari loses more often than not (poster
