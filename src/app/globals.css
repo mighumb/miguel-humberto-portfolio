@@ -24,22 +24,22 @@
 }
 
 [data-theme="dark"] {
-  /* Near-black night blue */
-  --bg-primary: #05060a;
-  --bg-secondary: #0a0c12;
-  --bg-tertiary: #12151c;
+  /* Soft blue-anthracite night — lifted off pure black */
+  --bg-primary: #0c0e14;
+  --bg-secondary: #12151c;
+  --bg-tertiary: #1a1e28;
   /* Soft lift so chips read as cells without shouting */
-  --chip-bg: #1a1e28;
+  --chip-bg: #222733;
   --chip-text: #c2c2c7;
   --text-primary: #e8e8ed;
   --text-secondary: #6e6e73;
   --accent: #6e6e73;
-  --border: #1e222c;
-  --modal-bg: #05060a;
-  --header-bg: rgba(5, 6, 10, 0.72);
-  --header-bg-subtle: rgba(5, 6, 10, 0.65);
-  --placeholder: #1e222c;
-  --placeholder-dark: #2c313c;
+  --border: #262b36;
+  --modal-bg: #0c0e14;
+  --header-bg: rgba(12, 14, 20, 0.72);
+  --header-bg-subtle: rgba(12, 14, 20, 0.65);
+  --placeholder: #262b36;
+  --placeholder-dark: #323846;
   --hero-particle: #e8eaf0;
   --hero-particle-alt: #7a8294;
 }
@@ -134,6 +134,76 @@ button:disabled {
 
 .project-modal-backdrop.is-visible {
   opacity: 1;
+}
+
+/* In-modal project switch: short slide + fade + micro scale (not a full-panel push). */
+.project-modal-switch {
+  transform-origin: 50% 12%;
+  will-change: transform, opacity;
+}
+
+.project-modal-switch.is-exit-next {
+  transition:
+    transform 160ms cubic-bezier(0.4, 0, 0.7, 1),
+    opacity 160ms cubic-bezier(0.4, 0, 0.7, 1);
+  transform: translateX(-18px) scale(0.992);
+  opacity: 0;
+}
+
+.project-modal-switch.is-exit-prev {
+  transition:
+    transform 160ms cubic-bezier(0.4, 0, 0.7, 1),
+    opacity 160ms cubic-bezier(0.4, 0, 0.7, 1);
+  transform: translateX(18px) scale(0.992);
+  opacity: 0;
+}
+
+.project-modal-switch.is-enter-next {
+  animation: project-modal-enter-next 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.project-modal-switch.is-enter-prev {
+  animation: project-modal-enter-prev 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes project-modal-enter-next {
+  from {
+    opacity: 0;
+    transform: translateX(28px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes project-modal-enter-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-28px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .project-modal-switch.is-exit-next,
+  .project-modal-switch.is-exit-prev {
+    transition: opacity 160ms ease;
+    transform: none;
+  }
+
+  .project-modal-switch.is-enter-next,
+  .project-modal-switch.is-enter-prev {
+    animation: project-modal-enter-fade 280ms ease both;
+  }
+
+  @keyframes project-modal-enter-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }
 
 .project-shared-flight-thumb,

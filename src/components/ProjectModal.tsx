@@ -39,6 +39,9 @@ interface ProjectModalProps {
   /** Frame captured from the card at click time; covers the hero video while
    *  it seeks to the handoff position, which would otherwise render black. */
   videoPoster?: string;
+  /** In-modal prev/next switch animation phase. */
+  switchPhase?: "idle" | "exit" | "enter";
+  switchDirection?: "prev" | "next" | null;
   onFlightTargetsReady: (targets: ModalTargets) => void;
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
@@ -890,6 +893,8 @@ export default function ProjectModal({
   videoPlaying,
   videoTime,
   videoPoster,
+  switchPhase = "idle",
+  switchDirection = null,
   onFlightTargetsReady,
   onRegisterMeasure,
 }: ProjectModalProps) {
@@ -1063,6 +1068,10 @@ export default function ProjectModal({
   if (typeof document === "undefined") return null;
 
   const sharedHidden = !sharedContentVisible;
+  const switchClass =
+    switchPhase !== "idle" && switchDirection
+      ? `is-${switchPhase}-${switchDirection}`
+      : "";
 
   return createPortal(
     <div
@@ -1081,7 +1090,7 @@ export default function ProjectModal({
         className="project-modal-scroll relative z-[1] h-full overflow-x-hidden overflow-y-auto overscroll-contain"
       >
         <div
-          className={`project-modal-body ${sharedContentVisible ? "is-visible" : ""}`}
+          className={`project-modal-body project-modal-switch ${switchClass} ${sharedContentVisible ? "is-visible" : ""}`}
         >
           <div
             className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"

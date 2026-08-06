@@ -26,7 +26,7 @@ import {
   type FlightPair,
   type ModalTargets,
 } from "@/lib/motion";
-import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
+import { getSavedScrollPosition, snapScrollTo, updateSavedScrollPosition } from "@/lib/scrollLock";
 import {
   animateCardPerspectives,
   applySnapshotPerspective,
@@ -38,6 +38,13 @@ import { alignCardIntoView } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
+
+const SWITCH_EXIT_MS = 160;
+const SWITCH_ENTER_MS = 400;
+
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
 
 /**
  * Odd number of copies so the viewport rests in the exact middle cycle. Two
@@ -177,6 +184,8 @@ export default function Projects() {
   const [closeFlightPerspective, setCloseFlightPerspective] = useState<CardPerspective | null>(
     null,
   );
+  const [switchPhase, setSwitchPhase] = useState<"idle" | "exit" | "enter">("idle");
+  const [switchDirection, setSwitchDirection] = useState<"prev" | "next" | null>(null);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -184,6 +193,8 @@ export default function Projects() {
   const prevPhaseRef = useRef<TransitionPhase>("idle");
   const hadActiveProjectRef = useRef(false);
   const savedWorkScrollLeftRef = useRef(0);
+  /** Page scroll when leaving home — restored on mobile close. */
+  const homePageScrollRef = useRef({ x: 0, y: 0 });
   const carouselSnapshotRef = useRef<Map<string, CardPerspective> | null>(null);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
@@ -192,6 +203,7 @@ export default function Projects() {
   const closedViaTransitionRef = useRef(false);
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
+  const switchTimersRef = useRef<number[]>([]);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -415,6 +427,10 @@ export default function Projects() {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+    switchTimersRef.current = [];
+    setSwitchPhase("idle");
+    setSwitchDirection(null);
     setActiveProject(null);
     resetTransition();
   }, [resetTransition]);
@@ -445,7 +461,15 @@ export default function Projects() {
 
     const instanceId = activeInstanceRef.current ?? undefined;
     const card = findVisibleProjectCard(project.id, instanceId);
-    if (card) alignCardIntoView(card);
+    // Mobile: never nudge page Y on close — restore the exact home viewport
+    // from open time so "Who I am" keeps its peek.
+    if (isMobileViewport()) {
+      const { x, y } = homePageScrollRef.current;
+      snapScrollTo(x, y);
+      updateSavedScrollPosition(x, y);
+    } else if (card) {
+      alignCardIntoView(card);
+    }
 
     // Re-flatten after scroll nudge (align can change which cards are nearby).
     if (container) {
@@ -490,9 +514,13 @@ export default function Projects() {
       carouselSnapshotRef.current = captureCardPerspectives(scrollRef.current);
     }
 
+    homePageScrollRef.current = { x: window.scrollX, y: window.scrollY };
+
     setActiveIndex(index);
     setActiveProject(project);
     setActiveInstanceId(origin?.carouselInstanceId ?? null);
+    setSwitchPhase("idle");
+    setSwitchDirection(null);
 
     if (!origin || prefersReducedMotion()) {
       setSharedContentVisible(true);
@@ -601,18 +629,51 @@ export default function Projects() {
   }, [activeProject, closeModal]);
 
   const navigate = (direction: "prev" | "next") => {
+    if (phase !== "open" || switchPhase !== "idle") return;
+
     const newIndex =
       direction === "next"
         ? (activeIndex + 1) % projects.length
         : (activeIndex - 1 + projects.length) % projects.length;
-    setFlightShowVideo(false);
-    setFlightVideoTime(0);
-    setActiveIndex(newIndex);
-    setActiveProject(projects[newIndex]);
-    // Different project than the card we came from: let the close flight pick
-    // the copy nearest the carousel instead of the stale one.
-    setActiveInstanceId(null);
+
+    const applyProject = () => {
+      setFlightShowVideo(false);
+      setFlightVideoTime(0);
+      setActiveIndex(newIndex);
+      setActiveProject(projects[newIndex]);
+      // Different project than the card we came from: let the close flight pick
+      // the copy nearest the carousel instead of the stale one.
+      setActiveInstanceId(null);
+    };
+
+    if (prefersReducedMotion()) {
+      applyProject();
+      return;
+    }
+
+    switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+    switchTimersRef.current = [];
+
+    setSwitchDirection(direction);
+    setSwitchPhase("exit");
+
+    const exitTimer = window.setTimeout(() => {
+      applyProject();
+      setSwitchPhase("enter");
+      const enterTimer = window.setTimeout(() => {
+        setSwitchPhase("idle");
+        setSwitchDirection(null);
+      }, SWITCH_ENTER_MS);
+      switchTimersRef.current.push(enterTimer);
+    }, SWITCH_EXIT_MS);
+    switchTimersRef.current.push(exitTimer);
   };
+
+  useEffect(() => {
+    return () => {
+      switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+    };
+  }, []);
 
   const registerMeasure = useCallback((fn: (() => ModalTargets | null) | null) => {
     measureRef.current = fn;
@@ -698,6 +759,8 @@ export default function Projects() {
           videoPlaying={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}
+          switchPhase={switchPhase}
+          switchDirection={switchDirection}
           onFlightTargetsReady={handleFlightTargetsReady}
           onRegisterMeasure={registerMeasure}
         />

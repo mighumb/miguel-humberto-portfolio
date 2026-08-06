@@ -23,8 +23,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#05060a" },
-    { color: "#05060a" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0e14" },
+    { color: "#0c0e14" },
   ],
 };
 
@@ -41,7 +41,7 @@ const modeBootstrap = `
     document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.dataset.mode = mode;
 
-    var color = theme === "light" ? "#f5f5f7" : "#05060a";
+    var color = theme === "light" ? "#f5f5f7" : "#0c0e14";
     var meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) {
       meta = document.createElement("meta");
