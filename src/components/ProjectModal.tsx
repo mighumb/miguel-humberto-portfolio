@@ -175,6 +175,49 @@ function ProcessSilentLoop({ src }: { src: string }) {
   );
 }
 
+function ProcessLinkedInEmbed({ src }: { src: string }) {
+  const [active, setActive] = useState(false);
+
+  return (
+    <div className="relative mx-auto aspect-[504/399] w-full max-w-3xl overflow-hidden rounded-xl bg-bg-secondary">
+      {active ? (
+        <iframe
+          src={src}
+          title="LinkedIn post"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          className="h-full w-full border-0"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setActive(true)}
+          className="group absolute inset-0 flex cursor-pointer items-center justify-center border-0 bg-bg-secondary text-text-primary"
+          aria-label="Play LinkedIn post"
+        >
+          <span
+            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(255,255,255,0.08),transparent_58%)]"
+            aria-hidden
+          />
+          <span className="relative flex flex-col items-center gap-5">
+            <span className="text-sm font-medium tracking-[0.16em] text-text-secondary uppercase">
+              LinkedIn
+            </span>
+            <span
+              className="flex h-14 w-14 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+              aria-hidden
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+                <path d="M8 5.14v13.72L19 12 8 5.14z" />
+              </svg>
+            </span>
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ProcessWorkflowStack({
   items,
   assetBase,
@@ -185,6 +228,10 @@ function ProcessWorkflowStack({
   return (
     <div className="space-y-10 md:space-y-14">
       {items.map((item, index) => {
+        if (item.type === "linkedin") {
+          return <ProcessLinkedInEmbed key={`${item.url}-${index}`} src={item.url} />;
+        }
+
         const src = `${assetBase}/${item.file}`;
 
         if (item.type === "loop") {
@@ -321,6 +368,115 @@ function DeliverablesBento({
             })}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+const CATEGORY_BENTO_FOUR = [
+  [
+    "col-span-5 col-start-1 row-start-1",
+    "col-span-3 col-start-6 row-start-1 mt-[8vw]",
+    "col-span-2 col-start-9 row-start-1 mt-[2vw]",
+    "col-span-2 col-start-11 row-start-1 mt-[10vw]",
+  ],
+  [
+    "col-span-5 col-start-8 row-start-1",
+    "col-span-2 col-start-1 row-start-1 mt-[8vw]",
+    "col-span-2 col-start-3 row-start-1 mt-[2vw]",
+    "col-span-3 col-start-5 row-start-1 mt-[10vw]",
+  ],
+] as const;
+
+const CATEGORY_BENTO_THREE = [
+  [
+    "col-span-5 col-start-1 row-start-1",
+    "col-span-3 col-start-6 row-start-1 mt-[9vw]",
+    "col-span-4 col-start-9 row-start-1 mt-[3vw]",
+  ],
+  [
+    "col-span-5 col-start-8 row-start-1",
+    "col-span-3 col-start-1 row-start-1 mt-[9vw]",
+    "col-span-4 col-start-4 row-start-1 mt-[3vw]",
+  ],
+] as const;
+
+function DeliverablesCategoryBento({
+  deliverables,
+  assetBase,
+  locale,
+}: {
+  deliverables: ImageDeliverable[];
+  assetBase: string;
+  locale: "en" | "fr";
+}) {
+  const groups = Array.from(
+    deliverables.reduce((map, deliverable) => {
+      const key = deliverable.group ?? "default";
+      const group = map.get(key) ?? [];
+      group.push(deliverable);
+      map.set(key, group);
+      return map;
+    }, new Map<string, ImageDeliverable[]>()),
+  );
+
+  const alt = (index: number) =>
+    locale === "fr"
+      ? `Packshot cosmétique Verdio ${index + 1}`
+      : `Verdio cosmetics packshot ${index + 1}`;
+
+  let imageIndex = 0;
+
+  return (
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden">
+      <div className="space-y-12 md:hidden">
+        {groups.map(([group, items]) => {
+          const mobileColumns = [
+            items.filter((_, index) => index % 2 === 0),
+            items.filter((_, index) => index % 2 === 1),
+          ];
+          return (
+            <div key={group} className="grid grid-cols-2 items-start gap-2">
+              {mobileColumns.map((column, columnIndex) => (
+                <div
+                  key={columnIndex}
+                  className={`space-y-2 ${columnIndex === 1 ? "pt-10" : ""}`}
+                >
+                  {column.map((deliverable) => (
+                    <DeliverablePicture
+                      key={deliverable.url}
+                      deliverable={deliverable}
+                      assetBase={assetBase}
+                      alt={alt(imageIndex++)}
+                      className="aspect-square"
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden space-y-[3vw] md:block">
+        {groups.map(([group, items], groupIndex) => {
+          const layouts =
+            items.length === 4 ? CATEGORY_BENTO_FOUR : CATEGORY_BENTO_THREE;
+          const layout = layouts[groupIndex % 2];
+          return (
+            <div key={group} className="grid grid-cols-12 items-start gap-3">
+              {items.map((deliverable, index) => (
+                <DeliverablePicture
+                  key={deliverable.url}
+                  deliverable={deliverable}
+                  assetBase={assetBase}
+                  alt={alt(imageIndex++)}
+                  className={`aspect-square ${layout[index]}`}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -967,7 +1123,17 @@ export default function ProjectModal({
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
-              {project.deliverables && project.deliverableLayout === "bento" ? (
+              {project.deliverables &&
+              project.deliverableLayout === "category-bento" ? (
+                <DeliverablesCategoryBento
+                  deliverables={project.deliverables.filter(
+                    (deliverable): deliverable is ImageDeliverable =>
+                      deliverable.type === "image"
+                  )}
+                  assetBase={projectAssetBase(project)}
+                  locale={locale}
+                />
+              ) : project.deliverables && project.deliverableLayout === "bento" ? (
                 <DeliverablesBento
                   deliverables={project.deliverables.filter(
                     (deliverable): deliverable is ImageDeliverable =>

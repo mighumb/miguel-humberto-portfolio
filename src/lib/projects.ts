@@ -5,13 +5,14 @@ export type LocalizedCopy = { en: string; fr: string };
 export type Deliverable =
   | { type: "video"; url: string }
   | { type: "instagram"; url: string }
-  | { type: "image"; url: string; fallback: string }
+  | { type: "image"; url: string; fallback: string; group?: string }
   | { type: "placeholder" };
 
 /** Vertical workflow media (not the Ekara stacked-card pile). */
 export type ProcessItem =
   | { type: "loop"; file: string }
-  | { type: "image"; file: string; fullBleed?: boolean };
+  | { type: "image"; file: string; fullBleed?: boolean }
+  | { type: "linkedin"; url: string };
 
 export interface Project {
   id: string;
@@ -55,7 +56,7 @@ export interface Project {
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
   deliverables?: Deliverable[];
   /** Optional full-viewport, staggered layout for image deliverables. */
-  deliverableLayout?: "bento";
+  deliverableLayout?: "bento" | "category-bento";
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
@@ -282,15 +283,53 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/verdio/cover-video-verdio.mp4",
+    videoPoster: "poster-cover-verdio.jpg",
     unmuteOnOpen: true,
     tools: ["Figma Weave", "Figma", "Nano Banana"],
     links: {
       notion:
         "https://zenith-flood-86d.notion.site/WORKFLOW-Packaging-Photor-aliste-avec-l-IA-2717cd46589480ea9f76ecb39715256d?source=copy_link",
     },
-    deliverableCount: 0,
+    deliverableCount: 14,
+    deliverableLayout: "category-bento",
+    deliverables: [
+      ["alv", "alv_1"],
+      ["alv", "alv_0"],
+      ["alv", "alv_2"],
+      ["alv", "alv_3"],
+      ["crh", "crh_0_4k"],
+      ["crh", "crh_2"],
+      ["crh", "crh_3"],
+      ["crh", "crh_1"],
+      ["map", "map_1"],
+      ["map", "map_2"],
+      ["map", "map_3"],
+      ["hln", "hln_1"],
+      ["hln", "hln_2"],
+      ["hln", "hln_3"],
+    ].map(([group, name]) => ({
+      type: "image" as const,
+      group,
+      url: `deliverables/deliverable-${name}-verdio.webp`,
+      fallback: `deliverables/deliverable-${name}-verdio.jpg`,
+    })),
     processTitle: { en: "Workflow", fr: "Workflow" },
-    processItems: [],
+    processItems: [
+      {
+        type: "image",
+        file: "process/process-figma-1-verdio.png",
+        fullBleed: true,
+      },
+      {
+        type: "linkedin",
+        url: "https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7391647776704450560?compact=1",
+      },
+      {
+        type: "image",
+        file: "process/process-figma-weave-verdio.png",
+        fullBleed: true,
+      },
+    ],
   },
   {
     id: "c01",
