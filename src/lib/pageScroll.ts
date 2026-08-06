@@ -1,19 +1,21 @@
-const MAX_DURATION_MS = 1350;
-const MIN_DURATION_MS = 750;
+/* Native "smooth" crosses the whole page in roughly 600ms, which reads as a jump
+   rather than a move. These bounds keep a short hop clearly eased and let a
+   full-page journey take its time without dragging. */
+const MIN_DURATION_MS = 1400;
+const MAX_DURATION_MS = 2200;
+const MS_PER_PX = 0.6;
 
 let cancelActiveScroll: (() => void) | null = null;
 
-function easeInOutCubic(progress: number) {
+/* Quart over cubic: softer departure and a much longer landing, which is what
+   makes the arrival feel settled instead of cut short. */
+function easeInOutQuart(progress: number) {
   return progress < 0.5
-    ? 4 * progress * progress * progress
-    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+    ? 8 * progress * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 4) / 2;
 }
 
-function prefersNativePageScroll() {
-  return !window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-}
-
-/** Smooth, interruptible page scroll for long desktop journeys. */
+/** Smooth, interruptible page scroll for section-to-section journeys. */
 export function scrollPageTo(top: number) {
   cancelActiveScroll?.();
 
@@ -28,17 +30,11 @@ export function scrollPageTo(top: number) {
     return;
   }
 
-  // Touch browsers already tune momentum and cancellation for the device.
-  if (prefersNativePageScroll()) {
-    window.scrollTo({ top: targetTop, behavior: "smooth" });
-    return;
-  }
-
   const startTop = window.scrollY;
   const distance = targetTop - startTop;
   const duration = Math.min(
     MAX_DURATION_MS,
-    Math.max(MIN_DURATION_MS, 600 + Math.abs(distance) * 0.18),
+    Math.max(MIN_DURATION_MS, Math.abs(distance) * MS_PER_PX),
   );
   const startTime = performance.now();
   let raf = 0;
@@ -72,7 +68,7 @@ export function scrollPageTo(top: number) {
 
   const step = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
-    window.scrollTo({ top: startTop + distance * easeInOutCubic(progress) });
+    window.scrollTo({ top: startTop + distance * easeInOutQuart(progress) });
 
     if (progress < 1) {
       raf = requestAnimationFrame(step);
