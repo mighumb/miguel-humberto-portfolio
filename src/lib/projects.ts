@@ -187,6 +187,7 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/goodies-factory/cover-video-goodies-factory.mp4",
+    videoPoster: "poster-cover-goodies-factory.jpg",
     unmuteOnOpen: true,
     tools: [
       "Figma Weave",
