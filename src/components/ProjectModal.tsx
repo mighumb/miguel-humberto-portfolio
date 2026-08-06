@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useLayoutEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
@@ -175,6 +183,112 @@ function ProcessSilentLoop({ src }: { src: string }) {
   );
 }
 
+function LinkedInMark({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+      className={className}
+    >
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
+function ProcessClickPlayer({
+  src,
+  poster,
+  linkedinUrl,
+}: {
+  src: string;
+  poster: string;
+  linkedinUrl?: string;
+}) {
+  const { locale } = useLocale();
+  const t = translations[locale];
+  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handlePlay = () => {
+    setPlaying(true);
+    videoRef.current?.play().catch(() => {});
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="group relative aspect-video overflow-hidden rounded-xl bg-bg-secondary">
+        <video
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          controls={playing}
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
+        {!playing && (
+          <button
+            type="button"
+            onClick={handlePlay}
+            className="absolute inset-0 cursor-pointer border-0 bg-transparent"
+            aria-label="Play video"
+          >
+            <span
+              className="absolute inset-0 bg-bg-primary/15 transition-colors group-hover:bg-bg-primary/5"
+              aria-hidden
+            />
+            <span
+              className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+              aria-hidden
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+                <path d="M8 5.14v13.72L19 12 8 5.14z" />
+              </svg>
+            </span>
+          </button>
+        )}
+        {/* Desktop: overlay badge. Hidden on mobile to avoid native mute control clash. */}
+        {linkedinUrl && (
+          <a
+            href={linkedinUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            className="group/li absolute right-3 top-3 z-20 hidden outline-none md:flex"
+            aria-label={t.modal.viewOnLinkedin}
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white transition-colors group-hover/li:bg-black/55 group-focus-visible/li:bg-black/55">
+              <LinkedInMark />
+            </span>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute right-full top-1/2 z-30 mr-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black/80 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/li:opacity-100 group-focus-visible/li:opacity-100"
+            >
+              {t.modal.viewOnLinkedin}
+            </span>
+          </a>
+        )}
+      </div>
+      {/* Mobile: link under the player so native controls stay free. */}
+      {linkedinUrl && (
+        <a
+          href={linkedinUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-text-secondary transition-colors hover:text-text-primary md:hidden"
+        >
+          <LinkedInMark className="h-3.5 w-3.5 shrink-0" />
+          {t.modal.viewOnLinkedin}
+        </a>
+      )}
+    </div>
+  );
+}
+
 function ProcessWorkflowStack({
   items,
   assetBase,
@@ -185,6 +299,17 @@ function ProcessWorkflowStack({
   return (
     <div className="space-y-10 md:space-y-14">
       {items.map((item, index) => {
+        if (item.type === "player") {
+          return (
+            <ProcessClickPlayer
+              key={`${item.file}-${index}`}
+              src={`${assetBase}/${item.file}`}
+              poster={`${assetBase}/${item.poster}`}
+              linkedinUrl={item.linkedinUrl}
+            />
+          );
+        }
+
         const src = `${assetBase}/${item.file}`;
 
         if (item.type === "loop") {
@@ -225,14 +350,16 @@ function DeliverablePicture({
   assetBase,
   alt,
   className = "",
+  style,
 }: {
   deliverable: ImageDeliverable;
   assetBase: string;
   alt: string;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
-    <picture className={`block overflow-hidden ${className}`}>
+    <picture className={`block overflow-hidden ${className}`} style={style}>
       <source srcSet={`${assetBase}/${deliverable.url}`} type="image/webp" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -320,6 +447,152 @@ function DeliverablesBento({
               );
             })}
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One continuous grid. Separate per-category grids left empty track space under
+ * row-span + aspect-ratio cells, so the visual gap between categories looked larger
+ * even when every CSS gap was 8px.
+ */
+function categoryBentoPlacements(groups: ImageDeliverable[][]) {
+  const desktop: { deliverable: ImageDeliverable; style: CSSProperties }[] = [];
+  const mobile: { deliverable: ImageDeliverable; className: string }[] = [];
+  let desktopRow = 1;
+
+  groups.forEach((items, groupIndex) => {
+    const flip = groupIndex % 2 === 1;
+
+    if (items.length === 4) {
+      desktop.push(
+        {
+          deliverable: items[0],
+          style: {
+            gridColumn: flip ? "3 / span 2" : "1 / span 2",
+            gridRow: `${desktopRow} / span 2`,
+          },
+        },
+        {
+          deliverable: items[1],
+          style: {
+            gridColumn: flip ? "1 / span 2" : "3 / span 2",
+            gridRow: `${desktopRow}`,
+          },
+        },
+        {
+          deliverable: items[2],
+          style: {
+            gridColumn: flip ? "1" : "3",
+            gridRow: `${desktopRow + 1}`,
+          },
+        },
+        {
+          deliverable: items[3],
+          style: {
+            gridColumn: flip ? "2" : "4",
+            gridRow: `${desktopRow + 1}`,
+          },
+        },
+      );
+      desktopRow += 2;
+      items.forEach((deliverable) => {
+        mobile.push({ deliverable, className: "aspect-square" });
+      });
+      return;
+    }
+
+    desktop.push(
+      {
+        deliverable: items[0],
+        style: {
+          gridColumn: flip ? "3 / span 2" : "1 / span 2",
+          gridRow: `${desktopRow} / span 2`,
+        },
+      },
+      {
+        deliverable: items[1],
+        style: {
+          gridColumn: flip ? "1" : "3",
+          gridRow: `${desktopRow} / span 2`,
+        },
+      },
+      {
+        deliverable: items[2],
+        style: {
+          gridColumn: flip ? "2" : "4",
+          gridRow: `${desktopRow} / span 2`,
+        },
+      },
+    );
+    desktopRow += 2;
+    items.forEach((deliverable, index) => {
+      mobile.push({
+        deliverable,
+        className: index === 0 ? "col-span-2 aspect-[2/1]" : "aspect-square",
+      });
+    });
+  });
+
+  return { desktop, mobile };
+}
+
+function DeliverablesCategoryBento({
+  deliverables,
+  assetBase,
+  locale,
+}: {
+  deliverables: ImageDeliverable[];
+  assetBase: string;
+  locale: "en" | "fr";
+}) {
+  const groups = Array.from(
+    deliverables.reduce((map, deliverable) => {
+      const key = deliverable.group ?? "default";
+      const group = map.get(key) ?? [];
+      group.push(deliverable);
+      map.set(key, group);
+      return map;
+    }, new Map<string, ImageDeliverable[]>()),
+    ([, items]) => items,
+  );
+
+  const alt = (index: number) =>
+    locale === "fr"
+      ? `Packshot cosmétique Verdio ${index + 1}`
+      : `Verdio cosmetics packshot ${index + 1}`;
+
+  const { desktop, mobile } = categoryBentoPlacements(groups);
+
+  return (
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden">
+      <div className="grid grid-cols-2 gap-2 md:hidden">
+        {mobile.map(({ deliverable, className }, index) => (
+          <DeliverablePicture
+            key={deliverable.url}
+            deliverable={deliverable}
+            assetBase={assetBase}
+            alt={alt(index)}
+            className={className}
+          />
+        ))}
+      </div>
+
+      <div
+        className="hidden grid-cols-4 gap-2 md:grid"
+        style={{ gridAutoRows: "calc((100vw - 1.5rem) / 4)" }}
+      >
+        {desktop.map(({ deliverable, style }, index) => (
+          <DeliverablePicture
+            key={deliverable.url}
+            deliverable={deliverable}
+            assetBase={assetBase}
+            alt={alt(index)}
+            className="min-h-0 h-full w-full"
+            style={style}
+          />
         ))}
       </div>
     </div>
@@ -967,7 +1240,17 @@ export default function ProjectModal({
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
-              {project.deliverables && project.deliverableLayout === "bento" ? (
+              {project.deliverables &&
+              project.deliverableLayout === "category-bento" ? (
+                <DeliverablesCategoryBento
+                  deliverables={project.deliverables.filter(
+                    (deliverable): deliverable is ImageDeliverable =>
+                      deliverable.type === "image"
+                  )}
+                  assetBase={projectAssetBase(project)}
+                  locale={locale}
+                />
+              ) : project.deliverables && project.deliverableLayout === "bento" ? (
                 <DeliverablesBento
                   deliverables={project.deliverables.filter(
                     (deliverable): deliverable is ImageDeliverable =>
