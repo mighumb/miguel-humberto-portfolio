@@ -51,6 +51,7 @@ export const translations = {
       tiktok: "TikTok",
       figma: "Figma File",
       template: "Get template",
+      viewOnLinkedin: "View on LinkedIn",
     },
     header: {
       contact: "Contact",
@@ -106,6 +107,7 @@ export const translations = {
       tiktok: "TikTok",
       figma: "Fichier Figma",
       template: "Obtenir le template",
+      viewOnLinkedin: "Voir sur LinkedIn",
     },
     header: {
       contact: "Contact",

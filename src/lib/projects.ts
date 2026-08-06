@@ -12,7 +12,7 @@ export type Deliverable =
 export type ProcessItem =
   | { type: "loop"; file: string }
   | { type: "image"; file: string; fullBleed?: boolean }
-  | { type: "player"; file: string; poster: string };
+  | { type: "player"; file: string; poster: string; linkedinUrl?: string };
 
 export interface Project {
   id: string;
@@ -324,6 +324,8 @@ export const projects: Project[] = [
         type: "player",
         file: "process/process-linkedin-verdio.mp4",
         poster: "process/poster-linkedin-verdio.jpg",
+        linkedinUrl:
+          "https://www.linkedin.com/posts/miguel-humberto-a15b4794_directionartistique-designgraphique-moodboard-activity-7391889587675045888-ewkf",
       },
       {
         type: "image",
