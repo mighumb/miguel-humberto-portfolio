@@ -172,8 +172,8 @@ export const projects: Project[] = [
     track: "ai",
     title: { en: "Goodies Factory", fr: "Goodies Factory" },
     context: {
-      en: "Goodies Factory is a set of three AI templates — Production, Scene, and Worn — for branded merchandise mockups. From a logo to a blank product, then a styled scene and a worn look, the workflow builds photoreal mockups for marketers and designers who want distinctive goodies instead of stock imagery.",
-      fr: "Goodies Factory est un set de trois templates IA — Production, Scene et Worn — pour des mockups de goodies de marque. Du logo au produit vierge, puis à une scène stylisée et un rendu porté, le workflow produit des mockups photoréalistes pour les marketeurs et designers qui veulent des goodies distinctifs plutôt que des images stock.",
+      en: "Goodies Factory is a set of three AI templates (Production, Scene, and Worn) for branded merchandise mockups. From a logo to a blank product, then a styled scene and a worn look, the workflow builds photoreal mockups for marketers and designers who want distinctive goodies instead of stock imagery.",
+      fr: "Goodies Factory est un set de trois templates IA (Production, Scene et Worn) pour des mockups de goodies de marque. Du logo au produit vierge, puis à une scène stylisée et un rendu porté, le workflow produit des mockups photoréalistes pour les marketeurs et designers qui veulent des goodies distinctifs plutôt que des images stock.",
     },
     tags: [
       { en: "Template", fr: "Template" },
@@ -185,7 +185,7 @@ export const projects: Project[] = [
     hasVideo: true,
     videoUrl: "/projects/ai/goodies-factory/cover-video-goodies-factory.mp4",
     tools: ["Figma Weave", "Magnific"],
-    // VS Good product URL — wire when available.
+    // VS Good product URL - wire when available.
     links: { template: "#" },
     deliverableCount: 0,
     processTitle: { en: "Workflow", fr: "Workflow" },
