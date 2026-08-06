@@ -30,7 +30,7 @@ export default function SiteNav({ className = "", onBrandClick }: SiteNavProps) 
           }
           scrollPageTo(0);
         }}
-        className="cursor-pointer text-sm font-medium tracking-tight text-text-primary transition-opacity hover:opacity-70 md:text-base"
+        className="cursor-pointer text-sm font-medium tracking-tight text-text-secondary transition-colors hover:text-text-primary md:text-base"
       >
         Miguel Humberto
       </a>
