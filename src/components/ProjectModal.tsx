@@ -912,10 +912,10 @@ export default function ProjectModal({
   // only matches during the open handoff. Every other case (notably a prev/next
   // switch) falls back to the project's own still.
   const heroStill = (videoPlaying && videoPoster) || projectVideoPosterUrl(project);
-  // The still stays layered over the hero video until the video has actually
-  // PRESENTED a frame. The `poster` attribute is not enough: a video that is
-  // still seeking/decoding paints black on mobile Safari, poster or not.
-  const [heroPosterVisible, setHeroPosterVisible] = useState(true);
+  // A video with no decoded frame paints black rather than showing its poster on
+  // mobile Safari, so the element stays fully transparent until the browser
+  // reports data for the source it currently holds.
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
   // On touch devices, enabling `controls` at reveal makes iOS pop its native
   // control chrome over the hero — big center pause button, skip buttons and
   // a DARK SCRIM — which reads as a dark flash right at the end of the
@@ -935,10 +935,10 @@ export default function ProjectModal({
   }, [project.id]);
 
   // A prev/next switch swaps `src` on the SAME video element, which drops back
-  // to no decoded frame. Re-arm the still so the swap never shows black.
+  // to no decoded frame. Hide it again so the swap never shows black.
   useLayoutEffect(() => {
-    setHeroPosterVisible(true);
-  }, [project.id]);
+    setHeroVideoReady(false);
+  }, [project.videoUrl]);
 
   useScrollLock(true);
 
@@ -949,43 +949,29 @@ export default function ProjectModal({
   }, [project.id, project.hasVideo, videoPlaying, videoTime]);
 
   useEffect(() => {
-    // Once the modal content is revealed, drop the poster overlay as soon as
-    // the video PRESENTS a frame (rVFC when available). Deliberately no
-    // timeout: on a slow mobile connection the video can take seconds to
-    // buffer, and force-dropping the overlay would reveal a black element.
-    // If playback never starts, keeping the frozen frame is strictly better
-    // than black.
-    if (!heroPosterVisible || !sharedContentVisible) return;
+    if (heroVideoReady) return;
     const video = heroVideoRef.current;
-    if (!video) {
-      setHeroPosterVisible(false);
-      return;
-    }
-    let cancelled = false;
-    const clear = () => {
-      if (cancelled) return;
-      // Safari can fire the frame callback while the swapped src still has no
-      // decoded data; dropping the still then is exactly the black frame.
-      if (video.readyState < 2) {
-        video.addEventListener("loadeddata", clear, { once: true });
-        return;
-      }
-      setHeroPosterVisible(false);
-    };
-    const rvfcVideo = video as HTMLVideoElement & {
-      requestVideoFrameCallback?: (cb: () => void) => number;
-    };
-    if (typeof rvfcVideo.requestVideoFrameCallback === "function") {
-      rvfcVideo.requestVideoFrameCallback(clear);
-    } else {
-      video.addEventListener("timeupdate", clear, { once: true });
-    }
+    if (!video) return;
+
+    // Media events are emitted per load, so a listener attached after the src
+    // swap can only hear the new source. That makes them the one signal that
+    // cannot be stale, unlike readyState or a frame callback, both of which can
+    // still describe the previous source for a beat after the swap.
+    const reveal = () => setHeroVideoReady(true);
+    video.addEventListener("loadeddata", reveal);
+    video.addEventListener("canplay", reveal);
+    video.addEventListener("playing", reveal);
+
+    // Covers the case where the element already holds decoded data for this
+    // source, e.g. the open handoff seeking an already-buffered video.
+    if (video.readyState >= 2 && video.currentSrc) reveal();
+
     return () => {
-      cancelled = true;
-      video.removeEventListener("timeupdate", clear);
-      video.removeEventListener("loadeddata", clear);
+      video.removeEventListener("loadeddata", reveal);
+      video.removeEventListener("canplay", reveal);
+      video.removeEventListener("playing", reveal);
     };
-  }, [heroPosterVisible, sharedContentVisible, project.id]);
+  }, [heroVideoReady, project.videoUrl]);
 
   useEffect(() => {
     const video = heroVideoRef.current;
@@ -1162,6 +1148,18 @@ export default function ProjectModal({
                     ? "bg-bg-secondary"
                     : "project-placeholder-gradient"
                 } ${sharedHidden ? "is-shared-hidden" : ""}`}
+                // The still is painted by the container itself, so it cannot be
+                // hidden by the video's own compositing layer and survives every
+                // src swap. The video fades in over it once it has a frame.
+                style={
+                  heroStill
+                    ? {
+                        backgroundImage: `url(${heroStill})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
               >
                 {project.hasVideo && project.videoUrl ? (
                   <>
@@ -1185,22 +1183,14 @@ export default function ProjectModal({
                       muted={!heroUnmuted}
                       playsInline
                       preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition-opacity"
+                      // Fading IN is a nicety; hiding must be immediate, or the
+                      // fade-out itself shows the undecoded frame it exists to hide.
+                      style={{
+                        opacity: heroVideoReady ? 1 : 0,
+                        transitionDuration: heroVideoReady ? "200ms" : "0ms",
+                      }}
                     />
-                    {heroPosterVisible && heroStill && (
-                      // Stays on top of the video until it presents a frame
-                      // after the reveal (see the heroPosterVisible effect).
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={heroStill}
-                        alt=""
-                        // z-index is explicit: iOS gives an inline video its own
-                        // compositing layer, which can otherwise paint over a
-                        // plain absolutely-positioned sibling.
-                        className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover"
-                        aria-hidden
-                      />
-                    )}
                   </>
                 ) : coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
