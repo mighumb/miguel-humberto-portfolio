@@ -51,12 +51,37 @@ function visualViewportBottom() {
   return (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
 }
 
+/**
+ * iOS Safari hands back an all-black bitmap when a video being composited by
+ * the hardware overlay is drawn to a canvas, so a capture is only usable once
+ * it is shown to carry actual luminance.
+ */
+function videoFrameIsPaintable(video: HTMLVideoElement) {
+  try {
+    const probe = document.createElement("canvas");
+    probe.width = 8;
+    probe.height = 8;
+    const context = probe.getContext("2d", { willReadFrequently: true });
+    if (!context) return false;
+    context.drawImage(video, 0, 0, probe.width, probe.height);
+    const { data } = context.getImageData(0, 0, probe.width, probe.height);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] > 12 || data[i + 1] > 12 || data[i + 2] > 12) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function captureVideoFrame(video: HTMLVideoElement | undefined) {
   if (!video || video.readyState < 2) return null;
 
   const width = video.videoWidth || video.clientWidth;
   const height = video.videoHeight || video.clientHeight;
   if (!width || !height) return null;
+
+  if (!videoFrameIsPaintable(video)) return null;
 
   try {
     const canvas = document.createElement("canvas");
@@ -121,8 +146,14 @@ function createOutgoingModalPanel(direction: "prev" | "next") {
       return;
     }
 
+    const poster = video.getAttribute("poster");
+    if (!poster) {
+      video.remove();
+      return;
+    }
+
     const still = document.createElement("img");
-    still.src = video.getAttribute("poster") ?? "";
+    still.src = poster;
     still.alt = "";
     still.className = video.className;
     still.setAttribute("aria-hidden", "true");

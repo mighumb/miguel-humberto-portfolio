@@ -1194,7 +1194,10 @@ export default function ProjectModal({
                       <img
                         src={heroStill}
                         alt=""
-                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                        // z-index is explicit: iOS gives an inline video its own
+                        // compositing layer, which can otherwise paint over a
+                        // plain absolutely-positioned sibling.
+                        className="pointer-events-none absolute inset-0 z-10 h-full w-full object-cover"
                         aria-hidden
                       />
                     )}
