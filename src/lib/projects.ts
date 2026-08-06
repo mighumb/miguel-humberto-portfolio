@@ -265,6 +265,34 @@ export const projects: Project[] = [
     ],
   },
   {
+    id: "05",
+    slug: "verdio",
+    track: "ai",
+    title: { en: "Verdio", fr: "Verdio" },
+    context: {
+      en: "Verdio is a natural cosmetics brand built around a clean botanical identity. I designed the logo, visual system, and brand direction, then generated photoreal packshots for four products across cream, gel, and oil formats.",
+      fr: "Verdio est une marque de cosmétiques naturels construite autour d’une identité botanique sobre. J’ai conçu le logo, le système visuel et la direction artistique, puis généré des packshots photoréalistes pour quatre produits : crème, gel et huile.",
+    },
+    tags: [
+      { en: "Packaging", fr: "Packaging" },
+      { en: "Cosmetic", fr: "Cosmétique" },
+      { en: "Branding", fr: "Branding" },
+    ],
+    year: "2025",
+    type: "Video",
+    hasVideo: true,
+    videoUrl: "/projects/ai/verdio/cover-video-verdio.mp4",
+    unmuteOnOpen: true,
+    tools: ["Figma Weave", "Figma", "Nano Banana"],
+    links: {
+      notion:
+        "https://zenith-flood-86d.notion.site/WORKFLOW-Packaging-Photor-aliste-avec-l-IA-2717cd46589480ea9f76ecb39715256d?source=copy_link",
+    },
+    deliverableCount: 0,
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [],
+  },
+  {
     id: "c01",
     slug: "ekara-design-system",
     track: "craft",
