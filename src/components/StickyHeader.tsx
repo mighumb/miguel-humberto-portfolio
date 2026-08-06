@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { scrollPageTo } from "@/lib/pageScroll";
 import SiteNav from "./SiteNav";
 
 /**
@@ -51,7 +52,7 @@ export default function StickyHeader() {
       />
       <SiteNav
         className="relative z-[1] pb-4 md:pb-5"
-        onBrandClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        onBrandClick={() => scrollPageTo(0)}
       />
     </div>,
     document.body,

@@ -3,6 +3,7 @@
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
+import { scrollPageTo, scrollPageToElement } from "@/lib/pageScroll";
 
 interface SiteNavProps {
   className?: string;
@@ -27,7 +28,7 @@ export default function SiteNav({ className = "", onBrandClick }: SiteNavProps) 
             onBrandClick();
             return;
           }
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          scrollPageTo(0);
         }}
         className="cursor-pointer text-sm font-medium tracking-tight text-text-primary transition-opacity hover:opacity-70 md:text-base"
       >
@@ -98,7 +99,8 @@ export default function SiteNav({ className = "", onBrandClick }: SiteNavProps) 
           href="#contact"
           onClick={(event) => {
             event.preventDefault();
-            document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            const contact = document.getElementById("contact");
+            if (contact) scrollPageToElement(contact);
           }}
           className="hidden cursor-pointer text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:block"
         >
