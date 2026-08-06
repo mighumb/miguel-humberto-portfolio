@@ -136,67 +136,264 @@ button:disabled {
   opacity: 1;
 }
 
-/* In-modal project switch: short slide + fade + micro scale (not a full-panel push). */
+/* Editorial in-modal project switch. The shell/header stays still while the
+   hero, metadata, and long-form body move on separate timings. */
 .project-modal-switch {
-  transform-origin: 50% 12%;
-  will-change: transform, opacity;
+  --switch-x: 1;
 }
 
-.project-modal-switch.is-exit-next {
-  transition:
-    transform 160ms cubic-bezier(0.4, 0, 0.7, 1),
-    opacity 160ms cubic-bezier(0.4, 0, 0.7, 1);
-  transform: translateX(-18px) scale(0.992);
-  opacity: 0;
+.project-modal-switch .project-modal-hero {
+  view-transition-name: project-modal-hero;
 }
 
-.project-modal-switch.is-exit-prev {
-  transition:
-    transform 160ms cubic-bezier(0.4, 0, 0.7, 1),
-    opacity 160ms cubic-bezier(0.4, 0, 0.7, 1);
-  transform: translateX(18px) scale(0.992);
-  opacity: 0;
+.project-modal-switch .project-modal-switch-meta {
+  view-transition-name: project-modal-meta;
 }
 
-.project-modal-switch.is-enter-next {
-  animation: project-modal-enter-next 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.project-modal-switch .project-modal-switch-copy {
+  view-transition-name: project-modal-copy;
 }
 
+/* Keep the modal shell fixed. Only named content snapshots animate. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-group(project-modal-hero),
+::view-transition-group(project-modal-meta),
+::view-transition-group(project-modal-copy) {
+  animation-duration: 560ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(project-modal-hero),
+::view-transition-new(project-modal-hero),
+::view-transition-old(project-modal-meta),
+::view-transition-new(project-modal-meta),
+::view-transition-old(project-modal-copy),
+::view-transition-new(project-modal-copy) {
+  height: 100%;
+  width: 100%;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(project-modal-hero) {
+  animation: project-vt-hero-old-next 420ms cubic-bezier(0.4, 0, 0.7, 1) both;
+}
+
+::view-transition-new(project-modal-hero) {
+  z-index: 2;
+  animation: project-vt-hero-new-next 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-project-switch-direction="prev"]::view-transition-old(project-modal-hero) {
+  animation-name: project-vt-hero-old-prev;
+}
+
+html[data-project-switch-direction="prev"]::view-transition-new(project-modal-hero) {
+  animation-name: project-vt-hero-new-prev;
+}
+
+::view-transition-old(project-modal-meta) {
+  animation: project-vt-meta-old-next 230ms ease-in both;
+}
+
+::view-transition-new(project-modal-meta) {
+  animation: project-vt-meta-new-next 430ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-project-switch-direction="prev"]::view-transition-old(project-modal-meta) {
+  animation-name: project-vt-meta-old-prev;
+}
+
+html[data-project-switch-direction="prev"]::view-transition-new(project-modal-meta) {
+  animation-name: project-vt-meta-new-prev;
+}
+
+::view-transition-old(project-modal-copy) {
+  animation: project-vt-copy-old 180ms ease both;
+}
+
+::view-transition-new(project-modal-copy) {
+  animation: project-vt-copy-new 360ms 150ms ease both;
+}
+
+@keyframes project-vt-hero-old-next {
+  to { transform: translateX(-18px) scale(0.975); filter: blur(3px); opacity: 0.2; }
+}
+
+@keyframes project-vt-hero-old-prev {
+  to { transform: translateX(18px) scale(0.975); filter: blur(3px); opacity: 0.2; }
+}
+
+@keyframes project-vt-hero-new-next {
+  from { clip-path: inset(0 0 0 100% round 0.75rem); transform: translateX(16px) scale(1.015); }
+  to { clip-path: inset(0 0 0 0 round 0.75rem); transform: translateX(0) scale(1); }
+}
+
+@keyframes project-vt-hero-new-prev {
+  from { clip-path: inset(0 100% 0 0 round 0.75rem); transform: translateX(-16px) scale(1.015); }
+  to { clip-path: inset(0 0 0 0 round 0.75rem); transform: translateX(0) scale(1); }
+}
+
+@keyframes project-vt-meta-old-next {
+  to { transform: translateX(-14px) translateY(-3px); opacity: 0; }
+}
+
+@keyframes project-vt-meta-old-prev {
+  to { transform: translateX(14px) translateY(-3px); opacity: 0; }
+}
+
+@keyframes project-vt-meta-new-next {
+  from { transform: translateX(18px) translateY(8px); opacity: 0; }
+  to { transform: translateX(0) translateY(0); opacity: 1; }
+}
+
+@keyframes project-vt-meta-new-prev {
+  from { transform: translateX(-18px) translateY(8px); opacity: 0; }
+  to { transform: translateX(0) translateY(0); opacity: 1; }
+}
+
+@keyframes project-vt-copy-old {
+  to { transform: translateY(-5px); opacity: 0; }
+}
+
+@keyframes project-vt-copy-new {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.project-modal-switch.is-exit-prev,
 .project-modal-switch.is-enter-prev {
-  animation: project-modal-enter-prev 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --switch-x: -1;
 }
 
-@keyframes project-modal-enter-next {
+.project-modal-switch .project-modal-hero,
+.project-modal-switch .project-modal-switch-meta,
+.project-modal-switch > section {
+  will-change: transform, opacity, filter, clip-path;
+}
+
+.project-modal-switch.is-exit-next .project-modal-hero,
+.project-modal-switch.is-exit-prev .project-modal-hero {
+  transition:
+    transform 190ms cubic-bezier(0.4, 0, 0.7, 1),
+    opacity 190ms ease,
+    filter 190ms ease;
+  transform: translateX(calc(var(--switch-x) * -10px)) scale(0.975);
+  filter: blur(3px);
+  opacity: 0.18;
+}
+
+.project-modal-switch.is-exit-next .project-modal-switch-meta,
+.project-modal-switch.is-exit-prev .project-modal-switch-meta {
+  transition:
+    transform 150ms cubic-bezier(0.4, 0, 0.7, 1),
+    opacity 130ms ease;
+  transform: translateX(calc(var(--switch-x) * -14px)) translateY(-3px);
+  opacity: 0;
+}
+
+.project-modal-switch.is-exit-next > section,
+.project-modal-switch.is-exit-prev > section {
+  transition:
+    transform 130ms ease,
+    opacity 120ms ease;
+  transform: translateY(-5px);
+  opacity: 0;
+}
+
+.project-modal-switch.is-enter-next .project-modal-hero {
+  animation: project-modal-hero-enter-next 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.project-modal-switch.is-enter-prev .project-modal-hero {
+  animation: project-modal-hero-enter-prev 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.project-modal-switch.is-enter-next .project-modal-switch-meta,
+.project-modal-switch.is-enter-prev .project-modal-switch-meta {
+  animation: project-modal-meta-enter 430ms 70ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.project-modal-switch.is-enter-next > section,
+.project-modal-switch.is-enter-prev > section {
+  animation: project-modal-body-enter 400ms 130ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes project-modal-hero-enter-next {
   from {
-    opacity: 0;
-    transform: translateX(28px) scale(0.985);
+    clip-path: inset(0 0 0 100% round 0.75rem);
+    transform: translateX(14px) scale(1.018);
+    filter: blur(2px);
+    opacity: 0.45;
   }
   to {
-    opacity: 1;
+    clip-path: inset(0 0 0 0 round 0.75rem);
     transform: translateX(0) scale(1);
+    filter: blur(0);
+    opacity: 1;
   }
 }
 
-@keyframes project-modal-enter-prev {
+@keyframes project-modal-hero-enter-prev {
   from {
-    opacity: 0;
-    transform: translateX(-28px) scale(0.985);
+    clip-path: inset(0 100% 0 0 round 0.75rem);
+    transform: translateX(-14px) scale(1.018);
+    filter: blur(2px);
+    opacity: 0.45;
   }
   to {
-    opacity: 1;
+    clip-path: inset(0 0 0 0 round 0.75rem);
     transform: translateX(0) scale(1);
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes project-modal-meta-enter {
+  from {
+    transform: translateX(calc(var(--switch-x) * 16px)) translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes project-modal-body-enter {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .project-modal-switch.is-exit-next,
-  .project-modal-switch.is-exit-prev {
+  .project-modal-switch.is-exit-next .project-modal-hero,
+  .project-modal-switch.is-exit-prev .project-modal-hero,
+  .project-modal-switch.is-exit-next .project-modal-switch-meta,
+  .project-modal-switch.is-exit-prev .project-modal-switch-meta,
+  .project-modal-switch.is-exit-next > section,
+  .project-modal-switch.is-exit-prev > section {
     transition: opacity 160ms ease;
     transform: none;
+    filter: none;
+    opacity: 0;
   }
 
-  .project-modal-switch.is-enter-next,
-  .project-modal-switch.is-enter-prev {
+  .project-modal-switch.is-enter-next .project-modal-hero,
+  .project-modal-switch.is-enter-prev .project-modal-hero,
+  .project-modal-switch.is-enter-next .project-modal-switch-meta,
+  .project-modal-switch.is-enter-prev .project-modal-switch-meta,
+  .project-modal-switch.is-enter-next > section,
+  .project-modal-switch.is-enter-prev > section {
     animation: project-modal-enter-fade 280ms ease both;
   }
 

@@ -1090,7 +1090,7 @@ export default function ProjectModal({
         className="project-modal-scroll relative z-[1] h-full overflow-x-hidden overflow-y-auto overscroll-contain"
       >
         <div
-          className={`project-modal-body project-modal-switch ${switchClass} ${sharedContentVisible ? "is-visible" : ""}`}
+          className={`project-modal-body ${sharedContentVisible ? "is-visible" : ""}`}
         >
           <div
             className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
@@ -1134,7 +1134,9 @@ export default function ProjectModal({
             </div>
           </div>
 
-          <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
+          <div
+            className={`project-modal-switch mx-auto max-w-5xl px-6 pb-24 md:px-10 ${switchClass}`}
+          >
             <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
@@ -1192,7 +1194,7 @@ export default function ProjectModal({
                 )}
               </div>
 
-              <div className="mt-8">
+              <div className="project-modal-switch-meta mt-8">
                 <div className="flex items-baseline justify-between gap-4">
                   <h2
                     ref={titleRef}
@@ -1230,7 +1232,7 @@ export default function ProjectModal({
             </div>
 
             <section
-              className={`mt-16 pt-16 transition-opacity duration-300 ${
+              className={`project-modal-switch-copy mt-16 pt-16 transition-opacity duration-300 ${
                 sharedContentVisible ? "opacity-100" : "opacity-0"
               }`}
             >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useLayoutEffect, useMemo, useEffect, type RefObject } from "react";
+import { flushSync } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
@@ -39,11 +40,16 @@ import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
-const SWITCH_EXIT_MS = 160;
-const SWITCH_ENTER_MS = 400;
+const SWITCH_EXIT_MS = 190;
+const SWITCH_ENTER_MS = 520;
 
 function isMobileViewport() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
+
+function visualViewportBottom() {
+  const viewport = window.visualViewport;
+  return (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
 }
 
 /**
@@ -195,6 +201,9 @@ export default function Projects() {
   const savedWorkScrollLeftRef = useRef(0);
   /** Page scroll when leaving home — restored on mobile close. */
   const homePageScrollRef = useRef({ x: 0, y: 0 });
+  /** Manifesto position relative to Safari's visible bottom edge at open time. */
+  const manifestoOffsetFromBottomRef = useRef<number | null>(null);
+  const viewportRestoreCleanupRef = useRef<(() => void) | null>(null);
   const carouselSnapshotRef = useRef<Map<string, CardPerspective> | null>(null);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
@@ -204,6 +213,7 @@ export default function Projects() {
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
   const switchTimersRef = useRef<number[]>([]);
+  const viewTransitionActiveRef = useRef(false);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -423,17 +433,73 @@ export default function Projects() {
     openFlightRef.current = null;
   }, []);
 
+  const restoreMobileVisualAnchor = useCallback(() => {
+    if (!isMobileViewport() || manifestoOffsetFromBottomRef.current === null) return;
+
+    viewportRestoreCleanupRef.current?.();
+
+    let stopped = false;
+    let raf = 0;
+    let timeout = 0;
+    const restore = () => {
+      if (stopped) return;
+      const manifesto = document.querySelector<HTMLElement>(".manifesto-section");
+      if (!manifesto) return;
+
+      const currentOffset =
+        manifesto.getBoundingClientRect().top - visualViewportBottom();
+      const delta = currentOffset - manifestoOffsetFromBottomRef.current!;
+      if (Math.abs(delta) > 0.5) {
+        const x = window.scrollX;
+        const y = Math.max(0, window.scrollY + delta);
+        snapScrollTo(x, y);
+        updateSavedScrollPosition(x, y);
+      }
+    };
+    const schedule = () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(restore);
+    };
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      window.cancelAnimationFrame(raf);
+      window.visualViewport?.removeEventListener("resize", schedule);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("wheel", stop);
+      window.clearTimeout(timeout);
+      if (viewportRestoreCleanupRef.current === stop) {
+        viewportRestoreCleanupRef.current = null;
+      }
+    };
+
+    // The modal unlock commits before the first frame. A second frame catches
+    // Safari's initial toolbar expansion; resize events cover the rest.
+    raf = window.requestAnimationFrame(() => {
+      restore();
+      raf = window.requestAnimationFrame(restore);
+    });
+    window.visualViewport?.addEventListener("resize", schedule);
+    window.addEventListener("touchstart", stop, { passive: true, once: true });
+    window.addEventListener("wheel", stop, { passive: true, once: true });
+    timeout = window.setTimeout(stop, 900);
+    viewportRestoreCleanupRef.current = stop;
+  }, []);
+
   const closeModal = useCallback(() => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
     switchTimersRef.current.forEach((id) => window.clearTimeout(id));
     switchTimersRef.current = [];
+    viewTransitionActiveRef.current = false;
+    delete document.documentElement.dataset.projectSwitchDirection;
     setSwitchPhase("idle");
     setSwitchDirection(null);
     setActiveProject(null);
     resetTransition();
-  }, [resetTransition]);
+    restoreMobileVisualAnchor();
+  }, [resetTransition, restoreMobileVisualAnchor]);
 
   useLayoutEffect(() => {
     const enteredClosing = phase === "closing" && prevPhaseRef.current !== "closing";
@@ -515,6 +581,12 @@ export default function Projects() {
     }
 
     homePageScrollRef.current = { x: window.scrollX, y: window.scrollY };
+    viewportRestoreCleanupRef.current?.();
+    const manifesto = document.querySelector<HTMLElement>(".manifesto-section");
+    manifestoOffsetFromBottomRef.current =
+      isMobileViewport() && manifesto
+        ? manifesto.getBoundingClientRect().top - visualViewportBottom()
+        : null;
 
     setActiveIndex(index);
     setActiveProject(project);
@@ -629,7 +701,11 @@ export default function Projects() {
   }, [activeProject, closeModal]);
 
   const navigate = (direction: "prev" | "next") => {
-    if (phase !== "open" || switchPhase !== "idle") return;
+    if (
+      phase !== "open" ||
+      switchPhase !== "idle" ||
+      viewTransitionActiveRef.current
+    ) return;
 
     const newIndex =
       direction === "next"
@@ -648,6 +724,24 @@ export default function Projects() {
 
     if (prefersReducedMotion()) {
       applyProject();
+      return;
+    }
+
+    const transitionDocument = document as Document & {
+      startViewTransition?: (update: () => void) => {
+        finished: Promise<void>;
+      };
+    };
+    if (transitionDocument.startViewTransition) {
+      viewTransitionActiveRef.current = true;
+      document.documentElement.dataset.projectSwitchDirection = direction;
+      const transition = transitionDocument.startViewTransition(() => {
+        flushSync(applyProject);
+      });
+      transition.finished.finally(() => {
+        viewTransitionActiveRef.current = false;
+        delete document.documentElement.dataset.projectSwitchDirection;
+      });
       return;
     }
 
@@ -672,6 +766,8 @@ export default function Projects() {
   useEffect(() => {
     return () => {
       switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+      viewportRestoreCleanupRef.current?.();
+      delete document.documentElement.dataset.projectSwitchDirection;
     };
   }, []);
 
