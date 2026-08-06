@@ -1003,6 +1003,9 @@ export default function ProjectModal({
                 {project.links.figma && (
                   <ResourceLink href={project.links.figma}>{mt.figma}</ResourceLink>
                 )}
+                {project.links.template && (
+                  <ResourceLink href={project.links.template}>{mt.template}</ResourceLink>
+                )}
                 {project.links.instagram && (
                   <ResourceLink href={project.links.instagram}>{mt.instagram}</ResourceLink>
                 )}

@@ -50,6 +50,7 @@ export const translations = {
       instagram: "Instagram",
       tiktok: "TikTok",
       figma: "Figma File",
+      template: "Get template",
     },
     header: {
       contact: "Contact",
@@ -104,6 +105,7 @@ export const translations = {
       instagram: "Instagram",
       tiktok: "TikTok",
       figma: "Fichier Figma",
+      template: "Obtenir le template",
     },
     header: {
       contact: "Contact",

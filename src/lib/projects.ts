@@ -47,6 +47,8 @@ export interface Project {
     instagram?: string;
     tiktok?: string;
     figma?: string;
+    /** Product / template store page (e.g. VS Good). */
+    template?: string;
   };
   deliverableCount: number;
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
@@ -166,6 +168,32 @@ export const projects: Project[] = [
   },
   {
     id: "03",
+    slug: "goodies-factory",
+    track: "ai",
+    title: { en: "Goodies Factory", fr: "Goodies Factory" },
+    context: {
+      en: "Goodies Factory is a set of three AI templates (Production, Scene, and Worn) for branded merchandise mockups. From a logo to a blank product, then a styled scene and a worn look, the workflow builds photoreal mockups for marketers and designers who want distinctive goodies instead of stock imagery.",
+      fr: "Goodies Factory est un set de trois templates IA (Production, Scene et Worn) pour des mockups de goodies de marque. Du logo au produit vierge, puis à une scène stylisée et un rendu porté, le workflow produit des mockups photoréalistes pour les marketeurs et designers qui veulent des goodies distinctifs plutôt que des images stock.",
+    },
+    tags: [
+      { en: "Template", fr: "Template" },
+      { en: "Mockup", fr: "Mockup" },
+      { en: "Marketing", fr: "Marketing" },
+    ],
+    year: "2026",
+    type: "Video",
+    hasVideo: true,
+    videoUrl: "/projects/ai/goodies-factory/cover-video-goodies-factory.mp4",
+    tools: ["Figma Weave", "Magnific"],
+    // VS Good product URL - wire when available.
+    links: { template: "#" },
+    // Production / Scene / Worn - replace placeholders once files are uploaded.
+    deliverableCount: 3,
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [],
+  },
+  {
+    id: "04",
     slug: "superman-save-minneapolis",
     track: "ai",
     title: {
@@ -204,59 +232,6 @@ export const projects: Project[] = [
       { type: "loop", file: "process/workflow-3-figma-weave-superman-save-minneapolis.mp4?v=2" },
       { type: "loop", file: "process/workflow-4-higgsfield-superman-save-minneapolis.mp4?v=2" },
     ],
-  },
-  {
-    id: "04",
-    slug: "generative-visual-identity",
-    track: "ai",
-    title: { en: "Generative Visual Identity", fr: "Identité visuelle générative" },
-    tags: [
-      { en: "Client", fr: "Client" },
-      { en: "Branding", fr: "Branding" },
-      { en: "Motion", fr: "Motion" },
-    ],
-    year: "2024",
-    type: "Client",
-    hasVideo: true,
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    tools: ["DALL·E 3", "After Effects", "Figma"],
-    links: { notion: "#", instagram: "#" },
-    deliverableCount: 10,
-  },
-  {
-    id: "05",
-    slug: "tiktok-ai-art-experiments",
-    track: "ai",
-    title: { en: "TikTok AI Art Experiments", fr: "Expériences art IA TikTok" },
-    tags: [
-      { en: "Social", fr: "Social" },
-      { en: "TikTok", fr: "TikTok" },
-      { en: "Experimental", fr: "Expérimental" },
-    ],
-    year: "2025",
-    type: "Social",
-    hasVideo: true,
-    videoUrl: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
-    tools: ["Kling", "CapCut", "Suno"],
-    links: { tiktok: "#", instagram: "#" },
-    deliverableCount: 15,
-  },
-  {
-    id: "06",
-    slug: "audio-visual-ai-installation",
-    track: "ai",
-    title: { en: "Audio-Visual AI Installation", fr: "Installation audio-visuelle IA" },
-    tags: [
-      { en: "Audio", fr: "Audio" },
-      { en: "Installation", fr: "Installation" },
-      { en: "Experimental", fr: "Expérimental" },
-    ],
-    year: "2024",
-    type: "Audio",
-    hasVideo: false,
-    tools: ["Suno", "TouchDesigner", "Ableton"],
-    links: { youtube: "#", notion: "#" },
-    deliverableCount: 5,
   },
   {
     id: "c01",
