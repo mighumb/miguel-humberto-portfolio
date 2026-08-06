@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useLayoutEffect, useMemo, useEffect, type RefObject } from "react";
+import { flushSync } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
@@ -26,7 +27,7 @@ import {
   type FlightPair,
   type ModalTargets,
 } from "@/lib/motion";
-import { getSavedScrollPosition, snapScrollTo } from "@/lib/scrollLock";
+import { getSavedScrollPosition, snapScrollTo, updateSavedScrollPosition } from "@/lib/scrollLock";
 import {
   animateCardPerspectives,
   applySnapshotPerspective,
@@ -38,6 +39,134 @@ import { alignCardIntoView } from "@/lib/flipClose";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
+
+const SWITCH_ENTER_MS = 620;
+
+function isMobileViewport() {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
+}
+
+function visualViewportBottom() {
+  const viewport = window.visualViewport;
+  return (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
+}
+
+/**
+ * iOS Safari hands back an all-black bitmap when a video being composited by
+ * the hardware overlay is drawn to a canvas, so a capture is only usable once
+ * it is shown to carry actual luminance.
+ */
+function videoFrameIsPaintable(video: HTMLVideoElement) {
+  try {
+    const probe = document.createElement("canvas");
+    probe.width = 8;
+    probe.height = 8;
+    const context = probe.getContext("2d", { willReadFrequently: true });
+    if (!context) return false;
+    context.drawImage(video, 0, 0, probe.width, probe.height);
+    const { data } = context.getImageData(0, 0, probe.width, probe.height);
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] > 12 || data[i + 1] > 12 || data[i + 2] > 12) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function captureVideoFrame(video: HTMLVideoElement | undefined) {
+  if (!video || video.readyState < 2) return null;
+
+  const width = video.videoWidth || video.clientWidth;
+  const height = video.videoHeight || video.clientHeight;
+  if (!width || !height) return null;
+
+  if (!videoFrameIsPaintable(video)) return null;
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(video, 0, 0, width, height);
+    return canvas;
+  } catch {
+    return null;
+  }
+}
+
+function createOutgoingModalPanel(direction: "prev" | "next") {
+  const source = document.querySelector<HTMLElement>(".project-modal-switch");
+  const scroll = source?.closest<HTMLElement>(".project-modal-scroll");
+  if (!source || !scroll) return () => {};
+
+  const rect = source.getBoundingClientRect();
+  const innerRect = source.firstElementChild?.getBoundingClientRect();
+  const slideDistance = innerRect
+    ? Math.max(innerRect.right, window.innerWidth - innerRect.left)
+    : window.innerWidth;
+  source.style.setProperty("--project-slide-distance", `${slideDistance}px`);
+  const clone = source.cloneNode(true) as HTMLElement;
+  clone.setAttribute("aria-hidden", "true");
+  clone.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+  clone.classList.remove(
+    "is-enter-next",
+    "is-enter-prev",
+    "is-exit-next",
+    "is-exit-prev",
+  );
+  clone.classList.add("project-modal-switch-outgoing", `is-${direction}`);
+  Object.assign(clone.style, {
+    position: "fixed",
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    maxWidth: "none",
+    margin: "0",
+    zIndex: "5",
+    pointerEvents: "none",
+  });
+  scroll.appendChild(clone);
+
+  // A cloned <video> starts its own load and paints black until it decodes,
+  // which is the dark flash the outgoing panel used to show on mobile. Every
+  // clone is therefore replaced by a still: the live frame when it can be
+  // captured, the poster otherwise.
+  const sourceVideos = source.querySelectorAll("video");
+  clone.querySelectorAll("video").forEach((video, index) => {
+    const sourceVideo = sourceVideos[index];
+    const frame = captureVideoFrame(sourceVideo);
+
+    if (frame) {
+      frame.className = video.className;
+      frame.setAttribute("aria-hidden", "true");
+      video.replaceWith(frame);
+      return;
+    }
+
+    const poster = video.getAttribute("poster");
+    if (!poster) {
+      video.remove();
+      return;
+    }
+
+    const still = document.createElement("img");
+    still.src = poster;
+    still.alt = "";
+    still.className = video.className;
+    still.setAttribute("aria-hidden", "true");
+    video.replaceWith(still);
+  });
+
+  return () => {
+    clone.remove();
+    document
+      .querySelector<HTMLElement>(".project-modal-switch")
+      ?.style.removeProperty("--project-slide-distance");
+  };
+}
 
 /**
  * Odd number of copies so the viewport rests in the exact middle cycle. Two
@@ -177,6 +306,8 @@ export default function Projects() {
   const [closeFlightPerspective, setCloseFlightPerspective] = useState<CardPerspective | null>(
     null,
   );
+  const [switchPhase, setSwitchPhase] = useState<"idle" | "exit" | "enter">("idle");
+  const [switchDirection, setSwitchDirection] = useState<"prev" | "next" | null>(null);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -184,6 +315,11 @@ export default function Projects() {
   const prevPhaseRef = useRef<TransitionPhase>("idle");
   const hadActiveProjectRef = useRef(false);
   const savedWorkScrollLeftRef = useRef(0);
+  /** Page scroll when leaving home — restored on mobile close. */
+  const homePageScrollRef = useRef({ x: 0, y: 0 });
+  /** Manifesto position relative to Safari's visible bottom edge at open time. */
+  const manifestoOffsetFromBottomRef = useRef<number | null>(null);
+  const viewportRestoreCleanupRef = useRef<(() => void) | null>(null);
   const carouselSnapshotRef = useRef<Map<string, CardPerspective> | null>(null);
   const phaseRef = useRef(phase);
   const cardOriginRef = useRef(cardOrigin);
@@ -192,6 +328,8 @@ export default function Projects() {
   const closedViaTransitionRef = useRef(false);
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
+  const switchTimersRef = useRef<number[]>([]);
+  const outgoingPanelCleanupRef = useRef<(() => void) | null>(null);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -411,13 +549,73 @@ export default function Projects() {
     openFlightRef.current = null;
   }, []);
 
+  const restoreMobileVisualAnchor = useCallback(() => {
+    if (!isMobileViewport() || manifestoOffsetFromBottomRef.current === null) return;
+
+    viewportRestoreCleanupRef.current?.();
+
+    let stopped = false;
+    let raf = 0;
+    let timeout = 0;
+    const restore = () => {
+      if (stopped) return;
+      const manifesto = document.querySelector<HTMLElement>(".manifesto-section");
+      if (!manifesto) return;
+
+      const currentOffset =
+        manifesto.getBoundingClientRect().top - visualViewportBottom();
+      const delta = currentOffset - manifestoOffsetFromBottomRef.current!;
+      if (Math.abs(delta) > 0.5) {
+        const x = window.scrollX;
+        const y = Math.max(0, window.scrollY + delta);
+        snapScrollTo(x, y);
+        updateSavedScrollPosition(x, y);
+      }
+    };
+    const schedule = () => {
+      window.cancelAnimationFrame(raf);
+      raf = window.requestAnimationFrame(restore);
+    };
+    const stop = () => {
+      if (stopped) return;
+      stopped = true;
+      window.cancelAnimationFrame(raf);
+      window.visualViewport?.removeEventListener("resize", schedule);
+      window.removeEventListener("touchstart", stop);
+      window.removeEventListener("wheel", stop);
+      window.clearTimeout(timeout);
+      if (viewportRestoreCleanupRef.current === stop) {
+        viewportRestoreCleanupRef.current = null;
+      }
+    };
+
+    // The modal unlock commits before the first frame. A second frame catches
+    // Safari's initial toolbar expansion; resize events cover the rest.
+    raf = window.requestAnimationFrame(() => {
+      restore();
+      raf = window.requestAnimationFrame(restore);
+    });
+    window.visualViewport?.addEventListener("resize", schedule);
+    window.addEventListener("touchstart", stop, { passive: true, once: true });
+    window.addEventListener("wheel", stop, { passive: true, once: true });
+    timeout = window.setTimeout(stop, 900);
+    viewportRestoreCleanupRef.current = stop;
+  }, []);
+
   const closeModal = useCallback(() => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+    switchTimersRef.current = [];
+    outgoingPanelCleanupRef.current?.();
+    outgoingPanelCleanupRef.current = null;
+    setSwitchPhase("idle");
+    setSwitchDirection(null);
     setActiveProject(null);
     resetTransition();
-  }, [resetTransition]);
+    restoreMobileVisualAnchor();
+  }, [resetTransition, restoreMobileVisualAnchor]);
 
   useLayoutEffect(() => {
     const enteredClosing = phase === "closing" && prevPhaseRef.current !== "closing";
@@ -445,7 +643,15 @@ export default function Projects() {
 
     const instanceId = activeInstanceRef.current ?? undefined;
     const card = findVisibleProjectCard(project.id, instanceId);
-    if (card) alignCardIntoView(card);
+    // Mobile: never nudge page Y on close — restore the exact home viewport
+    // from open time so "Who I am" keeps its peek.
+    if (isMobileViewport()) {
+      const { x, y } = homePageScrollRef.current;
+      snapScrollTo(x, y);
+      updateSavedScrollPosition(x, y);
+    } else if (card) {
+      alignCardIntoView(card);
+    }
 
     // Re-flatten after scroll nudge (align can change which cards are nearby).
     if (container) {
@@ -490,9 +696,19 @@ export default function Projects() {
       carouselSnapshotRef.current = captureCardPerspectives(scrollRef.current);
     }
 
+    homePageScrollRef.current = { x: window.scrollX, y: window.scrollY };
+    viewportRestoreCleanupRef.current?.();
+    const manifesto = document.querySelector<HTMLElement>(".manifesto-section");
+    manifestoOffsetFromBottomRef.current =
+      isMobileViewport() && manifesto
+        ? manifesto.getBoundingClientRect().top - visualViewportBottom()
+        : null;
+
     setActiveIndex(index);
     setActiveProject(project);
     setActiveInstanceId(origin?.carouselInstanceId ?? null);
+    setSwitchPhase("idle");
+    setSwitchDirection(null);
 
     if (!origin || prefersReducedMotion()) {
       setSharedContentVisible(true);
@@ -601,18 +817,57 @@ export default function Projects() {
   }, [activeProject, closeModal]);
 
   const navigate = (direction: "prev" | "next") => {
+    if (phase !== "open" || switchPhase !== "idle") return;
+
     const newIndex =
       direction === "next"
         ? (activeIndex + 1) % projects.length
         : (activeIndex - 1 + projects.length) % projects.length;
-    setFlightShowVideo(false);
-    setFlightVideoTime(0);
-    setActiveIndex(newIndex);
-    setActiveProject(projects[newIndex]);
-    // Different project than the card we came from: let the close flight pick
-    // the copy nearest the carousel instead of the stale one.
-    setActiveInstanceId(null);
+
+    const applyProject = () => {
+      setFlightShowVideo(false);
+      setFlightVideoTime(0);
+      // The captured frame belongs to the project we are leaving.
+      setFlightVideoPoster(undefined);
+      setActiveIndex(newIndex);
+      setActiveProject(projects[newIndex]);
+      // Different project than the card we came from: let the close flight pick
+      // the copy nearest the carousel instead of the stale one.
+      setActiveInstanceId(null);
+    };
+
+    if (prefersReducedMotion()) {
+      applyProject();
+      return;
+    }
+
+    switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+    switchTimersRef.current = [];
+    outgoingPanelCleanupRef.current?.();
+    outgoingPanelCleanupRef.current = createOutgoingModalPanel(direction);
+
+    flushSync(() => {
+      setSwitchDirection(direction);
+      setSwitchPhase("enter");
+      applyProject();
+    });
+
+    const enterTimer = window.setTimeout(() => {
+      outgoingPanelCleanupRef.current?.();
+      outgoingPanelCleanupRef.current = null;
+      setSwitchPhase("idle");
+      setSwitchDirection(null);
+    }, SWITCH_ENTER_MS);
+    switchTimersRef.current.push(enterTimer);
   };
+
+  useEffect(() => {
+    return () => {
+      switchTimersRef.current.forEach((id) => window.clearTimeout(id));
+      viewportRestoreCleanupRef.current?.();
+      outgoingPanelCleanupRef.current?.();
+    };
+  }, []);
 
   const registerMeasure = useCallback((fn: (() => ModalTargets | null) | null) => {
     measureRef.current = fn;
@@ -698,6 +953,8 @@ export default function Projects() {
           videoPlaying={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}
+          switchPhase={switchPhase}
+          switchDirection={switchDirection}
           onFlightTargetsReady={handleFlightTargetsReady}
           onRegisterMeasure={registerMeasure}
         />

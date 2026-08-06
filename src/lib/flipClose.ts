@@ -10,8 +10,12 @@ import { nudgeScrollWhileLocked } from "@/lib/scrollLock";
 export const FLIP_CLOSE_MS = SHARED_TRANSITION_MS;
 export const FLIP_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-/** Scroll the page so the destination card sits fully in view (under the modal cover). */
+/** Scroll the page so the destination card sits fully in view (under the modal cover).
+ *  Skip on mobile — closing must restore the exact home viewport from open time. */
 export function alignCardIntoView(card: HTMLElement, edge = 24) {
+  if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+    return;
+  }
   const rect = card.getBoundingClientRect();
   let dy = 0;
   if (rect.top < edge) dy = rect.top - edge;

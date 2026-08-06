@@ -20,6 +20,7 @@ import {
   type ProcessItem,
   projectAssetBase,
   projectCoverUrl,
+  projectVideoPosterUrl,
 } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 import EkaraUIKit from "@/components/EkaraUIKit";
@@ -39,6 +40,9 @@ interface ProjectModalProps {
   /** Frame captured from the card at click time; covers the hero video while
    *  it seeks to the handoff position, which would otherwise render black. */
   videoPoster?: string;
+  /** In-modal prev/next switch animation phase. */
+  switchPhase?: "idle" | "exit" | "enter";
+  switchDirection?: "prev" | "next" | null;
   onFlightTargetsReady: (targets: ModalTargets) => void;
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
@@ -890,6 +894,8 @@ export default function ProjectModal({
   videoPlaying,
   videoTime,
   videoPoster,
+  switchPhase = "idle",
+  switchDirection = null,
   onFlightTargetsReady,
   onRegisterMeasure,
 }: ProjectModalProps) {
@@ -902,13 +908,14 @@ export default function ProjectModal({
   const yearRef = useRef<HTMLSpanElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
-  // The captured card frame stays layered over the hero video until the video
-  // has actually PRESENTED a frame after the reveal. The `poster` attribute is
-  // not enough: an autoplaying video that is still seeking/decoding at reveal
-  // time paints black on mobile Safari, poster or not.
-  const [heroPosterVisible, setHeroPosterVisible] = useState(
-    () => videoPlaying && !!videoPoster,
-  );
+  // The flight poster is a frame captured from the card that was opened, so it
+  // only matches during the open handoff. Every other case (notably a prev/next
+  // switch) falls back to the project's own still.
+  const heroStill = (videoPlaying && videoPoster) || projectVideoPosterUrl(project);
+  // A video with no decoded frame paints black rather than showing its poster on
+  // mobile Safari, so the element stays fully transparent until the browser
+  // reports data for the source it currently holds.
+  const [heroVideoReady, setHeroVideoReady] = useState(false);
   // On touch devices, enabling `controls` at reveal makes iOS pop its native
   // control chrome over the hero — big center pause button, skip buttons and
   // a DARK SCRIM — which reads as a dark flash right at the end of the
@@ -927,6 +934,12 @@ export default function ProjectModal({
     setTouchControls(false);
   }, [project.id]);
 
+  // A prev/next switch swaps `src` on the SAME video element, which drops back
+  // to no decoded frame. Hide it again so the swap never shows black.
+  useLayoutEffect(() => {
+    setHeroVideoReady(false);
+  }, [project.videoUrl]);
+
   useScrollLock(true);
 
   useLayoutEffect(() => {
@@ -936,35 +949,29 @@ export default function ProjectModal({
   }, [project.id, project.hasVideo, videoPlaying, videoTime]);
 
   useEffect(() => {
-    // Once the modal content is revealed, drop the poster overlay as soon as
-    // the video PRESENTS a frame (rVFC when available). Deliberately no
-    // timeout: on a slow mobile connection the video can take seconds to
-    // buffer, and force-dropping the overlay would reveal a black element.
-    // If playback never starts, keeping the frozen frame is strictly better
-    // than black.
-    if (!heroPosterVisible || !sharedContentVisible) return;
+    if (heroVideoReady) return;
     const video = heroVideoRef.current;
-    if (!video) {
-      setHeroPosterVisible(false);
-      return;
-    }
-    let cancelled = false;
-    const clear = () => {
-      if (!cancelled) setHeroPosterVisible(false);
-    };
-    const rvfcVideo = video as HTMLVideoElement & {
-      requestVideoFrameCallback?: (cb: () => void) => number;
-    };
-    if (typeof rvfcVideo.requestVideoFrameCallback === "function") {
-      rvfcVideo.requestVideoFrameCallback(clear);
-    } else {
-      video.addEventListener("timeupdate", clear, { once: true });
-    }
+    if (!video) return;
+
+    // Media events are emitted per load, so a listener attached after the src
+    // swap can only hear the new source. That makes them the one signal that
+    // cannot be stale, unlike readyState or a frame callback, both of which can
+    // still describe the previous source for a beat after the swap.
+    const reveal = () => setHeroVideoReady(true);
+    video.addEventListener("loadeddata", reveal);
+    video.addEventListener("canplay", reveal);
+    video.addEventListener("playing", reveal);
+
+    // Covers the case where the element already holds decoded data for this
+    // source, e.g. the open handoff seeking an already-buffered video.
+    if (video.readyState >= 2 && video.currentSrc) reveal();
+
     return () => {
-      cancelled = true;
-      video.removeEventListener("timeupdate", clear);
+      video.removeEventListener("loadeddata", reveal);
+      video.removeEventListener("canplay", reveal);
+      video.removeEventListener("playing", reveal);
     };
-  }, [heroPosterVisible, sharedContentVisible]);
+  }, [heroVideoReady, project.videoUrl]);
 
   useEffect(() => {
     const video = heroVideoRef.current;
@@ -1063,6 +1070,10 @@ export default function ProjectModal({
   if (typeof document === "undefined") return null;
 
   const sharedHidden = !sharedContentVisible;
+  const switchClass =
+    switchPhase !== "idle" && switchDirection
+      ? `is-${switchPhase}-${switchDirection}`
+      : "";
 
   return createPortal(
     <div
@@ -1125,8 +1136,11 @@ export default function ProjectModal({
             </div>
           </div>
 
-          <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
-            <div className="pt-8 md:pt-12">
+          <div
+            className={`project-modal-switch w-full ${switchClass}`}
+          >
+            <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
+              <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
                 className={`project-modal-hero relative aspect-video w-full overflow-hidden rounded-xl ${
@@ -1134,6 +1148,18 @@ export default function ProjectModal({
                     ? "bg-bg-secondary"
                     : "project-placeholder-gradient"
                 } ${sharedHidden ? "is-shared-hidden" : ""}`}
+                // The still is painted by the container itself, so it cannot be
+                // hidden by the video's own compositing layer and survives every
+                // src swap. The video fades in over it once it has a frame.
+                style={
+                  heroStill
+                    ? {
+                        backgroundImage: `url(${heroStill})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }
+                    : undefined
+                }
               >
                 {project.hasVideo && project.videoUrl ? (
                   <>
@@ -1145,7 +1171,7 @@ export default function ProjectModal({
                       // video has no frame to paint, so without a poster it
                       // renders black for a beat — the flash at the end of the
                       // card→modal transition.
-                      poster={videoPoster}
+                      poster={heroStill ?? undefined}
                       controls={isTouch ? touchControls : sharedContentVisible}
                       onClick={
                         isTouch && !touchControls
@@ -1156,20 +1182,15 @@ export default function ProjectModal({
                       loop
                       muted={!heroUnmuted}
                       playsInline
-                      preload={videoPlaying ? "auto" : "metadata"}
-                      className="h-full w-full object-cover"
+                      preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
+                      className="h-full w-full object-cover transition-opacity"
+                      // Fading IN is a nicety; hiding must be immediate, or the
+                      // fade-out itself shows the undecoded frame it exists to hide.
+                      style={{
+                        opacity: heroVideoReady ? 1 : 0,
+                        transitionDuration: heroVideoReady ? "200ms" : "0ms",
+                      }}
                     />
-                    {heroPosterVisible && videoPoster && (
-                      // Stays on top of the video until it presents a frame
-                      // after the reveal (see the heroPosterVisible effect).
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={videoPoster}
-                        alt=""
-                        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-                        aria-hidden
-                      />
-                    )}
                   </>
                 ) : coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -1183,7 +1204,7 @@ export default function ProjectModal({
                 )}
               </div>
 
-              <div className="mt-8">
+              <div className="project-modal-switch-meta mt-8">
                 <div className="flex items-baseline justify-between gap-4">
                   <h2
                     ref={titleRef}
@@ -1221,7 +1242,7 @@ export default function ProjectModal({
             </div>
 
             <section
-              className={`mt-16 pt-16 transition-opacity duration-300 ${
+              className={`project-modal-switch-copy mt-16 pt-16 transition-opacity duration-300 ${
                 sharedContentVisible ? "opacity-100" : "opacity-0"
               }`}
             >
@@ -1236,7 +1257,7 @@ export default function ProjectModal({
             </section>
 
             {hasDeliverables && (
-            <section className="mt-16 pt-16">
+              <section className="mt-16 pt-16">
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
@@ -1431,7 +1452,8 @@ export default function ProjectModal({
                   <ResourceLink href={project.links.tiktok}>{mt.tiktok}</ResourceLink>
                 )}
               </div>
-            </section>
+              </section>
+            </div>
           </div>
         </div>
       </div>
