@@ -55,6 +55,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   const [isHovering, setIsHovering] = useState(false);
   const [isCtaVisible, setIsCtaVisible] = useState(false);
   const [isNearViewport, setIsNearViewport] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const thumbnailUrl = projectThumbnailUrl(project);
   const videoPosterUrl = projectVideoPosterUrl(project);
   const videoIsHero = project.hasVideo && !!project.videoUrl && !thumbnailUrl;
@@ -122,6 +123,27 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
     video.play().catch(() => {});
   }, [videoIsHero, isVideoMounted]);
+
+  // The loop wraps by one full cycle, which swaps the visible copies for freshly
+  // mounted ones. Revealing their video before it has a decoded frame paints a
+  // gap over the cover still, which reads as a blink at the wrap.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isVideoMounted) {
+      setIsVideoReady(false);
+      return;
+    }
+
+    if (video.readyState >= 2) {
+      setIsVideoReady(true);
+      return;
+    }
+
+    setIsVideoReady(false);
+    const onReady = () => setIsVideoReady(true);
+    video.addEventListener("loadeddata", onReady);
+    return () => video.removeEventListener("loadeddata", onReady);
+  }, [isVideoMounted, project.videoUrl]);
 
   // Native mobile carousel scroll often skips pointermove; cancel hold on scroll.
   useEffect(() => {
@@ -345,7 +367,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                   src={coverStillUrl}
                   alt=""
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
-                    isHovering && project.hasVideo && thumbnailUrl
+                    isHovering && project.hasVideo && thumbnailUrl && isVideoReady
                       ? "opacity-0"
                       : "opacity-100"
                   }`}
@@ -353,7 +375,9 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
               ) : (
                 <div
                   className={`project-placeholder-gradient absolute inset-0 transition-opacity duration-400 ${
-                    isHovering && project.hasVideo ? "opacity-0" : "opacity-100"
+                    isHovering && project.hasVideo && isVideoReady
+                      ? "opacity-0"
+                      : "opacity-100"
                   }`}
                   aria-hidden
                 >
@@ -379,7 +403,9 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
                   playsInline
                   preload="auto"
                   className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-400 ${
-                    videoIsHero || isHovering ? "opacity-100" : "opacity-0"
+                    (videoIsHero || isHovering) && isVideoReady
+                      ? "opacity-100"
+                      : "opacity-0"
                   }`}
                 />
               )}

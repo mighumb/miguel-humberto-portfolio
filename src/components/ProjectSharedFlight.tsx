@@ -16,7 +16,12 @@ import {
   perspectiveEase,
   type CardPerspective,
 } from "@/lib/workCardFocus";
-import { type Project, projectCoverUrl, type LocalizedCopy } from "@/lib/projects";
+import {
+  type Project,
+  projectCoverUrl,
+  projectVideoPosterUrl,
+  type LocalizedCopy,
+} from "@/lib/projects";
 import { type Locale } from "@/lib/i18n";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 
@@ -58,7 +63,9 @@ function FlightThumbnail({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
-  const coverUrl = projectCoverUrl(project);
+  // Video-only projects have no cover still of their own; their card poster is
+  // the frame the flight has to keep showing instead of the numbered gradient.
+  const coverUrl = projectCoverUrl(project) ?? projectVideoPosterUrl(project);
 
   // Touch devices get a frozen flight: mounting a fresh <video> mid-transition
   // means a decode race that mobile Safari loses more often than not (poster
@@ -129,17 +136,17 @@ function FlightThumbnail({
             // freshly mounted (still undecoded) video is never black. The
             // overlay <img> below covers the same gap, but it has to decode
             // first — this closes the frame or two before that happens.
-            poster={videoPoster}
+            poster={videoPoster ?? coverUrl ?? undefined}
             muted
             loop
             playsInline
             preload="auto"
             className="h-full w-full object-cover"
           />
-          {!videoReady && videoPoster && (
+          {!videoReady && (videoPoster ?? coverUrl) && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={videoPoster}
+              src={videoPoster ?? coverUrl ?? undefined}
               alt=""
               className="absolute inset-0 h-full w-full object-cover"
               aria-hidden

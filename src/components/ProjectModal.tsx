@@ -6,7 +6,13 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { translations } from "@/lib/i18n";
 import { toRect, type ModalTargets } from "@/lib/motion";
-import { type Project, type ProcessItem, projectAssetBase, projectCoverUrl } from "@/lib/projects";
+import {
+  type Deliverable,
+  type Project,
+  type ProcessItem,
+  projectAssetBase,
+  projectCoverUrl,
+} from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 import EkaraUIKit from "@/components/EkaraUIKit";
 
@@ -208,6 +214,114 @@ function ProcessWorkflowStack({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+type ImageDeliverable = Extract<Deliverable, { type: "image" }>;
+
+function DeliverablePicture({
+  deliverable,
+  assetBase,
+  alt,
+  className = "",
+}: {
+  deliverable: ImageDeliverable;
+  assetBase: string;
+  alt: string;
+  className?: string;
+}) {
+  return (
+    <picture className={`block overflow-hidden ${className}`}>
+      <source srcSet={`${assetBase}/${deliverable.url}`} type="image/webp" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`${assetBase}/${deliverable.fallback}`}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        className="block h-full w-full object-cover"
+      />
+    </picture>
+  );
+}
+
+const GOODIES_BENTO_ROWS = [
+  [
+    "col-span-5 aspect-[3/4]",
+    "col-span-3 mt-[9vw] aspect-[4/5]",
+    "col-span-4 mt-[3vw] aspect-[3/4]",
+  ],
+  [
+    "col-span-3 mt-[7vw] aspect-[4/5]",
+    "col-span-5 aspect-[3/4]",
+    "col-span-4 mt-[10vw] aspect-[4/5]",
+  ],
+  [
+    "col-span-5 aspect-[3/4]",
+    "col-span-3 mt-[8vw] aspect-[4/5]",
+    "col-span-4 mt-[3vw] aspect-[3/4]",
+  ],
+  ["col-span-5 mt-[4vw] aspect-[4/5]", "col-span-7 aspect-[3/4]"],
+] as const;
+
+function DeliverablesBento({
+  deliverables,
+  assetBase,
+  locale,
+}: {
+  deliverables: ImageDeliverable[];
+  assetBase: string;
+  locale: "en" | "fr";
+}) {
+  const alt = (index: number) =>
+    locale === "fr"
+      ? `Mockup de goodies de marque ${index + 1}`
+      : `Branded merchandise mockup ${index + 1}`;
+
+  let desktopIndex = 0;
+  const mobileColumns = [
+    deliverables.filter((_, index) => index % 2 === 0),
+    deliverables.filter((_, index) => index % 2 === 1),
+  ];
+
+  return (
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden">
+      <div className="grid grid-cols-2 items-start gap-2 md:hidden">
+        {mobileColumns.map((column, columnIndex) => (
+          <div key={columnIndex} className={`space-y-2 ${columnIndex === 1 ? "pt-12" : ""}`}>
+            {column.map((deliverable, itemIndex) => (
+              <DeliverablePicture
+                key={deliverable.url}
+                deliverable={deliverable}
+                assetBase={assetBase}
+                alt={alt(itemIndex * 2 + columnIndex)}
+                className="aspect-[3/4]"
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden space-y-3 md:block">
+        {GOODIES_BENTO_ROWS.map((row, rowIndex) => (
+          <div key={rowIndex} className="grid grid-cols-12 items-start gap-3">
+            {row.map((className) => {
+              const index = desktopIndex++;
+              const deliverable = deliverables[index];
+              return (
+                <DeliverablePicture
+                  key={deliverable.url}
+                  deliverable={deliverable}
+                  assetBase={assetBase}
+                  alt={alt(index)}
+                  className={className}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -853,7 +967,16 @@ export default function ProjectModal({
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
-              {project.deliverables ? (
+              {project.deliverables && project.deliverableLayout === "bento" ? (
+                <DeliverablesBento
+                  deliverables={project.deliverables.filter(
+                    (deliverable): deliverable is ImageDeliverable =>
+                      deliverable.type === "image"
+                  )}
+                  assetBase={projectAssetBase(project)}
+                  locale={locale}
+                />
+              ) : project.deliverables ? (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {project.deliverables.map((deliverable, i) =>
                     deliverable.type === "video" ? (
@@ -870,6 +993,18 @@ export default function ProjectModal({
                           style={{ margin: 0, width: "100%", maxWidth: "100%" }}
                         />
                       </div>
+                    ) : deliverable.type === "image" ? (
+                      <DeliverablePicture
+                        key={deliverable.url}
+                        deliverable={deliverable}
+                        assetBase={projectAssetBase(project)}
+                        alt={
+                          locale === "fr"
+                            ? `Livrable du projet ${i + 1}`
+                            : `Project deliverable ${i + 1}`
+                        }
+                        className="aspect-[3/4] rounded-xl"
+                      />
                     ) : (
                       <div
                         key={i}

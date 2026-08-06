@@ -5,6 +5,7 @@ export type LocalizedCopy = { en: string; fr: string };
 export type Deliverable =
   | { type: "video"; url: string }
   | { type: "instagram"; url: string }
+  | { type: "image"; url: string; fallback: string }
   | { type: "placeholder" };
 
 /** Vertical workflow media (not the Ekara stacked-card pile). */
@@ -53,6 +54,8 @@ export interface Project {
   deliverableCount: number;
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
   deliverables?: Deliverable[];
+  /** Optional full-viewport, staggered layout for image deliverables. */
+  deliverableLayout?: "bento";
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
@@ -184,14 +187,41 @@ export const projects: Project[] = [
     type: "Video",
     hasVideo: true,
     videoUrl: "/projects/ai/goodies-factory/cover-video-goodies-factory.mp4",
+    videoPoster: "poster-cover-goodies-factory.jpg",
     unmuteOnOpen: true,
-    tools: ["Figma Weave", "Magnific"],
+    tools: [
+      "Figma Weave",
+      "Magnific",
+      "Higgsfield",
+      "Suno",
+      "Figma",
+      "Jitter",
+      "Premiere Pro",
+      "After Effects",
+    ],
     // VS Good product URL - wire when available.
     links: { template: "#" },
-    // Production / Scene / Worn - replace placeholders once files are uploaded.
-    deliverableCount: 3,
+    deliverableCount: 11,
+    deliverableLayout: "bento",
+    deliverables: [3, 9, 1, 4, 10, 7, 2, 5, 6, 11, 8].map((number) => ({
+      type: "image" as const,
+      url: `deliverables/deliverable-${number}-goodies-factory.webp`,
+      fallback: `deliverables/deliverable-${number}-goodies-factory.jpg`,
+    })),
     processTitle: { en: "Workflow", fr: "Workflow" },
-    processItems: [],
+    processItems: [
+      {
+        type: "image",
+        file: "process/process-magnific-goodies-factory.png",
+        fullBleed: true,
+      },
+      { type: "loop", file: "process/process-higgsfield-goodies-factory.mp4" },
+      {
+        type: "image",
+        file: "process/process-figma-weave-goodies-factory.png",
+        fullBleed: true,
+      },
+    ],
   },
   {
     id: "04",
