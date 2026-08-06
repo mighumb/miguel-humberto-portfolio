@@ -183,6 +183,21 @@ function ProcessSilentLoop({ src }: { src: string }) {
   );
 }
 
+function LinkedInMark({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+      className={className}
+    >
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
 function ProcessClickPlayer({
   src,
   poster,
@@ -203,58 +218,73 @@ function ProcessClickPlayer({
   };
 
   return (
-    <div className="group relative mx-auto aspect-video w-full max-w-3xl overflow-hidden rounded-xl bg-bg-secondary">
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        controls={playing}
-        playsInline
-        preload="metadata"
-        className="h-full w-full object-cover"
-      />
-      {!playing && (
-        <button
-          type="button"
-          onClick={handlePlay}
-          className="absolute inset-0 cursor-pointer border-0 bg-transparent"
-          aria-label="Play video"
-        >
-          <span
-            className="absolute inset-0 bg-bg-primary/15 transition-colors group-hover:bg-bg-primary/5"
-            aria-hidden
-          />
-          <span
-            className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
-            aria-hidden
+    <div className="mx-auto w-full max-w-3xl">
+      <div className="group relative aspect-video overflow-hidden rounded-xl bg-bg-secondary">
+        <video
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          controls={playing}
+          playsInline
+          preload="metadata"
+          className="h-full w-full object-cover"
+        />
+        {!playing && (
+          <button
+            type="button"
+            onClick={handlePlay}
+            className="absolute inset-0 cursor-pointer border-0 bg-transparent"
+            aria-label="Play video"
           >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
-              <path d="M8 5.14v13.72L19 12 8 5.14z" />
-            </svg>
-          </span>
-        </button>
-      )}
+            <span
+              className="absolute inset-0 bg-bg-primary/15 transition-colors group-hover:bg-bg-primary/5"
+              aria-hidden
+            />
+            <span
+              className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+              aria-hidden
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+                <path d="M8 5.14v13.72L19 12 8 5.14z" />
+              </svg>
+            </span>
+          </button>
+        )}
+        {/* Desktop: overlay badge. Hidden on mobile to avoid native mute control clash. */}
+        {linkedinUrl && (
+          <a
+            href={linkedinUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            className="group/li absolute right-3 top-3 z-20 hidden outline-none md:flex"
+            aria-label={t.modal.viewOnLinkedin}
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white transition-colors group-hover/li:bg-black/55 group-focus-visible/li:bg-black/55">
+              <LinkedInMark />
+            </span>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute right-full top-1/2 z-30 mr-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black/80 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/li:opacity-100 group-focus-visible/li:opacity-100"
+            >
+              {t.modal.viewOnLinkedin}
+            </span>
+          </a>
+        )}
+      </div>
+      {/* Mobile: link under the player so native controls stay free. */}
       {linkedinUrl && (
         <a
           href={linkedinUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={(event) => event.stopPropagation()}
-          onPointerDown={(event) => event.stopPropagation()}
-          className="group/li absolute right-3 top-3 z-20 flex outline-none"
-          aria-label={t.modal.viewOnLinkedin}
+          className="mt-3 inline-flex items-center gap-2 text-sm text-text-secondary transition-colors hover:text-text-primary md:hidden"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white transition-colors group-hover/li:bg-black/55 group-focus-visible/li:bg-black/55">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-            </svg>
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-black/40 text-white">
+            <LinkedInMark className="h-3.5 w-3.5" />
           </span>
-          <span
-            role="tooltip"
-            className="pointer-events-none absolute right-full top-1/2 z-30 mr-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-black/80 px-2.5 py-1 text-xs text-white opacity-0 transition-opacity group-hover/li:opacity-100 group-focus-visible/li:opacity-100"
-          >
-            {t.modal.viewOnLinkedin}
-          </span>
+          {t.modal.viewOnLinkedin}
         </a>
       )}
     </div>
