@@ -202,7 +202,7 @@ export const projects: Project[] = [
     links: { template: "#" },
     deliverableCount: 11,
     deliverableLayout: "bento",
-    deliverables: [3, 1, 9, 6, 10, 2, 4, 11, 5, 7, 8].map((number) => ({
+    deliverables: [3, 9, 1, 4, 10, 7, 2, 5, 6, 11, 8].map((number) => ({
       type: "image" as const,
       url: `deliverables/deliverable-${number}-goodies-factory.webp`,
       fallback: `deliverables/deliverable-${number}-goodies-factory.jpg`,
