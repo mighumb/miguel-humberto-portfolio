@@ -1135,9 +1135,10 @@ export default function ProjectModal({
           </div>
 
           <div
-            className={`project-modal-switch mx-auto max-w-5xl px-6 pb-24 md:px-10 ${switchClass}`}
+            className={`project-modal-switch w-full ${switchClass}`}
           >
-            <div className="pt-8 md:pt-12">
+            <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
+              <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
                 className={`project-modal-hero relative aspect-video w-full overflow-hidden rounded-xl ${
@@ -1247,7 +1248,7 @@ export default function ProjectModal({
             </section>
 
             {hasDeliverables && (
-            <section className="mt-16 pt-16">
+              <section className="mt-16 pt-16">
               <h3 className="mb-8 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {mt.deliverables}
               </h3>
@@ -1442,7 +1443,8 @@ export default function ProjectModal({
                   <ResourceLink href={project.links.tiktok}>{mt.tiktok}</ResourceLink>
                 )}
               </div>
-            </section>
+              </section>
+            </div>
           </div>
         </div>
       </div>

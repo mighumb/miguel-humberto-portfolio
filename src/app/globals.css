@@ -403,6 +403,65 @@ html[data-project-switch-direction="prev"]::view-transition-new(project-modal-me
   }
 }
 
+/* Full-panel switch used on every viewport. The outgoing DOM clone and the
+   incoming live panel move together; the sticky modal header is not cloned. */
+.project-modal-switch.is-enter-next,
+.project-modal-switch.is-enter-prev {
+  transform-origin: center center;
+}
+
+.project-modal-switch.is-enter-next {
+  animation: project-panel-enter-next 620ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.project-modal-switch.is-enter-prev {
+  animation: project-panel-enter-prev 620ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+/* Disable the previous segmented fallback while the whole panel is moving. */
+.project-modal-switch.is-enter-next .project-modal-hero,
+.project-modal-switch.is-enter-prev .project-modal-hero,
+.project-modal-switch.is-enter-next .project-modal-switch-meta,
+.project-modal-switch.is-enter-prev .project-modal-switch-meta,
+.project-modal-switch.is-enter-next > section,
+.project-modal-switch.is-enter-prev > section {
+  animation: none !important;
+  transition: none !important;
+}
+
+.project-modal-switch-outgoing {
+  transform-origin: center center;
+  contain: paint;
+}
+
+.project-modal-switch-outgoing.is-next {
+  animation: project-panel-exit-next 620ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+.project-modal-switch-outgoing.is-prev {
+  animation: project-panel-exit-prev 620ms cubic-bezier(0.76, 0, 0.24, 1) both;
+}
+
+@keyframes project-panel-enter-next {
+  from { transform: translateX(var(--project-slide-distance, 100vw)) scale(0.985); opacity: 0.72; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+@keyframes project-panel-enter-prev {
+  from { transform: translateX(calc(var(--project-slide-distance, 100vw) * -1)) scale(0.985); opacity: 0.72; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+@keyframes project-panel-exit-next {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(calc(var(--project-slide-distance, 100vw) * -1)) scale(0.985); opacity: 0.32; }
+}
+
+@keyframes project-panel-exit-prev {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(var(--project-slide-distance, 100vw)) scale(0.985); opacity: 0.32; }
+}
+
 .project-shared-flight-thumb,
 .project-shared-flight-title,
 .project-shared-flight-year,

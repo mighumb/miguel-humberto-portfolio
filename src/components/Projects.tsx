@@ -40,8 +40,7 @@ import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
 import ProjectSharedFlight from "./ProjectSharedFlight";
 
-const SWITCH_EXIT_MS = 190;
-const SWITCH_ENTER_MS = 520;
+const SWITCH_ENTER_MS = 620;
 
 function isMobileViewport() {
   return typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches;
@@ -50,6 +49,70 @@ function isMobileViewport() {
 function visualViewportBottom() {
   const viewport = window.visualViewport;
   return (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
+}
+
+function createOutgoingModalPanel(direction: "prev" | "next") {
+  const source = document.querySelector<HTMLElement>(".project-modal-switch");
+  const scroll = source?.closest<HTMLElement>(".project-modal-scroll");
+  if (!source || !scroll) return () => {};
+
+  const rect = source.getBoundingClientRect();
+  const innerRect = source.firstElementChild?.getBoundingClientRect();
+  const slideDistance = innerRect
+    ? Math.max(innerRect.right, window.innerWidth - innerRect.left)
+    : window.innerWidth;
+  source.style.setProperty("--project-slide-distance", `${slideDistance}px`);
+  const clone = source.cloneNode(true) as HTMLElement;
+  clone.setAttribute("aria-hidden", "true");
+  clone.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
+  clone.classList.remove(
+    "is-enter-next",
+    "is-enter-prev",
+    "is-exit-next",
+    "is-exit-prev",
+  );
+  clone.classList.add("project-modal-switch-outgoing", `is-${direction}`);
+  Object.assign(clone.style, {
+    position: "fixed",
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    maxWidth: "none",
+    margin: "0",
+    zIndex: "5",
+    pointerEvents: "none",
+  });
+  scroll.appendChild(clone);
+
+  // Freeze current video frames into canvases. Cloned <video> elements often
+  // paint black for their first decode frame, which would leave a dark panel.
+  const sourceVideos = source.querySelectorAll("video");
+  clone.querySelectorAll("video").forEach((video, index) => {
+    const sourceVideo = sourceVideos[index];
+    if (!sourceVideo || sourceVideo.readyState < 2) return;
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = sourceVideo.videoWidth || sourceVideo.clientWidth;
+      canvas.height = sourceVideo.videoHeight || sourceVideo.clientHeight;
+      const context = canvas.getContext("2d");
+      if (!context || canvas.width === 0 || canvas.height === 0) return;
+      context.drawImage(sourceVideo, 0, 0, canvas.width, canvas.height);
+      canvas.className = video.className;
+      canvas.setAttribute("aria-hidden", "true");
+      video.replaceWith(canvas);
+    } catch {
+      video.controls = false;
+      video.muted = true;
+    }
+  });
+
+  return () => {
+    clone.remove();
+    document
+      .querySelector<HTMLElement>(".project-modal-switch")
+      ?.style.removeProperty("--project-slide-distance");
+  };
 }
 
 /**
@@ -213,7 +276,7 @@ export default function Projects() {
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
   const switchTimersRef = useRef<number[]>([]);
-  const viewTransitionActiveRef = useRef(false);
+  const outgoingPanelCleanupRef = useRef<(() => void) | null>(null);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -492,8 +555,8 @@ export default function Projects() {
     }
     switchTimersRef.current.forEach((id) => window.clearTimeout(id));
     switchTimersRef.current = [];
-    viewTransitionActiveRef.current = false;
-    delete document.documentElement.dataset.projectSwitchDirection;
+    outgoingPanelCleanupRef.current?.();
+    outgoingPanelCleanupRef.current = null;
     setSwitchPhase("idle");
     setSwitchDirection(null);
     setActiveProject(null);
@@ -701,11 +764,7 @@ export default function Projects() {
   }, [activeProject, closeModal]);
 
   const navigate = (direction: "prev" | "next") => {
-    if (
-      phase !== "open" ||
-      switchPhase !== "idle" ||
-      viewTransitionActiveRef.current
-    ) return;
+    if (phase !== "open" || switchPhase !== "idle") return;
 
     const newIndex =
       direction === "next"
@@ -727,47 +786,31 @@ export default function Projects() {
       return;
     }
 
-    const transitionDocument = document as Document & {
-      startViewTransition?: (update: () => void) => {
-        finished: Promise<void>;
-      };
-    };
-    if (transitionDocument.startViewTransition) {
-      viewTransitionActiveRef.current = true;
-      document.documentElement.dataset.projectSwitchDirection = direction;
-      const transition = transitionDocument.startViewTransition(() => {
-        flushSync(applyProject);
-      });
-      transition.finished.finally(() => {
-        viewTransitionActiveRef.current = false;
-        delete document.documentElement.dataset.projectSwitchDirection;
-      });
-      return;
-    }
-
     switchTimersRef.current.forEach((id) => window.clearTimeout(id));
     switchTimersRef.current = [];
+    outgoingPanelCleanupRef.current?.();
+    outgoingPanelCleanupRef.current = createOutgoingModalPanel(direction);
 
-    setSwitchDirection(direction);
-    setSwitchPhase("exit");
-
-    const exitTimer = window.setTimeout(() => {
-      applyProject();
+    flushSync(() => {
+      setSwitchDirection(direction);
       setSwitchPhase("enter");
-      const enterTimer = window.setTimeout(() => {
-        setSwitchPhase("idle");
-        setSwitchDirection(null);
-      }, SWITCH_ENTER_MS);
-      switchTimersRef.current.push(enterTimer);
-    }, SWITCH_EXIT_MS);
-    switchTimersRef.current.push(exitTimer);
+      applyProject();
+    });
+
+    const enterTimer = window.setTimeout(() => {
+      outgoingPanelCleanupRef.current?.();
+      outgoingPanelCleanupRef.current = null;
+      setSwitchPhase("idle");
+      setSwitchDirection(null);
+    }, SWITCH_ENTER_MS);
+    switchTimersRef.current.push(enterTimer);
   };
 
   useEffect(() => {
     return () => {
       switchTimersRef.current.forEach((id) => window.clearTimeout(id));
       viewportRestoreCleanupRef.current?.();
-      delete document.documentElement.dataset.projectSwitchDirection;
+      outgoingPanelCleanupRef.current?.();
     };
   }, []);
 
