@@ -51,6 +51,26 @@ function visualViewportBottom() {
   return (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
 }
 
+function captureVideoFrame(video: HTMLVideoElement | undefined) {
+  if (!video || video.readyState < 2) return null;
+
+  const width = video.videoWidth || video.clientWidth;
+  const height = video.videoHeight || video.clientHeight;
+  if (!width || !height) return null;
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(video, 0, 0, width, height);
+    return canvas;
+  } catch {
+    return null;
+  }
+}
+
 function createOutgoingModalPanel(direction: "prev" | "next") {
   const source = document.querySelector<HTMLElement>(".project-modal-switch");
   const scroll = source?.closest<HTMLElement>(".project-modal-scroll");
@@ -85,26 +105,28 @@ function createOutgoingModalPanel(direction: "prev" | "next") {
   });
   scroll.appendChild(clone);
 
-  // Freeze current video frames into canvases. Cloned <video> elements often
-  // paint black for their first decode frame, which would leave a dark panel.
+  // A cloned <video> starts its own load and paints black until it decodes,
+  // which is the dark flash the outgoing panel used to show on mobile. Every
+  // clone is therefore replaced by a still: the live frame when it can be
+  // captured, the poster otherwise.
   const sourceVideos = source.querySelectorAll("video");
   clone.querySelectorAll("video").forEach((video, index) => {
     const sourceVideo = sourceVideos[index];
-    if (!sourceVideo || sourceVideo.readyState < 2) return;
-    try {
-      const canvas = document.createElement("canvas");
-      canvas.width = sourceVideo.videoWidth || sourceVideo.clientWidth;
-      canvas.height = sourceVideo.videoHeight || sourceVideo.clientHeight;
-      const context = canvas.getContext("2d");
-      if (!context || canvas.width === 0 || canvas.height === 0) return;
-      context.drawImage(sourceVideo, 0, 0, canvas.width, canvas.height);
-      canvas.className = video.className;
-      canvas.setAttribute("aria-hidden", "true");
-      video.replaceWith(canvas);
-    } catch {
-      video.controls = false;
-      video.muted = true;
+    const frame = captureVideoFrame(sourceVideo);
+
+    if (frame) {
+      frame.className = video.className;
+      frame.setAttribute("aria-hidden", "true");
+      video.replaceWith(frame);
+      return;
     }
+
+    const still = document.createElement("img");
+    still.src = video.getAttribute("poster") ?? "";
+    still.alt = "";
+    still.className = video.className;
+    still.setAttribute("aria-hidden", "true");
+    video.replaceWith(still);
   });
 
   return () => {
@@ -774,6 +796,8 @@ export default function Projects() {
     const applyProject = () => {
       setFlightShowVideo(false);
       setFlightVideoTime(0);
+      // The captured frame belongs to the project we are leaving.
+      setFlightVideoPoster(undefined);
       setActiveIndex(newIndex);
       setActiveProject(projects[newIndex]);
       // Different project than the card we came from: let the close flight pick

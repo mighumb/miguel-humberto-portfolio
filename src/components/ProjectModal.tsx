@@ -20,6 +20,7 @@ import {
   type ProcessItem,
   projectAssetBase,
   projectCoverUrl,
+  projectVideoPosterUrl,
 } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 import EkaraUIKit from "@/components/EkaraUIKit";
@@ -907,13 +908,14 @@ export default function ProjectModal({
   const yearRef = useRef<HTMLSpanElement>(null);
   const tagsRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
-  // The captured card frame stays layered over the hero video until the video
-  // has actually PRESENTED a frame after the reveal. The `poster` attribute is
-  // not enough: an autoplaying video that is still seeking/decoding at reveal
-  // time paints black on mobile Safari, poster or not.
-  const [heroPosterVisible, setHeroPosterVisible] = useState(
-    () => videoPlaying && !!videoPoster,
-  );
+  // The flight poster is a frame captured from the card that was opened, so it
+  // only matches during the open handoff. Every other case (notably a prev/next
+  // switch) falls back to the project's own still.
+  const heroStill = (videoPlaying && videoPoster) || projectVideoPosterUrl(project);
+  // The still stays layered over the hero video until the video has actually
+  // PRESENTED a frame. The `poster` attribute is not enough: a video that is
+  // still seeking/decoding paints black on mobile Safari, poster or not.
+  const [heroPosterVisible, setHeroPosterVisible] = useState(true);
   // On touch devices, enabling `controls` at reveal makes iOS pop its native
   // control chrome over the hero — big center pause button, skip buttons and
   // a DARK SCRIM — which reads as a dark flash right at the end of the
@@ -930,6 +932,12 @@ export default function ProjectModal({
 
   useEffect(() => {
     setTouchControls(false);
+  }, [project.id]);
+
+  // A prev/next switch swaps `src` on the SAME video element, which drops back
+  // to no decoded frame. Re-arm the still so the swap never shows black.
+  useLayoutEffect(() => {
+    setHeroPosterVisible(true);
   }, [project.id]);
 
   useScrollLock(true);
@@ -955,7 +963,14 @@ export default function ProjectModal({
     }
     let cancelled = false;
     const clear = () => {
-      if (!cancelled) setHeroPosterVisible(false);
+      if (cancelled) return;
+      // Safari can fire the frame callback while the swapped src still has no
+      // decoded data; dropping the still then is exactly the black frame.
+      if (video.readyState < 2) {
+        video.addEventListener("loadeddata", clear, { once: true });
+        return;
+      }
+      setHeroPosterVisible(false);
     };
     const rvfcVideo = video as HTMLVideoElement & {
       requestVideoFrameCallback?: (cb: () => void) => number;
@@ -968,8 +983,9 @@ export default function ProjectModal({
     return () => {
       cancelled = true;
       video.removeEventListener("timeupdate", clear);
+      video.removeEventListener("loadeddata", clear);
     };
-  }, [heroPosterVisible, sharedContentVisible]);
+  }, [heroPosterVisible, sharedContentVisible, project.id]);
 
   useEffect(() => {
     const video = heroVideoRef.current;
@@ -1157,7 +1173,7 @@ export default function ProjectModal({
                       // video has no frame to paint, so without a poster it
                       // renders black for a beat — the flash at the end of the
                       // card→modal transition.
-                      poster={videoPoster}
+                      poster={heroStill ?? undefined}
                       controls={isTouch ? touchControls : sharedContentVisible}
                       onClick={
                         isTouch && !touchControls
@@ -1168,15 +1184,15 @@ export default function ProjectModal({
                       loop
                       muted={!heroUnmuted}
                       playsInline
-                      preload={videoPlaying ? "auto" : "metadata"}
+                      preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
                       className="h-full w-full object-cover"
                     />
-                    {heroPosterVisible && videoPoster && (
+                    {heroPosterVisible && heroStill && (
                       // Stays on top of the video until it presents a frame
                       // after the reveal (see the heroPosterVisible effect).
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={videoPoster}
+                        src={heroStill}
                         alt=""
                         className="pointer-events-none absolute inset-0 h-full w-full object-cover"
                         aria-hidden
