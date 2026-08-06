@@ -282,7 +282,8 @@ export const projects: Project[] = [
     year: "2025",
     type: "Video",
     hasVideo: true,
-    videoUrl: "/projects/ai/verdio/cover-video-verdio.mp4",
+    // ?v=2 busts browser media caches after the cover re-upload.
+    videoUrl: "/projects/ai/verdio/cover-video-verdio.mp4?v=2",
     videoPoster: "poster-cover-verdio.jpg",
     unmuteOnOpen: true,
     tools: ["Figma Weave", "Figma", "Nano Banana"],
