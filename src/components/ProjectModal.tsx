@@ -437,36 +437,27 @@ function DeliverablesCategoryBento({
 
   return (
     <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2 overflow-hidden">
-      <div className="space-y-12 md:hidden">
-        {groups.map(([group, items]) => {
-          const mobileColumns = [
-            items.filter((_, index) => index % 2 === 0),
-            items.filter((_, index) => index % 2 === 1),
-          ];
-          return (
-            <div key={group} className="grid grid-cols-2 items-start gap-2">
-              {mobileColumns.map((column, columnIndex) => (
-                <div
-                  key={columnIndex}
-                  className={`space-y-2 ${columnIndex === 1 ? "pt-10" : ""}`}
-                >
-                  {column.map((deliverable) => (
-                    <DeliverablePicture
-                      key={deliverable.url}
-                      deliverable={deliverable}
-                      assetBase={assetBase}
-                      alt={alt(imageIndex++)}
-                      className="aspect-square"
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          );
-        })}
+      <div className="flex flex-col gap-2 md:hidden">
+        {groups.map(([group, items]) => (
+          <div key={group} className="grid grid-cols-2 gap-2">
+            {items.map((deliverable, index) => (
+              <DeliverablePicture
+                key={deliverable.url}
+                deliverable={deliverable}
+                assetBase={assetBase}
+                alt={alt(imageIndex++)}
+                className={
+                  items.length === 3 && index === 0
+                    ? "col-span-2 aspect-[2/1]"
+                    : "aspect-square"
+                }
+              />
+            ))}
+          </div>
+        ))}
       </div>
 
-      <div className="hidden space-y-2 md:block">
+      <div className="hidden flex-col gap-2 md:flex">
         {groups.map(([group, items], groupIndex) => {
           const layouts =
             items.length === 4 ? CATEGORY_BENTO_FOUR : CATEGORY_BENTO_THREE;
