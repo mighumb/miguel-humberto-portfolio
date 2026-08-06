@@ -279,7 +279,7 @@ function ProcessClickPlayer({
           href={linkedinUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-2 text-sm text-white transition-colors hover:bg-black/55 md:hidden"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-text-secondary transition-colors hover:text-text-primary md:hidden"
         >
           <LinkedInMark className="h-3.5 w-3.5 shrink-0" />
           {t.modal.viewOnLinkedin}
