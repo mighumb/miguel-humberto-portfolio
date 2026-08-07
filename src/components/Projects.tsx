@@ -1,7 +1,15 @@
 "use client";
 
-import { useState, useCallback, useRef, useLayoutEffect, useMemo, useEffect, type RefObject } from "react";
-import { flushSync } from "react-dom";
+import {
+  useState,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  useMemo,
+  useEffect,
+  type CSSProperties,
+  type RefObject,
+} from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
@@ -52,119 +60,32 @@ function visualViewportBottom() {
 }
 
 /**
- * iOS Safari hands back an all-black bitmap when a video being composited by
- * the hardware overlay is drawn to a canvas, so a capture is only usable once
- * it is shown to carry actual luminance.
+ * Where the panel sits at the moment of the click, so the one sliding out can
+ * be frozen there while the modal scroll jumps back to the top for the one
+ * sliding in.
  */
-function videoFrameIsPaintable(video: HTMLVideoElement) {
-  try {
-    const probe = document.createElement("canvas");
-    probe.width = 8;
-    probe.height = 8;
-    const context = probe.getContext("2d", { willReadFrequently: true });
-    if (!context) return false;
-    context.drawImage(video, 0, 0, probe.width, probe.height);
-    const { data } = context.getImageData(0, 0, probe.width, probe.height);
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i] > 12 || data[i + 1] > 12 || data[i + 2] > 12) return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
+function measureOutgoingPanel() {
+  const panel = document.querySelector<HTMLElement>(".project-modal-switch");
+  if (!panel) return null;
 
-function captureVideoFrame(video: HTMLVideoElement | undefined) {
-  if (!video || video.readyState < 2) return null;
+  const rect = panel.getBoundingClientRect();
+  const inner = panel.firstElementChild?.getBoundingClientRect();
 
-  const width = video.videoWidth || video.clientWidth;
-  const height = video.videoHeight || video.clientHeight;
-  if (!width || !height) return null;
-
-  if (!videoFrameIsPaintable(video)) return null;
-
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    if (!context) return null;
-    context.drawImage(video, 0, 0, width, height);
-    return canvas;
-  } catch {
-    return null;
-  }
-}
-
-function createOutgoingModalPanel(direction: "prev" | "next") {
-  const source = document.querySelector<HTMLElement>(".project-modal-switch");
-  const scroll = source?.closest<HTMLElement>(".project-modal-scroll");
-  if (!source || !scroll) return () => {};
-
-  const rect = source.getBoundingClientRect();
-  const innerRect = source.firstElementChild?.getBoundingClientRect();
-  const slideDistance = innerRect
-    ? Math.max(innerRect.right, window.innerWidth - innerRect.left)
-    : window.innerWidth;
-  source.style.setProperty("--project-slide-distance", `${slideDistance}px`);
-  const clone = source.cloneNode(true) as HTMLElement;
-  clone.setAttribute("aria-hidden", "true");
-  clone.querySelectorAll("[id]").forEach((element) => element.removeAttribute("id"));
-  clone.classList.remove(
-    "is-enter-next",
-    "is-enter-prev",
-    "is-exit-next",
-    "is-exit-prev",
-  );
-  clone.classList.add("project-modal-switch-outgoing", `is-${direction}`);
-  Object.assign(clone.style, {
-    position: "fixed",
-    top: `${rect.top}px`,
-    left: `${rect.left}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-    maxWidth: "none",
-    margin: "0",
-    zIndex: "5",
-    pointerEvents: "none",
-  });
-  scroll.appendChild(clone);
-
-  // A cloned <video> starts its own load and paints black until it decodes,
-  // which is the dark flash the outgoing panel used to show on mobile. Every
-  // clone is therefore replaced by a still: the live frame when it can be
-  // captured, the poster otherwise.
-  const sourceVideos = source.querySelectorAll("video");
-  clone.querySelectorAll("video").forEach((video, index) => {
-    const sourceVideo = sourceVideos[index];
-    const frame = captureVideoFrame(sourceVideo);
-
-    if (frame) {
-      frame.className = video.className;
-      frame.setAttribute("aria-hidden", "true");
-      video.replaceWith(frame);
-      return;
-    }
-
-    const poster = video.getAttribute("poster");
-    if (!poster) {
-      video.remove();
-      return;
-    }
-
-    const still = document.createElement("img");
-    still.src = poster;
-    still.alt = "";
-    still.className = video.className;
-    still.setAttribute("aria-hidden", "true");
-    video.replaceWith(still);
-  });
-
-  return () => {
-    clone.remove();
-    document
-      .querySelector<HTMLElement>(".project-modal-switch")
-      ?.style.removeProperty("--project-slide-distance");
+  return {
+    style: {
+      position: "fixed",
+      top: `${rect.top}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      maxWidth: "none",
+      margin: 0,
+      zIndex: 5,
+      pointerEvents: "none",
+    } as CSSProperties,
+    slideDistance: inner
+      ? Math.max(inner.right, window.innerWidth - inner.left)
+      : window.innerWidth,
   };
 }
 
@@ -306,8 +227,10 @@ export default function Projects() {
   const [closeFlightPerspective, setCloseFlightPerspective] = useState<CardPerspective | null>(
     null,
   );
-  const [switchPhase, setSwitchPhase] = useState<"idle" | "exit" | "enter">("idle");
   const [switchDirection, setSwitchDirection] = useState<"prev" | "next" | null>(null);
+  const [outgoingProject, setOutgoingProject] = useState<Project | null>(null);
+  const [outgoingStyle, setOutgoingStyle] = useState<CSSProperties | undefined>(undefined);
+  const [slideDistance, setSlideDistance] = useState<number | undefined>(undefined);
   const measureRef = useRef<(() => ModalTargets | null) | null>(null);
   const closeTargetsRef = useRef<ModalTargets | null>(null);
   const flipCleanupRef = useRef<(() => void) | null>(null);
@@ -329,7 +252,6 @@ export default function Projects() {
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
   const switchTimersRef = useRef<number[]>([]);
-  const outgoingPanelCleanupRef = useRef<(() => void) | null>(null);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -608,10 +530,9 @@ export default function Projects() {
     }
     switchTimersRef.current.forEach((id) => window.clearTimeout(id));
     switchTimersRef.current = [];
-    outgoingPanelCleanupRef.current?.();
-    outgoingPanelCleanupRef.current = null;
-    setSwitchPhase("idle");
     setSwitchDirection(null);
+    setOutgoingProject(null);
+    setOutgoingStyle(undefined);
     setActiveProject(null);
     resetTransition();
     restoreMobileVisualAnchor();
@@ -707,8 +628,9 @@ export default function Projects() {
     setActiveIndex(index);
     setActiveProject(project);
     setActiveInstanceId(origin?.carouselInstanceId ?? null);
-    setSwitchPhase("idle");
     setSwitchDirection(null);
+    setOutgoingProject(null);
+    setOutgoingStyle(undefined);
 
     if (!origin || prefersReducedMotion()) {
       setSharedContentVisible(true);
@@ -817,7 +739,7 @@ export default function Projects() {
   }, [activeProject, closeModal]);
 
   const navigate = (direction: "prev" | "next") => {
-    if (phase !== "open" || switchPhase !== "idle") return;
+    if (phase !== "open" || outgoingProject) return;
 
     const newIndex =
       direction === "next"
@@ -836,26 +758,27 @@ export default function Projects() {
       setActiveInstanceId(null);
     };
 
-    if (prefersReducedMotion()) {
+    const leaving = activeProject;
+    const measured = prefersReducedMotion() ? null : measureOutgoingPanel();
+
+    if (!leaving || !measured) {
       applyProject();
       return;
     }
 
     switchTimersRef.current.forEach((id) => window.clearTimeout(id));
     switchTimersRef.current = [];
-    outgoingPanelCleanupRef.current?.();
-    outgoingPanelCleanupRef.current = createOutgoingModalPanel(direction);
 
-    flushSync(() => {
-      setSwitchDirection(direction);
-      setSwitchPhase("enter");
-      applyProject();
-    });
+    // Measured above, before this render resets the modal scroll to the top.
+    setOutgoingProject(leaving);
+    setOutgoingStyle(measured.style);
+    setSlideDistance(measured.slideDistance);
+    setSwitchDirection(direction);
+    applyProject();
 
     const enterTimer = window.setTimeout(() => {
-      outgoingPanelCleanupRef.current?.();
-      outgoingPanelCleanupRef.current = null;
-      setSwitchPhase("idle");
+      setOutgoingProject(null);
+      setOutgoingStyle(undefined);
       setSwitchDirection(null);
     }, SWITCH_ENTER_MS);
     switchTimersRef.current.push(enterTimer);
@@ -865,7 +788,6 @@ export default function Projects() {
     return () => {
       switchTimersRef.current.forEach((id) => window.clearTimeout(id));
       viewportRestoreCleanupRef.current?.();
-      outgoingPanelCleanupRef.current?.();
     };
   }, []);
 
@@ -953,8 +875,10 @@ export default function Projects() {
           videoPlaying={flightShowVideo}
           videoTime={flightVideoTime}
           videoPoster={flightVideoPoster}
-          switchPhase={switchPhase}
           switchDirection={switchDirection}
+          outgoingProject={outgoingProject}
+          outgoingStyle={outgoingStyle}
+          slideDistance={slideDistance}
           onFlightTargetsReady={handleFlightTargetsReady}
           onRegisterMeasure={registerMeasure}
         />
