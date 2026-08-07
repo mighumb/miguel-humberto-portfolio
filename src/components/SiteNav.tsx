@@ -1,7 +1,6 @@
 "use client";
 
 import { useLocale } from "@/contexts/LocaleContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import { scrollPageTo, scrollPageToElement } from "@/lib/pageScroll";
 
@@ -12,7 +11,6 @@ interface SiteNavProps {
 
 export default function SiteNav({ className = "", onBrandClick }: SiteNavProps) {
   const { locale, setLocale } = useLocale();
-  const { theme, toggleTheme } = useTheme();
   const t = translations[locale];
 
   return (
@@ -66,34 +64,6 @@ export default function SiteNav({ className = "", onBrandClick }: SiteNavProps) 
             FR
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={toggleTheme}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-bg-secondary/80 text-text-secondary backdrop-blur-sm transition-colors hover:text-text-primary"
-          aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-        >
-          {theme === "light" ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path
-                d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41M12 8a4 4 0 11-8 0 4 4 0 018 0z"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-              />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path
-                d="M14 9.5A6 6 0 116.5 2 4.5 4.5 0 0014 9.5z"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          )}
-        </button>
 
         <a
           href="#contact"

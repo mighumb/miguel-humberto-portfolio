@@ -33,9 +33,7 @@ const modeBootstrap = `
   try {
     var params = new URLSearchParams(window.location.search);
     var mode = params.get("mode");
-    if (mode !== "ai" && mode !== "craft") {
-      mode = localStorage.getItem("portfolio-mode");
-    }
+    // Bare URL always opens AI. Craft is URL-only while that track is unfinished.
     if (mode !== "ai" && mode !== "craft") mode = "ai";
     var theme = mode === "craft" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", theme);

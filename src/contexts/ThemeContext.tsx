@@ -18,7 +18,6 @@ const STORAGE_KEY = "portfolio-mode";
 interface ThemeContextValue {
   mode: PortfolioMode;
   theme: Theme;
-  toggleTheme: () => void;
   setMode: (mode: PortfolioMode) => void;
 }
 
@@ -38,13 +37,14 @@ function readModeFromUrl(): PortfolioMode | null {
   return parseMode(new URLSearchParams(window.location.search).get("mode"));
 }
 
-function readModeFromStorage(): PortfolioMode | null {
-  if (typeof window === "undefined") return null;
-  return parseMode(localStorage.getItem(STORAGE_KEY));
-}
-
+/**
+ * Public entry is always AI. Craft stays reachable only via an explicit
+ * `?mode=craft` URL while that side of the portfolio is still being built.
+ * localStorage is never used to pick the default, so a past craft visit cannot
+ * surprise a recruiter who opens the bare site.
+ */
 function resolveInitialMode(): PortfolioMode {
-  return readModeFromUrl() ?? readModeFromStorage() ?? "ai";
+  return readModeFromUrl() ?? "ai";
 }
 
 function syncUrl(mode: PortfolioMode) {
@@ -70,7 +70,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setModeState(initial);
     applyDocumentMode(initial);
     localStorage.setItem(STORAGE_KEY, initial);
-    // Keep shareable mode in the URL once resolved (default ai, or craft from storage/URL).
     syncUrl(initial);
     setMounted(true);
   }, []);
@@ -83,12 +82,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onPopState = () => {
-      const fromUrl = readModeFromUrl();
-      if (fromUrl) {
-        setModeState(fromUrl);
-        return;
-      }
-      setModeState(readModeFromStorage() ?? "ai");
+      setModeState(readModeFromUrl() ?? "ai");
     };
 
     window.addEventListener("popstate", onPopState);
@@ -102,20 +96,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyDocumentMode(next);
   }, []);
 
-  const toggleTheme = useCallback(() => {
-    setModeState((prev) => {
-      const next: PortfolioMode = prev === "ai" ? "craft" : "ai";
-      syncUrl(next);
-      localStorage.setItem(STORAGE_KEY, next);
-      applyDocumentMode(next);
-      return next;
-    });
-  }, []);
-
   return (
-    <ThemeContext.Provider
-      value={{ mode, theme: modeToTheme(mode), toggleTheme, setMode }}
-    >
+    <ThemeContext.Provider value={{ mode, theme: modeToTheme(mode), setMode }}>
       {children}
     </ThemeContext.Provider>
   );
