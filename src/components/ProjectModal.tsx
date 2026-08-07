@@ -8,6 +8,7 @@ import {
   useState,
   type CSSProperties,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -40,9 +41,14 @@ interface ProjectModalProps {
   /** Frame captured from the card at click time; covers the hero video while
    *  it seeks to the handoff position, which would otherwise render black. */
   videoPoster?: string;
-  /** In-modal prev/next switch animation phase. */
-  switchPhase?: "idle" | "exit" | "enter";
+  /** Direction of the in-modal prev/next switch currently playing. */
   switchDirection?: "prev" | "next" | null;
+  /** Project still sliding out. Its panel stays mounted for the transition. */
+  outgoingProject?: Project | null;
+  /** Freezes the outgoing panel where it sat before the modal scroll reset. */
+  outgoingStyle?: CSSProperties;
+  /** How far each panel travels, so both cross the full viewport. */
+  slideDistance?: number;
   onFlightTargetsReady: (targets: ModalTargets) => void;
   onRegisterMeasure: (fn: (() => ModalTargets | null) | null) => void;
 }
@@ -881,40 +887,54 @@ function DeliverableVideo({ src }: { src: string }) {
   );
 }
 
-export default function ProjectModal({
+/**
+ * One project's content. Mounted with `key={project.id}`, so a prev/next switch
+ * mounts a second panel instead of replacing this one: the outgoing panel keeps
+ * its own DOM nodes, and with them its live iframes and already-decoded videos,
+ * for the whole slide.
+ */
+function ProjectPanel({
   project,
-  onRequestClose,
-  onPrev,
-  onNext,
-  currentIndex,
-  total,
+  locale,
+  isActive,
   sharedContentVisible,
-  awaitingFlightTargets,
-  backdropVisible,
+  sharedHidden,
   videoPlaying,
   videoTime,
   videoPoster,
-  switchPhase = "idle",
-  switchDirection = null,
-  onFlightTargetsReady,
-  onRegisterMeasure,
-}: ProjectModalProps) {
-  const { locale } = useLocale();
+  className,
+  style,
+  heroRef,
+  titleRef,
+  yearRef,
+  tagsRef,
+}: {
+  project: Project;
+  locale: "en" | "fr";
+  /** Only the active panel drives playback and the shared-flight measurement. */
+  isActive: boolean;
+  sharedContentVisible: boolean;
+  sharedHidden: boolean;
+  videoPlaying: boolean;
+  videoTime: number;
+  videoPoster?: string;
+  className: string;
+  style?: CSSProperties;
+  heroRef?: RefObject<HTMLDivElement | null>;
+  titleRef?: RefObject<HTMLHeadingElement | null>;
+  yearRef?: RefObject<HTMLSpanElement | null>;
+  tagsRef?: RefObject<HTMLDivElement | null>;
+}) {
   const mt = translations[locale].modal;
   const coverUrl = projectCoverUrl(project);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const heroRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const yearRef = useRef<HTMLSpanElement>(null);
-  const tagsRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   // The flight poster is a frame captured from the card that was opened, so it
-  // only matches during the open handoff. Every other case (notably a prev/next
-  // switch) falls back to the project's own still.
+  // only matches during the open handoff. Every other case falls back to the
+  // project's own still.
   const heroStill = (videoPlaying && videoPoster) || projectVideoPosterUrl(project);
   // A video with no decoded frame paints black rather than showing its poster on
   // mobile Safari, so the element stays fully transparent until the browser
-  // reports data for the source it currently holds.
+  // reports data for it.
   const [heroVideoReady, setHeroVideoReady] = useState(false);
   // On touch devices, enabling `controls` at reveal makes iOS pop its native
   // control chrome over the hero — big center pause button, skip buttons and
@@ -926,44 +946,30 @@ export default function ProjectModal({
   );
   const [touchControls, setTouchControls] = useState(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
-  const heroUnmuted = unmuteOnOpen && sharedContentVisible;
+  const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
 
-  useEffect(() => {
-    setTouchControls(false);
-  }, [project.id]);
-
-  // A prev/next switch swaps `src` on the SAME video element, which drops back
-  // to no decoded frame. Hide it again so the swap never shows black.
-  useLayoutEffect(() => {
-    setHeroVideoReady(false);
-  }, [project.videoUrl]);
-
-  useScrollLock(true);
-
   useLayoutEffect(() => {
     const video = heroVideoRef.current;
-    if (!video || !project.hasVideo || !videoPlaying) return;
+    if (!video || !isActive || !project.hasVideo || !videoPlaying) return;
     syncVideoPlayback(video, videoTime);
-  }, [project.id, project.hasVideo, videoPlaying, videoTime]);
+  }, [isActive, project.hasVideo, videoPlaying, videoTime]);
 
   useEffect(() => {
     if (heroVideoReady) return;
     const video = heroVideoRef.current;
     if (!video) return;
 
-    // Media events are emitted per load, so a listener attached after the src
-    // swap can only hear the new source. That makes them the one signal that
-    // cannot be stale, unlike readyState or a frame callback, both of which can
-    // still describe the previous source for a beat after the swap.
+    // Media events are emitted per load, so they are the one signal that cannot
+    // describe a previous source, unlike readyState or a frame callback.
     const reveal = () => setHeroVideoReady(true);
     video.addEventListener("loadeddata", reveal);
     video.addEventListener("canplay", reveal);
     video.addEventListener("playing", reveal);
 
-    // Covers the case where the element already holds decoded data for this
-    // source, e.g. the open handoff seeking an already-buffered video.
+    // Covers the case where the element already holds decoded data, e.g. the
+    // open handoff seeking an already-buffered video.
     if (video.readyState >= 2 && video.currentSrc) reveal();
 
     return () => {
@@ -971,175 +977,34 @@ export default function ProjectModal({
       video.removeEventListener("canplay", reveal);
       video.removeEventListener("playing", reveal);
     };
-  }, [heroVideoReady, project.videoUrl]);
+  }, [heroVideoReady]);
 
   useEffect(() => {
     const video = heroVideoRef.current;
     if (!video || !project.hasVideo || !project.videoUrl) return;
-    if (sharedContentVisible) {
+    // A panel sliding out keeps playing silently: unmuting both would overlap
+    // two soundtracks for the length of the transition.
+    if (isActive && sharedContentVisible) {
       video.muted = !unmuteOnOpen;
-      // Also runs in the flight-handoff case (videoPlaying): iOS can reject
-      // the play() issued while the modal was still hidden, and nothing else
-      // would retry it. play() on an already-playing video is a no-op.
+      // iOS can reject the play() issued while the modal was still hidden, and
+      // nothing else would retry it. play() on a playing video is a no-op.
       video.play().catch(() => {});
     } else {
       video.muted = true;
     }
   }, [
+    isActive,
     sharedContentVisible,
     project.hasVideo,
     project.videoUrl,
-    project.id,
     videoPlaying,
     unmuteOnOpen,
   ]);
 
 
-  const measureTargets = useCallback((): ModalTargets | null => {
-    const modal = modalRef.current;
-    const hero = heroRef.current;
-    const title = titleRef.current;
-    const year = yearRef.current;
-    const tags = tagsRef.current;
-    if (!hero || !title || !year || !tags) return null;
-
-    // Snap to top so the hero is at its natural viewport position for the FLIP.
-    // The caller hides .project-modal-scroll (is-closing-prepare) before this
-    // runs, so the scroll reset is never painted as a visible frame.
-    if (modal && modal.scrollTop !== 0) {
-      modal.scrollTop = 0;
-    }
-
-    return {
-      thumbnail: toRect(hero.getBoundingClientRect()),
-      title: toRect(title.getBoundingClientRect()),
-      titleFontSize: getComputedStyle(title).fontSize,
-      year: toRect(year.getBoundingClientRect()),
-      yearFontSize: getComputedStyle(year).fontSize,
-      tags: toRect(tags.getBoundingClientRect()),
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    onRegisterMeasure(measureTargets);
-    return () => onRegisterMeasure(null);
-  }, [measureTargets, onRegisterMeasure]);
-
-  useLayoutEffect(() => {
-    modalRef.current?.scrollTo({ top: 0, left: 0 });
-
-    if (!awaitingFlightTargets) return;
-
-    const targets = measureTargets();
-    if (targets) onFlightTargetsReady(targets);
-  }, [awaitingFlightTargets, measureTargets, onFlightTargetsReady, project.id]);
-
-  useEffect(() => {
-    const modal = modalRef.current;
-    if (!modal) return;
-
-    const blockBackgroundScroll = (event: WheelEvent | TouchEvent) => {
-      if (!modal.contains(event.target as Node)) {
-        event.preventDefault();
-      }
-    };
-
-    window.addEventListener("wheel", blockBackgroundScroll, { passive: false });
-    window.addEventListener("touchmove", blockBackgroundScroll, { passive: false });
-
-    return () => {
-      window.removeEventListener("wheel", blockBackgroundScroll);
-      window.removeEventListener("touchmove", blockBackgroundScroll);
-    };
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onRequestClose();
-      if (e.key === "ArrowLeft") onPrev();
-      if (e.key === "ArrowRight") onNext();
-    },
-    [onRequestClose, onPrev, onNext],
-  );
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
-
-  if (typeof document === "undefined") return null;
-
-  const sharedHidden = !sharedContentVisible;
-  const switchClass =
-    switchPhase !== "idle" && switchDirection
-      ? `is-${switchPhase}-${switchDirection}`
-      : "";
-
-  return createPortal(
-    <div
-      className="project-modal fixed inset-0 z-[200]"
-      role="dialog"
-      aria-modal="true"
-      aria-label={project.title[locale]}
-    >
-      <div
-        className={`project-modal-backdrop fixed inset-0 ${backdropVisible ? "is-visible" : ""}`}
-        aria-hidden
-      />
-
-      <div
-        ref={modalRef}
-        className="project-modal-scroll relative z-[1] h-full overflow-x-hidden overflow-y-auto overscroll-contain"
-      >
-        <div
-          className={`project-modal-body ${sharedContentVisible ? "is-visible" : ""}`}
-        >
-          <div
-            className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
-            style={{ background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)" }}
-          >
-            <span className="text-xs tracking-widest text-text-secondary uppercase">
-              {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
-            </span>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={onPrev}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
-                aria-label="Previous project"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <path d="M11 3L5 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={onNext}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
-                aria-label="Next project"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <path d="M7 3l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                onClick={onRequestClose}
-                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
-                aria-label="Close"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-                  <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div
-            className={`project-modal-switch w-full ${switchClass}`}
-          >
-            <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
+  return (
+    <div className={className} style={style} aria-hidden={!isActive || undefined}>
+      <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
               <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
@@ -1204,7 +1069,7 @@ export default function ProjectModal({
                 )}
               </div>
 
-              <div className="project-modal-switch-meta mt-8">
+              <div className="mt-8">
                 <div className="flex items-baseline justify-between gap-4">
                   <h2
                     ref={titleRef}
@@ -1242,7 +1107,7 @@ export default function ProjectModal({
             </div>
 
             <section
-              className={`project-modal-switch-copy mt-16 pt-16 transition-opacity duration-300 ${
+              className={`mt-16 pt-16 transition-opacity duration-300 ${
                 sharedContentVisible ? "opacity-100" : "opacity-0"
               }`}
             >
@@ -1452,9 +1317,226 @@ export default function ProjectModal({
                   <ResourceLink href={project.links.tiktok}>{mt.tiktok}</ResourceLink>
                 )}
               </div>
-              </section>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+export default function ProjectModal({
+  project,
+  onRequestClose,
+  onPrev,
+  onNext,
+  currentIndex,
+  total,
+  sharedContentVisible,
+  awaitingFlightTargets,
+  backdropVisible,
+  videoPlaying,
+  videoTime,
+  videoPoster,
+  switchDirection = null,
+  outgoingProject = null,
+  outgoingStyle,
+  slideDistance,
+  onFlightTargetsReady,
+  onRegisterMeasure,
+}: ProjectModalProps) {
+  const { locale } = useLocale();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const yearRef = useRef<HTMLSpanElement>(null);
+  const tagsRef = useRef<HTMLDivElement>(null);
+
+  useScrollLock(true);
+
+  const measureTargets = useCallback((): ModalTargets | null => {
+    const modal = modalRef.current;
+    const hero = heroRef.current;
+    const title = titleRef.current;
+    const year = yearRef.current;
+    const tags = tagsRef.current;
+    if (!hero || !title || !year || !tags) return null;
+
+    // Snap to top so the hero is at its natural viewport position for the FLIP.
+    // The caller hides .project-modal-scroll (is-closing-prepare) before this
+    // runs, so the scroll reset is never painted as a visible frame.
+    if (modal && modal.scrollTop !== 0) {
+      modal.scrollTop = 0;
+    }
+
+    return {
+      thumbnail: toRect(hero.getBoundingClientRect()),
+      title: toRect(title.getBoundingClientRect()),
+      titleFontSize: getComputedStyle(title).fontSize,
+      year: toRect(year.getBoundingClientRect()),
+      yearFontSize: getComputedStyle(year).fontSize,
+      tags: toRect(tags.getBoundingClientRect()),
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    onRegisterMeasure(measureTargets);
+    return () => onRegisterMeasure(null);
+  }, [measureTargets, onRegisterMeasure]);
+
+  useLayoutEffect(() => {
+    modalRef.current?.scrollTo({ top: 0, left: 0 });
+
+    if (!awaitingFlightTargets) return;
+
+    const targets = measureTargets();
+    if (targets) onFlightTargetsReady(targets);
+  }, [awaitingFlightTargets, measureTargets, onFlightTargetsReady, project.id]);
+
+  useEffect(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const blockBackgroundScroll = (event: WheelEvent | TouchEvent) => {
+      if (!modal.contains(event.target as Node)) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener("wheel", blockBackgroundScroll, { passive: false });
+    window.addEventListener("touchmove", blockBackgroundScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", blockBackgroundScroll);
+      window.removeEventListener("touchmove", blockBackgroundScroll);
+    };
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") onRequestClose();
+      if (e.key === "ArrowLeft") onPrev();
+      if (e.key === "ArrowRight") onNext();
+    },
+    [onRequestClose, onPrev, onNext],
+  );
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  if (typeof document === "undefined") return null;
+
+  const slideVars = slideDistance
+    ? ({ "--project-slide-distance": `${slideDistance}px` } as CSSProperties)
+    : undefined;
+
+  // Always a keyed list, even with one entry: that is what lets React keep the
+  // outgoing panel's DOM nodes instead of replacing them when a second appears.
+  const panels: {
+    project: Project;
+    isActive: boolean;
+    className: string;
+    style?: CSSProperties;
+  }[] = [];
+
+  if (outgoingProject && switchDirection) {
+    panels.push({
+      project: outgoingProject,
+      isActive: false,
+      className: `project-modal-switch w-full is-exit-${switchDirection}`,
+      style: { ...slideVars, ...outgoingStyle },
+    });
+  }
+
+  panels.push({
+    project,
+    isActive: true,
+    className: `project-modal-switch w-full ${
+      outgoingProject && switchDirection ? `is-enter-${switchDirection}` : ""
+    }`,
+    style: slideVars,
+  });
+
+  return createPortal(
+    <div
+      className="project-modal fixed inset-0 z-[200]"
+      role="dialog"
+      aria-modal="true"
+      aria-label={project.title[locale]}
+    >
+      <div
+        className={`project-modal-backdrop fixed inset-0 ${backdropVisible ? "is-visible" : ""}`}
+        aria-hidden
+      />
+
+      <div
+        ref={modalRef}
+        className="project-modal-scroll relative z-[1] h-full overflow-x-hidden overflow-y-auto overscroll-contain"
+      >
+        <div
+          className={`project-modal-body ${sharedContentVisible ? "is-visible" : ""}`}
+        >
+          <div
+            className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 md:px-10"
+            style={{ background: "linear-gradient(to bottom, var(--header-bg-subtle) 0%, transparent 100%)" }}
+          >
+            <span className="text-xs tracking-widest text-text-secondary uppercase">
+              {String(currentIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+            </span>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onPrev}
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
+                aria-label="Previous project"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                  <path d="M11 3L5 9l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={onNext}
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
+                aria-label="Next project"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                  <path d="M7 3l6 6-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={onRequestClose}
+                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full text-text-secondary transition-colors hover:bg-bg-secondary/80 hover:text-text-primary"
+                aria-label="Close"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                  <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
             </div>
           </div>
+
+          {panels.map((panel) => (
+            <ProjectPanel
+              key={panel.project.id}
+              project={panel.project}
+              locale={locale}
+              isActive={panel.isActive}
+              sharedContentVisible={sharedContentVisible}
+              sharedHidden={panel.isActive && !sharedContentVisible}
+              videoPlaying={panel.isActive && videoPlaying}
+              videoTime={videoTime}
+              videoPoster={videoPoster}
+              className={panel.className}
+              style={panel.style}
+              heroRef={panel.isActive ? heroRef : undefined}
+              titleRef={panel.isActive ? titleRef : undefined}
+              yearRef={panel.isActive ? yearRef : undefined}
+              tagsRef={panel.isActive ? tagsRef : undefined}
+            />
+          ))}
         </div>
       </div>
     </div>,
