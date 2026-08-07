@@ -2,7 +2,7 @@ export type ThemeColorScheme = "light" | "dark";
 
 /** Matches --bg-primary so browser chrome / status area blends with the hero. */
 export const THEME_COLORS: Record<ThemeColorScheme, string> = {
-  dark: "#0c0e14",
+  dark: "#0d0e11",
   light: "#f5f5f7",
 };
 

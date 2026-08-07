@@ -9,10 +9,11 @@ const HeroScene = dynamic(() => import("./HeroScene"), {
   loading: () => null,
 });
 
-/* Night space: deep near-black blue, soft and low so particles stay readable */
+/* Night space: near-neutral anthracite, soft and low so particles stay readable.
+   Tinted no more than --bg-primary, or the top of the page reads bluer than the base. */
 const SPACE_SKY = `
-  radial-gradient(ellipse 90% 55% at 50% 0%, rgba(14, 18, 32, 0.4), transparent 55%),
-  radial-gradient(ellipse 50% 35% at 85% 80%, rgba(8, 10, 18, 0.35), transparent 50%)
+  radial-gradient(ellipse 90% 55% at 50% 0%, rgba(17, 18, 25, 0.4), transparent 55%),
+  radial-gradient(ellipse 50% 35% at 85% 80%, rgba(9, 10, 14, 0.35), transparent 50%)
 `;
 
 /* Snowy sky: light gray + white only — stay close to main #f5f5f7 so flakes read */

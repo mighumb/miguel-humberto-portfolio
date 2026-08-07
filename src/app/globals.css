@@ -24,22 +24,23 @@
 }
 
 [data-theme="dark"] {
-  /* Soft blue-anthracite night — lifted off pure black */
-  --bg-primary: #0c0e14;
-  --bg-secondary: #12151c;
-  --bg-tertiary: #1a1e28;
+  /* Near-neutral anthracite: half the blue cast of a night blue, same lightness.
+     Surfaces keep just enough tint to stay warmer than pure black. */
+  --bg-primary: #0d0e11;
+  --bg-secondary: #141518;
+  --bg-tertiary: #1c1e23;
   /* Soft lift so chips read as cells without shouting */
-  --chip-bg: #222733;
+  --chip-bg: #25272d;
   --chip-text: #c2c2c7;
   --text-primary: #e8e8ed;
   --text-secondary: #6e6e73;
   --accent: #6e6e73;
-  --border: #262b36;
-  --modal-bg: #0c0e14;
-  --header-bg: rgba(12, 14, 20, 0.72);
-  --header-bg-subtle: rgba(12, 14, 20, 0.65);
-  --placeholder: #262b36;
-  --placeholder-dark: #323846;
+  --border: #292b30;
+  --modal-bg: #0d0e11;
+  --header-bg: rgba(13, 14, 17, 0.72);
+  --header-bg-subtle: rgba(13, 14, 17, 0.65);
+  --placeholder: #292b30;
+  --placeholder-dark: #35383f;
   --hero-particle: #e8eaf0;
   --hero-particle-alt: #7a8294;
 }
