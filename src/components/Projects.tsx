@@ -14,7 +14,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
-import { projectsForTrack, type Project } from "@/lib/projects";
+import { projectsForCollection, type Project } from "@/lib/projects";
 import {
   getFocusedWorkCardIndex,
   getWorkCarouselEndGutterWidth,
@@ -202,7 +202,10 @@ export default function Projects() {
   const { locale } = useLocale();
   const { mode } = useTheme();
   const t = translations[locale];
-  const projects = useMemo(() => projectsForTrack(mode), [mode]);
+  const projects = useMemo(
+    () => projectsForCollection(mode === "craft" ? "craft" : "main"),
+    [mode],
+  );
   const loopedProjects = useMemo(
     () =>
       Array.from({ length: WORK_LOOP_COPIES }, (_, copyIndex) =>

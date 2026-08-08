@@ -4,16 +4,19 @@ export const translations = {
   en: {
     modes: {
       ai: {
-        role: "AI Creative Producer",
-        tagline: "I design Gen AI creative workflows from concept to delivery.",
+        role: "AI Creative Designer",
+        tagline:
+          "I design distinctive digital experiences for brands, connecting art and technology.",
       },
       craft: {
-        role: "Creative Designer",
-        tagline: "I design visual worlds across UI, motion, and 3D.",
+        role: "AI Creative Designer",
+        tagline:
+          "I design distinctive digital experiences for brands, connecting art and technology.",
       },
     },
-    role: "AI Creative Producer",
-    tagline: "I design Gen AI creative workflows from concept to delivery.",
+    role: "AI Creative Designer",
+    tagline:
+      "I design distinctive digital experiences for brands, connecting art and technology.",
     scrollHint: "Scroll to explore",
     projects: "Work",
     prevProject: "Previous project",
@@ -60,16 +63,19 @@ export const translations = {
   fr: {
     modes: {
       ai: {
-        role: "Producteur créatif IA",
-        tagline: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
+        role: "AI Creative Designer",
+        tagline:
+          "Je conçois des expériences digitales distinctives pour les marques, en reliant l'art et la technologie.",
       },
       craft: {
-        role: "Creative Designer",
-        tagline: "Je conçois des univers visuels entre UI, motion et 3D.",
+        role: "AI Creative Designer",
+        tagline:
+          "Je conçois des expériences digitales distinctives pour les marques, en reliant l'art et la technologie.",
       },
     },
-    role: "Producteur créatif IA",
-    tagline: "Je conçois des workflows créatifs Gen AI, du concept à la livraison.",
+    role: "AI Creative Designer",
+    tagline:
+      "Je conçois des expériences digitales distinctives pour les marques, en reliant l'art et la technologie.",
     scrollHint: "Défiler pour explorer",
     projects: "Projets",
     prevProject: "Projet précédent",

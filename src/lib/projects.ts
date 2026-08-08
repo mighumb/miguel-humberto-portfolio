@@ -1,4 +1,15 @@
-export type ProjectTrack = "ai" | "craft";
+/** Which page a project shows up on today. */
+export type ProjectCollection = "main" | "craft";
+
+/**
+ * What a project actually demonstrates. Only ever set from what the work shows,
+ * never to widen a profile. Not surfaced yet: this is the ground for the filters
+ * that will replace the two collections.
+ */
+export type ProjectCategory = "ai" | "3d" | "product";
+
+/** Folder under public/projects/ holding a project's assets. */
+export type ProjectAssetGroup = "ai" | "craft" | "3d";
 
 export type LocalizedCopy = { en: string; fr: string };
 
@@ -16,9 +27,11 @@ export type ProcessItem =
 
 export interface Project {
   id: string;
-  /** Folder name under public/projects/{track}/ */
+  /** Folder name under public/projects/{assetGroup}/ */
   slug: string;
-  track: ProjectTrack;
+  collection: ProjectCollection;
+  categories: ProjectCategory[];
+  assetGroup: ProjectAssetGroup;
   title: LocalizedCopy;
   /** Modal Context section. Falls back to a generic placeholder when omitted. */
   context?: LocalizedCopy;
@@ -68,12 +81,12 @@ export interface Project {
 }
 
 /** Public URL root for a project's local assets. */
-export function projectAssetBase(project: Pick<Project, "track" | "slug">) {
-  return `/projects/${project.track}/${project.slug}`;
+export function projectAssetBase(project: Pick<Project, "assetGroup" | "slug">) {
+  return `/projects/${project.assetGroup}/${project.slug}`;
 }
 
 function projectFileUrl(
-  project: Pick<Project, "track" | "slug">,
+  project: Pick<Project, "assetGroup" | "slug">,
   file: string | undefined,
 ): string | null {
   if (!file) return null;
@@ -102,7 +115,9 @@ export const projects: Project[] = [
   {
     id: "01",
     slug: "ai-cgi-station-f",
-    track: "ai",
+    collection: "main",
+    categories: ["ai"],
+    assetGroup: "ai",
     title: { en: "AI CGI Station F", fr: "AI CGI Station F" },
     context: {
       en: "Station F is the world's largest startup campus, in Paris, home to hundreds of startups backed by Meta, Microsoft and Google. Its iconic clay sculpture became the starting point of this CGI project. Using AI, I transformed it into a series of iconic tech logos.",
@@ -136,7 +151,9 @@ export const projects: Project[] = [
   {
     id: "02",
     slug: "big-flo-oli-colors-show",
-    track: "ai",
+    collection: "main",
+    categories: ["ai"],
+    assetGroup: "ai",
     title: { en: "Big Flo & Oli - Colors Show", fr: "Big Flo & Oli - Colors Show" },
     context: {
       en: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) is a live music series shot against a flat backdrop, and a global visual reference. Big Flo & Oli had never been invited: their [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25) video, filmed in an Airbus hangar in Toulouse, reignited the debate. I turned that scene into a real COLORS Show, with a pink set as a nod to Toulouse, known as the Pink City.",
@@ -173,7 +190,9 @@ export const projects: Project[] = [
   {
     id: "03",
     slug: "goodies-factory",
-    track: "ai",
+    collection: "main",
+    categories: ["ai"],
+    assetGroup: "ai",
     title: { en: "Goodies Factory", fr: "Goodies Factory" },
     context: {
       en: "Goodies Factory is a set of three AI templates (Production, Scene, and Worn) for branded merchandise mockups. From a logo to a blank product, then a styled scene and a worn look, the workflow builds photoreal mockups for marketers and designers who want distinctive goodies instead of stock imagery.",
@@ -227,7 +246,9 @@ export const projects: Project[] = [
   {
     id: "04",
     slug: "superman-save-minneapolis",
-    track: "ai",
+    collection: "main",
+    categories: ["ai"],
+    assetGroup: "ai",
     title: {
       en: "Superman save Minneapolis",
       fr: "Superman sauve Minneapolis",
@@ -268,7 +289,9 @@ export const projects: Project[] = [
   {
     id: "05",
     slug: "verdio",
-    track: "ai",
+    collection: "main",
+    categories: ["ai"],
+    assetGroup: "ai",
     title: { en: "Verdio", fr: "Verdio" },
     context: {
       en: "Verdio is a natural cosmetics brand built around a clean botanical identity. I designed the logo, visual system, and brand direction, then generated photoreal packshots for four products across cream, gel, and oil formats.",
@@ -338,7 +361,9 @@ export const projects: Project[] = [
   {
     id: "c01",
     slug: "ekara-design-system",
-    track: "craft",
+    collection: "craft",
+    categories: ["product"],
+    assetGroup: "craft",
     title: { en: "Ekara Design System", fr: "Ekara Design System" },
     context: {
       en: "[Ekara](https://ip-label.com/fr/) needed a new shared UI language for its new interfaces. I designed a modular system: components, spacing, and states, for clear, consistent screens.",
@@ -377,7 +402,9 @@ export const projects: Project[] = [
   {
     id: "c02",
     slug: "motion-brand-language",
-    track: "craft",
+    collection: "craft",
+    categories: ["3d"],
+    assetGroup: "craft",
     title: { en: "Motion Brand Language", fr: "Langage motion de marque" },
     tags: [
       { en: "Motion", fr: "Motion" },
@@ -394,7 +421,9 @@ export const projects: Project[] = [
   {
     id: "c03",
     slug: "3d-product-visualization",
-    track: "craft",
+    collection: "craft",
+    categories: ["3d"],
+    assetGroup: "craft",
     title: { en: "3D Product Visualization", fr: "Visualisation produit 3D" },
     tags: [
       { en: "3D", fr: "3D" },
@@ -411,7 +440,9 @@ export const projects: Project[] = [
   {
     id: "c04",
     slug: "editorial-web-experience",
-    track: "craft",
+    collection: "craft",
+    categories: ["product"],
+    assetGroup: "craft",
     title: { en: "Editorial Web Experience", fr: "Expérience web éditoriale" },
     tags: [
       { en: "UI", fr: "UI" },
@@ -428,7 +459,9 @@ export const projects: Project[] = [
   {
     id: "c05",
     slug: "app-onboarding-flows",
-    track: "craft",
+    collection: "craft",
+    categories: ["product"],
+    assetGroup: "craft",
     title: { en: "App Onboarding Flows", fr: "Parcours d'onboarding app" },
     tags: [
       { en: "UX", fr: "UX" },
@@ -445,7 +478,9 @@ export const projects: Project[] = [
   {
     id: "c06",
     slug: "spatial-interface-concept",
-    track: "craft",
+    collection: "craft",
+    categories: ["product"],
+    assetGroup: "craft",
     title: { en: "Spatial Interface Concept", fr: "Concept d'interface spatiale" },
     tags: [
       { en: "3D", fr: "3D" },
@@ -461,6 +496,6 @@ export const projects: Project[] = [
   },
 ];
 
-export function projectsForTrack(track: ProjectTrack) {
-  return projects.filter((project) => project.track === track);
+export function projectsForCollection(collection: ProjectCollection) {
+  return projects.filter((project) => project.collection === collection);
 }

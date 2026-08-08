@@ -3,9 +3,9 @@ import Providers from "@/components/Providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Miguel Humberto, AI Creative Producer",
+  title: "Miguel Humberto, AI Creative Designer",
   description:
-    "Gen AI creative workflows from concept to delivery. Portfolio of Miguel Humberto.",
+    "I design distinctive digital experiences for brands, connecting art and technology. Portfolio of Miguel Humberto.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

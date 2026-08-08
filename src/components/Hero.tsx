@@ -5,13 +5,13 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
 
-const MOBILE_TAGLINE_BREAKS = [
-  "from concept",
-  "du concept",
-  "entre UI, motion et",
-] as const;
+const MOBILE_TAGLINE_BREAKS = ["en reliant", "connecting"] as const;
 
-/** On mobile, start a new line at a known phrase in the tagline. */
+/**
+ * On mobile, start a new line at a known phrase in the tagline. The two halves
+ * are rendered once each: only the punctuation that the break replaces is
+ * duplicated, so assistive tech and crawlers never read the sentence twice.
+ */
 function MobileTaglineBreak({ text }: { text: string }) {
   const breakAt = MOBILE_TAGLINE_BREAKS.find((phrase) => text.includes(phrase)) ?? null;
 
@@ -22,14 +22,15 @@ function MobileTaglineBreak({ text }: { text: string }) {
 
   const before = text.slice(0, index);
   const after = text.slice(index);
-  // FR has a comma before "du concept"; drop it on the mobile break so the
-  // line does not look like the end of a sentence (same phrase continues).
-  const beforeMobile = before.replace(/,\s*$/, "").trimEnd();
+  // A comma right before the break reads like a full stop once the line splits
+  // there, so it is kept inline on desktop and dropped on mobile. The captured
+  // group carries the separating space, which is why the head can be trimmed.
+  const comma = before.match(/^(.*?)(,\s*)$/);
 
   return (
     <>
-      <span className="md:hidden">{beforeMobile}</span>
-      <span className="hidden md:inline">{before}</span>
+      {comma ? comma[1].trimEnd() : before}
+      {comma && <span className="hidden md:inline">{comma[2]}</span>}
       <br className="md:hidden" />
       {after}
     </>
