@@ -1151,7 +1151,7 @@ function ProjectPanel({
                     deliverable.type === "video" ? (
                       <DeliverableVideo
                         key={i}
-                        src={`/projects/${project.track}/${project.slug}/${deliverable.url}`}
+                        src={`${projectAssetBase(project)}/${deliverable.url}`}
                       />
                     ) : deliverable.type === "instagram" ? (
                       <div key={i} className="overflow-hidden rounded-xl">

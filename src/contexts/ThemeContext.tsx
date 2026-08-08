@@ -47,10 +47,19 @@ function resolveInitialMode(): PortfolioMode {
   return readModeFromUrl() ?? "ai";
 }
 
+/**
+ * The main portfolio is the bare URL: `?mode=ai` is dropped rather than written
+ * back, so the address stays clean in a shared or applied-to link. Only the
+ * craft page, which has no entry point in the UI, needs to name itself.
+ */
 function syncUrl(mode: PortfolioMode) {
   if (typeof window === "undefined") return;
+
   const url = new URL(window.location.href);
-  url.searchParams.set("mode", mode);
+  if (mode === "craft") url.searchParams.set("mode", mode);
+  else url.searchParams.delete("mode");
+
+  if (url.toString() === window.location.href) return;
   window.history.replaceState(window.history.state, "", url.toString());
 }
 

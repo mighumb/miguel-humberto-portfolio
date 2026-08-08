@@ -5,15 +5,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { translations } from "@/lib/i18n";
 import HeroNav from "./HeroNav";
 
-const MOBILE_TAGLINE_BREAKS = [
-  "from concept",
-  "du concept",
-  "entre UI, motion et",
-] as const;
+const TAGLINE_BREAKS = ["en reliant", "connecting"] as const;
 
-/** On mobile, start a new line at a known phrase in the tagline. */
-function MobileTaglineBreak({ text }: { text: string }) {
-  const breakAt = MOBILE_TAGLINE_BREAKS.find((phrase) => text.includes(phrase)) ?? null;
+/**
+ * Keep the second clause together on every viewport. The literal space after
+ * the <br> preserves the sentence in textContent for assistive tech/crawlers;
+ * browsers collapse it visually at the start of the new line.
+ */
+function TaglineBreak({ text }: { text: string }) {
+  const breakAt = TAGLINE_BREAKS.find((phrase) => text.includes(phrase)) ?? null;
 
   if (!breakAt) return text;
 
@@ -22,15 +22,12 @@ function MobileTaglineBreak({ text }: { text: string }) {
 
   const before = text.slice(0, index);
   const after = text.slice(index);
-  // FR has a comma before "du concept"; drop it on the mobile break so the
-  // line does not look like the end of a sentence (same phrase continues).
-  const beforeMobile = before.replace(/,\s*$/, "").trimEnd();
 
   return (
     <>
-      <span className="md:hidden">{beforeMobile}</span>
-      <span className="hidden md:inline">{before}</span>
-      <br className="md:hidden" />
+      {before.trimEnd()}
+      <br />
+      {" "}
       {after}
     </>
   );
@@ -54,7 +51,7 @@ export default function Hero() {
           {copy.role}
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-secondary md:mt-6 md:text-lg">
-          <MobileTaglineBreak text={copy.tagline} />
+          <TaglineBreak text={copy.tagline} />
         </p>
       </div>
     </section>
