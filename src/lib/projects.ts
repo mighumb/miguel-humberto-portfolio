@@ -9,7 +9,7 @@ export type ProjectCollection = "main" | "craft";
 export type ProjectCategory = "ai" | "3d" | "product";
 
 /** Folder under public/projects/ holding a project's assets. */
-export type ProjectAssetGroup = "ai" | "craft" | "3d";
+export type ProjectAssetGroup = "ai" | "product" | "3d";
 
 export type LocalizedCopy = { en: string; fr: string };
 
@@ -195,8 +195,8 @@ export const projects: Project[] = [
     assetGroup: "ai",
     title: { en: "Goodies Factory", fr: "Goodies Factory" },
     context: {
-      en: "Goodies Factory is a set of three AI templates (Production, Scene, and Worn) for branded merchandise mockups. From a logo to a blank product, then a styled scene and a worn look, the workflow builds photoreal mockups for marketers and designers who want distinctive goodies instead of stock imagery.",
-      fr: "Goodies Factory est un set de trois templates IA (Production, Scene et Worn) pour des mockups de goodies de marque. Du logo au produit vierge, puis à une scène stylisée et un rendu porté, le workflow produit des mockups photoréalistes pour les marketeurs et designers qui veulent des goodies distinctifs plutôt que des images stock.",
+      en: "Born from a collaboration with [Vendredi Society](https://vendredi-society.fr/), Goodies Factory is a set of three AI templates (Production, Scene, and Worn) for branded merchandise mockups. From a logo to a blank product, then a styled scene and a worn look, the workflow builds photoreal mockups for marketers and designers who want distinctive goodies instead of stock imagery.",
+      fr: "Né d'une collaboration avec [Vendredi Society](https://vendredi-society.fr/), Goodies Factory est un set de trois templates IA (Production, Scene et Worn) pour des mockups de goodies de marque. Du logo au produit vierge, puis à une scène stylisée et un rendu porté, le workflow produit des mockups photoréalistes pour les marketeurs et designers qui veulent des goodies distinctifs plutôt que des images stock.",
     },
     tags: [
       { en: "Template", fr: "Template" },
@@ -363,7 +363,7 @@ export const projects: Project[] = [
     slug: "ekara-design-system",
     collection: "craft",
     categories: ["product"],
-    assetGroup: "craft",
+    assetGroup: "product",
     title: { en: "Ekara Design System", fr: "Ekara Design System" },
     context: {
       en: "[Ekara](https://ip-label.com/fr/) needed a new shared UI language for its new interfaces. I designed a modular system: components, spacing, and states, for clear, consistent screens.",
