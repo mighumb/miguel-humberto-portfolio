@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Miguel Humberto, AI Creative Designer",
   description:
-    "I design distinctive digital experiences for brands, connecting art and technology. Portfolio of Miguel Humberto.",
+    "I design distinctive digital experiences, connecting art and technology. Portfolio of Miguel Humberto.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

@@ -6,17 +6,17 @@ export const translations = {
       ai: {
         role: "AI Creative Designer",
         tagline:
-          "I design distinctive digital experiences for brands, connecting art and technology.",
+          "I design distinctive digital experiences, connecting art and technology.",
       },
       craft: {
         role: "AI Creative Designer",
         tagline:
-          "I design distinctive digital experiences for brands, connecting art and technology.",
+          "I design distinctive digital experiences, connecting art and technology.",
       },
     },
     role: "AI Creative Designer",
     tagline:
-      "I design distinctive digital experiences for brands, connecting art and technology.",
+      "I design distinctive digital experiences, connecting art and technology.",
     scrollHint: "Scroll to explore",
     projects: "Work",
     prevProject: "Previous project",
@@ -65,17 +65,17 @@ export const translations = {
       ai: {
         role: "AI Creative Designer",
         tagline:
-          "Je conçois des expériences digitales distinctives pour les marques, en reliant l'art et la technologie.",
+          "Je conçois des expériences digitales distinctives, en reliant l'art et la technologie.",
       },
       craft: {
         role: "AI Creative Designer",
         tagline:
-          "Je conçois des expériences digitales distinctives pour les marques, en reliant l'art et la technologie.",
+          "Je conçois des expériences digitales distinctives, en reliant l'art et la technologie.",
       },
     },
     role: "AI Creative Designer",
     tagline:
-      "Je conçois des expériences digitales distinctives pour les marques, en reliant l'art et la technologie.",
+      "Je conçois des expériences digitales distinctives, en reliant l'art et la technologie.",
     scrollHint: "Défiler pour explorer",
     projects: "Projets",
     prevProject: "Projet précédent",
