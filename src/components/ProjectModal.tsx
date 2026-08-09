@@ -1007,6 +1007,38 @@ function DeliverablesStack({
   );
 }
 
+function VideoPlayOverlay({
+  onPlay,
+  className = "",
+  scrimClassName = "bg-bg-primary/25 group-hover:bg-bg-primary/15",
+}: {
+  onPlay: () => void;
+  className?: string;
+  scrimClassName?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      className={`absolute inset-0 cursor-pointer border-0 bg-transparent${className ? ` ${className}` : ""}`}
+      aria-label="Play video"
+    >
+      <span
+        className={`absolute inset-0 transition-colors ${scrimClassName}`}
+        aria-hidden
+      />
+      <span
+        className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
+        aria-hidden
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
+          <path d="M8 5.14v13.72L19 12 8 5.14z" />
+        </svg>
+      </span>
+    </button>
+  );
+}
+
 function DeliverableVideo({
   src,
   sound = false,
@@ -1064,27 +1096,7 @@ function DeliverableVideo({
         preload={preload}
         className="h-full w-full object-cover"
       />
-      {!playing && (
-        <button
-          type="button"
-          onClick={handlePlay}
-          className="absolute inset-0 cursor-pointer border-0 bg-transparent"
-          aria-label="Play video"
-        >
-          <span
-            className="absolute inset-0 bg-bg-primary/25 transition-colors group-hover:bg-bg-primary/15"
-            aria-hidden
-          />
-          <span
-            className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-bg-primary/70 text-text-primary backdrop-blur-sm transition-transform group-hover:scale-105 md:h-16 md:w-16"
-            aria-hidden
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5">
-              <path d="M8 5.14v13.72L19 12 8 5.14z" />
-            </svg>
-          </span>
-        </button>
-      )}
+      {!playing && <VideoPlayOverlay onPlay={handlePlay} />}
     </div>
   );
 }
@@ -1150,6 +1162,7 @@ function ProjectPanel({
     () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
   );
   const [touchControls, setTouchControls] = useState(false);
+  const [heroAwaitingPlay, setHeroAwaitingPlay] = useState(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroSplineScene = project.heroSplineScene;
   const heroSplinePoster = heroSplineScene ? projectHeroSplinePosterUrl(project) : null;
@@ -1226,6 +1239,35 @@ function ProjectPanel({
     keepSplineDuringExit,
   ]);
 
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video || heroSplineScene) return;
+
+    const onEnded = () => {
+      video.currentTime = 0;
+      setHeroAwaitingPlay(true);
+      setTouchControls(false);
+    };
+    const onPlay = () => setHeroAwaitingPlay(false);
+
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("play", onPlay);
+    return () => {
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("play", onPlay);
+    };
+  }, [heroSplineScene, project.videoUrl]);
+
+  const handleHeroReplay = () => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+    setHeroAwaitingPlay(false);
+    if (unmuteOnOpen) video.muted = false;
+    if (isTouch) setTouchControls(true);
+    video.currentTime = 0;
+    video.play().catch(() => {});
+  };
+
 
   return (
     <div className={className} style={style} aria-hidden={!isActive || undefined}>
@@ -1233,7 +1275,7 @@ function ProjectPanel({
               <div className="pt-8 md:pt-12">
               <div
                 ref={heroRef}
-                className={`project-modal-hero relative aspect-video w-full overflow-hidden rounded-xl ${
+                className={`project-modal-hero group relative aspect-video w-full overflow-hidden rounded-xl ${
                   coverUrl || (project.hasVideo && project.videoUrl)
                     ? "bg-bg-secondary"
                     : "project-placeholder-gradient"
@@ -1265,9 +1307,11 @@ function ProjectPanel({
                       controls={
                         heroSplineScene
                           ? false
-                          : isTouch
-                            ? touchControls
-                            : sharedContentVisible
+                          : heroAwaitingPlay
+                            ? false
+                            : isTouch
+                              ? touchControls
+                              : sharedContentVisible
                       }
                       onClick={
                         heroSplineScene
@@ -1291,6 +1335,9 @@ function ProjectPanel({
                         transitionDuration: heroVideoReady ? "200ms" : "0ms",
                       }}
                     />
+                    {heroAwaitingPlay && sharedContentVisible && !heroSplineScene ? (
+                      <VideoPlayOverlay onPlay={handleHeroReplay} className="z-20" />
+                    ) : null}
                     {heroSplineScene ? (
                       <HeroSplineOverlay
                         scene={heroSplineScene}
