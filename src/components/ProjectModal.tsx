@@ -1123,7 +1123,6 @@ function ProjectPanel({
                           : undefined
                       }
                       autoPlay
-                      loop
                       muted={!heroUnmuted}
                       playsInline
                       preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
