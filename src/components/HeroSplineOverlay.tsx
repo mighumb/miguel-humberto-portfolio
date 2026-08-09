@@ -1,31 +1,41 @@
 "use client";
 
-import { createElement, useEffect } from "react";
-
-const SPLINE_VIEWER_SCRIPT =
-  "https://unpkg.com/@splinetool/viewer@1.12.98/build/spline-viewer.js";
-
-function ensureSplineViewerScript() {
-  const scriptId = "spline-viewer-script";
-  if (document.getElementById(scriptId)) return;
-  const script = document.createElement("script");
-  script.id = scriptId;
-  script.type = "module";
-  script.src = SPLINE_VIEWER_SCRIPT;
-  document.head.appendChild(script);
-}
+import { useEffect, useRef } from "react";
+import type { Application } from "@splinetool/runtime";
 
 export function HeroSplineOverlay({ scene }: { scene: string }) {
+  const hostRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<Application | null>(null);
+
   useEffect(() => {
-    ensureSplineViewerScript();
-  }, []);
+    let cancelled = false;
+    const host = hostRef.current;
+    if (!host) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "block h-full w-full touch-none";
+    host.replaceChildren(canvas);
+
+    import("@splinetool/runtime")
+      .then(({ Application }) => {
+        if (cancelled || !hostRef.current) return;
+        const app = new Application(canvas);
+        appRef.current = app;
+        return app.load(scene);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      appRef.current?.dispose?.();
+      appRef.current = null;
+    };
+  }, [scene]);
 
   return (
-    <div className="absolute inset-0 z-10">
-      {createElement("spline-viewer", {
-        url: scene,
-        style: { width: "100%", height: "100%" },
-      })}
-    </div>
+    <div
+      ref={hostRef}
+      className="hero-spline-overlay absolute inset-0 z-10 h-full w-full"
+    />
   );
 }

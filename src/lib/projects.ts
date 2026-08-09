@@ -461,7 +461,6 @@ export const projects: Project[] = [
     heroSplineScene: "https://prod.spline.design/6FgauUWPH8678Jwn/scene.splinecode",
     tools: ["Blender", "Photoshop", "Premiere Pro"],
     links: {
-      youtube: "https://www.youtube.com/watch?v=LmUmViADgOc",
       instagram: "https://www.instagram.com/reel/C5oKWQnoIHl/",
     },
     deliverableCount: 0,
@@ -473,6 +472,7 @@ export const projects: Project[] = [
         video: {
           url: "deliverables/deliverable-2-dadju-tayc-heritage.mp4",
           sound: true,
+          poster: "deliverables/poster-deliverable-2-dadju-tayc-heritage.jpg",
         },
         slot: { left: "50%", top: "0%", width: "50%", height: "100%" },
       },

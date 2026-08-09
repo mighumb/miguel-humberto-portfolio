@@ -876,7 +876,7 @@ function DeliverableComposite({
           className="block h-full w-full object-cover"
         />
         <div
-          className="absolute"
+          className="absolute z-10"
           style={{
             left: slot.left,
             top: slot.top,
@@ -892,8 +892,9 @@ function DeliverableComposite({
                 ? `${assetBase}/${deliverable.video.poster}`
                 : undefined
             }
-            className="h-full"
+            className="h-full w-full"
             rounded={false}
+            preload="auto"
           />
         </div>
       </div>
@@ -1011,12 +1012,14 @@ function DeliverableVideo({
   poster,
   className = "",
   rounded = true,
+  preload = "metadata",
 }: {
   src: string;
   sound?: boolean;
   poster?: string;
   className?: string;
   rounded?: boolean;
+  preload?: "auto" | "metadata" | "none";
 }) {
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -1057,7 +1060,7 @@ function DeliverableVideo({
         controls={playing}
         muted
         playsInline
-        preload="metadata"
+        preload={preload}
         className="h-full w-full object-cover"
       />
       {!playing && (
@@ -1148,6 +1151,13 @@ function ProjectPanel({
   const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible && !heroSplineScene;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
+  const hasYoutubeDeliverable = project.deliverables?.some(
+    (deliverable) => deliverable.type === "youtube",
+  );
+  const hasProcessContent =
+    (project.processItems?.length ?? 0) > 0 ||
+    (project.processImages?.length ?? 0) > 0 ||
+    (Boolean(project.links.youtube) && !hasYoutubeDeliverable);
 
   useLayoutEffect(() => {
     const video = heroVideoRef.current;
@@ -1444,16 +1454,17 @@ function ProjectPanel({
             </section>
             )}
 
+            {hasProcessContent && (
             <section className="mt-16 pt-16">
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {project.processTitle?.[locale] ?? mt.process}
               </h3>
-              {project.processItems ? (
+              {project.processItems && project.processItems.length > 0 ? (
                 <ProcessWorkflowStack
                   items={project.processItems}
                   assetBase={projectAssetBase(project)}
                 />
-              ) : project.processImages ? (
+              ) : project.processImages && project.processImages.length > 0 ? (
                 <ProcessStackedCards
                   images={project.processImages}
                   assetBase={projectAssetBase(project)}
@@ -1475,29 +1486,9 @@ function ProjectPanel({
                     ) : null;
                   })()}
                 </div>
-              ) : (
-                <div className="space-y-12">
-                  {mt.steps.map((step, i) => (
-                    <div key={step} className="grid gap-6 md:grid-cols-[80px_1fr_200px] md:items-start">
-                      <span className="text-3xl font-light text-accent md:text-4xl">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <h4 className="text-lg font-medium text-text-primary">{step}</h4>
-                        <p className="mt-2 text-sm leading-relaxed text-text-secondary md:text-base">
-                          {mt.stepDescriptions[i]}
-                        </p>
-                      </div>
-                      <div
-                        className="aspect-[4/3] rounded-lg md:aspect-square"
-                        style={{ background: "var(--placeholder)" }}
-                        aria-hidden
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+              ) : null}
             </section>
+            )}
 
             {project.uiKit && (
               <section className="mt-16 pt-16">

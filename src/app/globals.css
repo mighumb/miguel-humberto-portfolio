@@ -346,6 +346,18 @@ html.modal-main-hidden .ambient-background {
   .process-pile-card-mount { animation: none !important; }
 }
 
+/* Spline free-tier logo — reliable removal needs a paid export toggle. */
+spline-viewer::part(logo) {
+  display: none !important;
+}
+
+.hero-spline-overlay a[href*="spline.design"],
+.hero-spline-overlay .logo,
+.hero-spline-overlay [class*="logo"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
