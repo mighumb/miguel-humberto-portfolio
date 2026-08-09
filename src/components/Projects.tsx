@@ -16,6 +16,7 @@ import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrol
 import { translations } from "@/lib/i18n";
 import { projectsForCollection, type Project } from "@/lib/projects";
 import { preloadSplineScene } from "@/lib/splinePreload";
+import { SplineSceneBootstrap } from "@/components/SplineSceneBootstrap";
 import {
   getFocusedWorkCardIndex,
   getWorkCarouselEndGutterWidth,
@@ -215,6 +216,17 @@ export default function Projects() {
           copyIndex,
         })),
       ).flat(),
+    [projects],
+  );
+  const splineHeroScenes = useMemo(
+    () =>
+      [
+        ...new Set(
+          projects
+            .map((project) => project.heroSplineScene)
+            .filter((scene): scene is string => Boolean(scene)),
+        ),
+      ],
     [projects],
   );
   const [activeProject, setActiveProject] = useState<Project | null>(null);
@@ -906,6 +918,8 @@ export default function Projects() {
           onLanding={handleFlightLanding}
         />
       )}
+
+      <SplineSceneBootstrap scenes={splineHeroScenes} />
     </section>
   );
 }

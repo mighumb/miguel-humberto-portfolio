@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Application } from "@splinetool/runtime";
 import {
   attachSplineScene,
+  attachSplineSceneIfReady,
   isSplineSceneReady,
+  parkSplineScene,
   preloadSplineScene,
+  waitForSplineScene,
 } from "@/lib/splinePreload";
 
 export function HeroSplineOverlay({
@@ -19,47 +22,37 @@ export function HeroSplineOverlay({
   const appRef = useRef<Application | null>(null);
   const [rendered, setRendered] = useState(() => isSplineSceneReady(scene));
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     preloadSplineScene(scene);
-  }, [scene]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let detach: (() => void) | undefined;
     const host = hostRef.current;
     if (!host) return;
 
-    if (!isSplineSceneReady(scene)) setRendered(false);
+    let cancelled = false;
 
-    attachSplineScene(scene, host)
-      .then(({ app, ready, detach: release }) => {
-        if (cancelled) {
-          release();
-          return;
-        }
-        detach = release;
+    if (attachSplineSceneIfReady(scene, host)) {
+      setRendered(true);
+      return () => parkSplineScene(scene);
+    }
+
+    waitForSplineScene(scene)
+      .then((app) => {
+        if (cancelled || !hostRef.current) return;
         appRef.current = app;
-        if (ready) {
-          setRendered(true);
-          return;
-        }
-
-        const onRendered = () => {
-          if (!cancelled) setRendered(true);
-        };
-        app.addEventListener("rendered", onRendered);
+        return attachSplineScene(scene, hostRef.current);
+      })
+      .then((attached) => {
+        if (!cancelled && attached?.ready) setRendered(true);
       })
       .catch(() => {});
 
     return () => {
       cancelled = true;
-      detach?.();
       appRef.current = null;
+      parkSplineScene(scene);
     };
   }, [scene]);
 
   const show = visible && rendered;
-  const fadeMs = isSplineSceneReady(scene) ? 0 : 500;
 
   return (
     <div
@@ -68,7 +61,6 @@ export function HeroSplineOverlay({
       style={{
         opacity: show ? 1 : 0,
         pointerEvents: show ? "auto" : "none",
-        transition: fadeMs ? `opacity ${fadeMs}ms ease-out` : undefined,
       }}
       aria-hidden={!show}
     />

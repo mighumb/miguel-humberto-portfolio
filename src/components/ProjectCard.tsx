@@ -111,7 +111,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       (entries) => {
         setIsNearViewport(entries.some((entry) => entry.isIntersecting));
       },
-      { rootMargin: "150% 0px" },
+      { rootMargin: "400% 0px" },
     );
     observer.observe(card);
 
@@ -176,6 +176,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   const handleMouseEnter = () => {
     setIsHovering(true);
+    if (project.heroSplineScene) preloadSplineScene(project.heroSplineScene);
     if (project.hasVideo && videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
