@@ -247,6 +247,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (project.heroSplineScene) preloadSplineScene(project.heroSplineScene);
     if (event.button !== 0) return;
     // Desktop mouse uses CSS :hover for the CTA; hold is a touch affordance.
     if (event.pointerType === "mouse" && !isTouchLikePointer(event)) return;

@@ -1,3 +1,5 @@
+import { HERITAGE_SPLINE_SCENE_URL } from "@/lib/splineScenes";
+
 /** Which page a project shows up on today. */
 export type ProjectCollection = "main" | "craft";
 
@@ -458,7 +460,7 @@ export const projects: Project[] = [
     hasVideo: true,
     videoUrl: "/projects/3d/dadju-tayc-heritage/cover-video-dadju-tayc-heritage.mp4",
     videoPoster: "poster-cover-dadju-tayc-heritage.jpg",
-    heroSplineScene: "https://prod.spline.design/6FgauUWPH8678Jwn/scene.splinecode",
+    heroSplineScene: HERITAGE_SPLINE_SCENE_URL,
     tools: ["Blender", "Photoshop", "Premiere Pro"],
     links: {
       instagram: "https://www.instagram.com/reel/C5oKWQnoIHl/",

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Providers from "@/components/Providers";
+import { HERITAGE_SPLINE_SCENE_URL } from "@/lib/splineScenes";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -67,6 +68,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link
+          rel="preload"
+          href={HERITAGE_SPLINE_SCENE_URL}
+          as="fetch"
+          crossOrigin="anonymous"
+        />
         <script dangerouslySetInnerHTML={{ __html: modeBootstrap }} />
       </head>
       <body className="antialiased">
