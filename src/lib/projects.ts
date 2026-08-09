@@ -1,3 +1,5 @@
+import { HERITAGE_SPLINE_SCENE_URL } from "@/lib/splineScenes";
+
 /** Which page a project shows up on today. */
 export type ProjectCollection = "main" | "craft";
 
@@ -22,6 +24,14 @@ export type Deliverable =
   | { type: "youtube"; videoId: string }
   | { type: "instagram"; url: string }
   | { type: "image"; url: string; fallback: string; group?: string }
+  | {
+      type: "composite";
+      frame: string;
+      video: { url: string; sound?: boolean; poster?: string };
+      /** CSS percentages for the video slot over the frame. Defaults to the right half. */
+      slot?: { left: string; top: string; width: string; height: string };
+    }
+  | { type: "still"; file: string }
   | { type: "placeholder" };
 
 /** Vertical workflow media (not the Ekara stacked-card pile). */
@@ -65,6 +75,8 @@ export interface Project {
    * underneath with no controls; audio and interaction live in the embed.
    */
   heroSplineScene?: string;
+  /** Still shown over the hero video until the Spline scene has rendered. */
+  heroSplinePoster?: string;
   tools: string[];
   links: {
     notion?: string;
@@ -83,8 +95,10 @@ export interface Project {
    * - `bento` / `category-bento`: full-viewport staggered grids for image sets.
    * - `stack`: one deliverable per row, each keeping its own aspect ratio, for
    *   sets that mix orientations (a vertical social cut next to a 16:9 embed).
+   * - `composite-stack`: full-bleed composite frame + video slot, then a grid
+   *   of stills, then any trailing embeds.
    */
-  deliverableLayout?: "bento" | "category-bento" | "stack";
+  deliverableLayout?: "bento" | "category-bento" | "stack" | "composite-stack";
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
@@ -124,6 +138,14 @@ export function projectCoverUrl(project: Project) {
 /** Work card video poster; falls back to the card still when there is one. */
 export function projectVideoPosterUrl(project: Project) {
   return projectFileUrl(project, project.videoPoster ?? project.thumbnail);
+}
+
+/** Modal hero still masking the Spline load; falls back to the cover video poster. */
+export function projectHeroSplinePosterUrl(project: Project) {
+  return projectFileUrl(
+    project,
+    project.heroSplinePoster ?? project.videoPoster ?? project.cover ?? project.thumbnail,
+  );
 }
 
 export const projects: Project[] = [
@@ -448,20 +470,27 @@ export const projects: Project[] = [
     hasVideo: true,
     videoUrl: "/projects/3d/dadju-tayc-heritage/cover-video-dadju-tayc-heritage.mp4",
     videoPoster: "poster-cover-dadju-tayc-heritage.jpg",
-    heroSplineScene: "https://prod.spline.design/6FgauUWPH8678Jwn/scene.splinecode",
+    heroSplineScene: HERITAGE_SPLINE_SCENE_URL,
+    heroSplinePoster: "poster-cover-dadju-tayc-heritage.jpg",
     tools: ["Blender", "Photoshop", "Premiere Pro"],
     links: {
-      youtube: "https://www.youtube.com/watch?v=LmUmViADgOc",
       instagram: "https://www.instagram.com/reel/C5oKWQnoIHl/",
     },
     deliverableCount: 0,
-    deliverableLayout: "stack",
+    deliverableLayout: "composite-stack",
     deliverables: [
       {
-        type: "video",
-        url: "deliverables/deliverable-dadju-tayc-heritage.mp4",
-        sound: true,
+        type: "composite",
+        frame: "deliverables/deliverable-1-dadju-tayc-heritage.jpg",
+        video: {
+          url: "deliverables/deliverable-2-dadju-tayc-heritage.mp4",
+          sound: true,
+          poster: "deliverables/poster-deliverable-2-dadju-tayc-heritage.jpg",
+        },
+        slot: { left: "50%", top: "0%", width: "50%", height: "100%" },
       },
+      { type: "still", file: "deliverables/deliverable-3-dadju-tayc-heritage.jpeg" },
+      { type: "still", file: "deliverables/deliverable-4-dadju-tayc-heritage.jpeg" },
       { type: "youtube", videoId: "LmUmViADgOc" },
     ],
   },

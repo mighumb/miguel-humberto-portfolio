@@ -346,6 +346,32 @@ html.modal-main-hidden .ambient-background {
   .process-pile-card-mount { animation: none !important; }
 }
 
+/* Spline free-tier logo — reliable removal needs a paid export toggle. */
+spline-viewer::part(logo) {
+  display: none !important;
+}
+
+.hero-spline-overlay a[href*="spline.design"],
+.hero-spline-overlay .logo,
+.hero-spline-overlay [class*="logo"],
+.hero-spline-float-host a[href*="spline.design"],
+.hero-spline-float-host .logo,
+.hero-spline-float-host [class*="logo"] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
+.hero-spline-float-host {
+  contain: strict;
+  touch-action: none;
+}
+
+.hero-spline-float-host canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;

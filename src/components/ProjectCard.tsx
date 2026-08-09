@@ -6,6 +6,7 @@ import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
 import type { Project } from "@/lib/projects";
 import { projectThumbnailUrl, projectVideoPosterUrl } from "@/lib/projects";
+import { preloadSplineScene } from "@/lib/splinePreload";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
@@ -110,12 +111,18 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
       (entries) => {
         setIsNearViewport(entries.some((entry) => entry.isIntersecting));
       },
-      { rootMargin: "150% 0px" },
+      { rootMargin: "400% 0px" },
     );
     observer.observe(card);
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (isNearViewport && project.heroSplineScene) {
+      preloadSplineScene(project.heroSplineScene);
+    }
+  }, [isNearViewport, project.heroSplineScene]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -169,6 +176,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
   const handleMouseEnter = () => {
     setIsHovering(true);
+    if (project.heroSplineScene) preloadSplineScene(project.heroSplineScene);
     if (project.hasVideo && videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
@@ -239,6 +247,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLElement>) => {
+    if (project.heroSplineScene) preloadSplineScene(project.heroSplineScene);
     if (event.button !== 0) return;
     // Desktop mouse uses CSS :hover for the CTA; hold is a touch affordance.
     if (event.pointerType === "mouse" && !isTouchLikePointer(event)) return;

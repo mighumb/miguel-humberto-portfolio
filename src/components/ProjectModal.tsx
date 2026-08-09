@@ -21,6 +21,7 @@ import {
   type ProcessItem,
   projectAssetBase,
   projectCoverUrl,
+  projectHeroSplinePosterUrl,
   projectVideoPosterUrl,
 } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
@@ -847,6 +848,117 @@ function DeliverableYouTube({ videoId, title }: { videoId: string; title: string
 }
 
 /**
+ * Full-bleed mockup frame with a video slotted over a placeholder area — used
+ * when a still ships with a black (or empty) region meant to carry motion.
+ */
+function DeliverableComposite({
+  deliverable,
+  assetBase,
+}: {
+  deliverable: Extract<Deliverable, { type: "composite" }>;
+  assetBase: string;
+}) {
+  const slot = deliverable.slot ?? {
+    left: "50%",
+    top: "0%",
+    width: "50%",
+    height: "100%",
+  };
+
+  return (
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
+      <div className="relative w-full" style={{ aspectRatio: "2953 / 1535" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`${assetBase}/${deliverable.frame}`}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="block h-full w-full object-cover"
+        />
+        <div
+          className="absolute z-10"
+          style={{
+            left: slot.left,
+            top: slot.top,
+            width: slot.width,
+            height: slot.height,
+          }}
+        >
+          <DeliverableVideo
+            src={`${assetBase}/${deliverable.video.url}`}
+            sound={deliverable.video.sound}
+            poster={
+              deliverable.video.poster
+                ? `${assetBase}/${deliverable.video.poster}`
+                : undefined
+            }
+            className="h-full w-full"
+            rounded={false}
+            preload="auto"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeliverablesCompositeStack({
+  deliverables,
+  assetBase,
+  youtubeTitle,
+}: {
+  deliverables: Deliverable[];
+  assetBase: string;
+  youtubeTitle: string;
+}) {
+  const composite = deliverables.find(
+    (deliverable): deliverable is Extract<Deliverable, { type: "composite" }> =>
+      deliverable.type === "composite",
+  );
+  const stills = deliverables.filter(
+    (deliverable): deliverable is Extract<Deliverable, { type: "still" }> =>
+      deliverable.type === "still",
+  );
+
+  return (
+    <div className="space-y-10 md:space-y-14">
+      {composite ? (
+        <DeliverableComposite deliverable={composite} assetBase={assetBase} />
+      ) : null}
+      {stills.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {stills.map((still) => (
+            <div
+              key={still.file}
+              className="aspect-square overflow-hidden rounded-xl bg-bg-secondary"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${assetBase}/${still.file}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="block h-full w-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {deliverables.map((deliverable, index) =>
+        deliverable.type === "youtube" ? (
+          <DeliverableYouTube
+            key={`${deliverable.videoId}-${index}`}
+            videoId={deliverable.videoId}
+            title={youtubeTitle}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}
+
+/**
  * One deliverable per row, each keeping its own aspect ratio. A vertical social
  * cut is capped to a phone-like width so it does not tower over a 16:9 embed.
  */
@@ -899,10 +1011,16 @@ function DeliverableVideo({
   src,
   sound = false,
   poster,
+  className = "",
+  rounded = true,
+  preload = "metadata",
 }: {
   src: string;
   sound?: boolean;
   poster?: string;
+  className?: string;
+  rounded?: boolean;
+  preload?: "auto" | "metadata" | "none";
 }) {
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -928,7 +1046,11 @@ function DeliverableVideo({
   };
 
   return (
-    <div className="group relative h-full overflow-hidden rounded-xl bg-bg-secondary">
+    <div
+      className={`group relative h-full overflow-hidden bg-bg-secondary${
+        rounded ? " rounded-xl" : ""
+      }${className ? ` ${className}` : ""}`}
+    >
       <video
         ref={videoRef}
         // #t=0.1 forces iOS Safari to seek and decode a frame at rest; without
@@ -939,7 +1061,7 @@ function DeliverableVideo({
         controls={playing}
         muted
         playsInline
-        preload="metadata"
+        preload={preload}
         className="h-full w-full object-cover"
       />
       {!playing && (
@@ -1027,9 +1149,17 @@ function ProjectPanel({
   const [touchControls, setTouchControls] = useState(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroSplineScene = project.heroSplineScene;
+  const heroSplinePoster = heroSplineScene ? projectHeroSplinePosterUrl(project) : null;
   const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible && !heroSplineScene;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
+  const hasYoutubeDeliverable = project.deliverables?.some(
+    (deliverable) => deliverable.type === "youtube",
+  );
+  const hasProcessContent =
+    (project.processItems?.length ?? 0) > 0 ||
+    (project.processImages?.length ?? 0) > 0 ||
+    (Boolean(project.links.youtube) && !hasYoutubeDeliverable);
 
   useLayoutEffect(() => {
     const video = heroVideoRef.current;
@@ -1154,8 +1284,12 @@ function ProjectPanel({
                         transitionDuration: heroVideoReady ? "200ms" : "0ms",
                       }}
                     />
-                    {heroSplineScene && isActive && sharedContentVisible ? (
-                      <HeroSplineOverlay scene={heroSplineScene} />
+                    {heroSplineScene ? (
+                      <HeroSplineOverlay
+                        scene={heroSplineScene}
+                        poster={heroSplinePoster}
+                        visible={isActive && sharedContentVisible}
+                      />
                     ) : null}
                   </>
                 ) : coverUrl ? (
@@ -1236,6 +1370,12 @@ function ProjectPanel({
                   )}
                   assetBase={projectAssetBase(project)}
                   locale={locale}
+                />
+              ) : project.deliverables && project.deliverableLayout === "composite-stack" ? (
+                <DeliverablesCompositeStack
+                  deliverables={project.deliverables}
+                  assetBase={projectAssetBase(project)}
+                  youtubeTitle={mt.youtube}
                 />
               ) : project.deliverables && project.deliverableLayout === "stack" ? (
                 <DeliverablesStack
@@ -1320,16 +1460,17 @@ function ProjectPanel({
             </section>
             )}
 
+            {hasProcessContent && (
             <section className="mt-16 pt-16">
               <h3 className="mb-10 text-sm font-medium tracking-[0.2em] text-text-secondary uppercase">
                 {project.processTitle?.[locale] ?? mt.process}
               </h3>
-              {project.processItems ? (
+              {project.processItems && project.processItems.length > 0 ? (
                 <ProcessWorkflowStack
                   items={project.processItems}
                   assetBase={projectAssetBase(project)}
                 />
-              ) : project.processImages ? (
+              ) : project.processImages && project.processImages.length > 0 ? (
                 <ProcessStackedCards
                   images={project.processImages}
                   assetBase={projectAssetBase(project)}
@@ -1351,29 +1492,9 @@ function ProjectPanel({
                     ) : null;
                   })()}
                 </div>
-              ) : (
-                <div className="space-y-12">
-                  {mt.steps.map((step, i) => (
-                    <div key={step} className="grid gap-6 md:grid-cols-[80px_1fr_200px] md:items-start">
-                      <span className="text-3xl font-light text-accent md:text-4xl">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <h4 className="text-lg font-medium text-text-primary">{step}</h4>
-                        <p className="mt-2 text-sm leading-relaxed text-text-secondary md:text-base">
-                          {mt.stepDescriptions[i]}
-                        </p>
-                      </div>
-                      <div
-                        className="aspect-[4/3] rounded-lg md:aspect-square"
-                        style={{ background: "var(--placeholder)" }}
-                        aria-hidden
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+              ) : null}
             </section>
+            )}
 
             {project.uiKit && (
               <section className="mt-16 pt-16">
