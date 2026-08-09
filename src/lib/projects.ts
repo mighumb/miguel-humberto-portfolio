@@ -204,9 +204,9 @@ export const projects: Project[] = [
     processTitle: { en: "Workflow", fr: "Workflow" },
     processItems: [
       { type: "loop", file: "process/process-blender-0-gims-dystinct-spider.mp4" },
-      { type: "image", file: "process/process-blender-1-gims-dystinct-spider.png", fullBleed: true },
+      { type: "image", file: "process/process-blender-1-gims-dystinct-spider.png" },
       { type: "loop", file: "process/process-blender-2-gims-dystinct-spider.mp4" },
-      { type: "image", file: "process/process-blender-3-gims-dystinct-spider.png", fullBleed: true },
+      { type: "image", file: "process/process-blender-3-gims-dystinct-spider.png" },
     ],
   },
   {

@@ -909,7 +909,9 @@ function DeliverableVideo({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const onPause = () => setPlaying(false);
+    const onPause = () => {
+      if (!video.ended) setPlaying(false);
+    };
     video.addEventListener("pause", onPause);
     return () => video.removeEventListener("pause", onPause);
   }, []);
@@ -935,7 +937,6 @@ function DeliverableVideo({
         poster={poster}
         controls={playing}
         muted
-        loop
         playsInline
         preload="metadata"
         className="h-full w-full object-cover"
