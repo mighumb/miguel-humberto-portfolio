@@ -75,6 +75,8 @@ export interface Project {
    * underneath with no controls; audio and interaction live in the embed.
    */
   heroSplineScene?: string;
+  /** Still shown over the hero video until the Spline scene has rendered. */
+  heroSplinePoster?: string;
   tools: string[];
   links: {
     notion?: string;
@@ -136,6 +138,14 @@ export function projectCoverUrl(project: Project) {
 /** Work card video poster; falls back to the card still when there is one. */
 export function projectVideoPosterUrl(project: Project) {
   return projectFileUrl(project, project.videoPoster ?? project.thumbnail);
+}
+
+/** Modal hero still masking the Spline load; falls back to the cover video poster. */
+export function projectHeroSplinePosterUrl(project: Project) {
+  return projectFileUrl(
+    project,
+    project.heroSplinePoster ?? project.videoPoster ?? project.cover ?? project.thumbnail,
+  );
 }
 
 export const projects: Project[] = [
@@ -461,6 +471,7 @@ export const projects: Project[] = [
     videoUrl: "/projects/3d/dadju-tayc-heritage/cover-video-dadju-tayc-heritage.mp4",
     videoPoster: "poster-cover-dadju-tayc-heritage.jpg",
     heroSplineScene: HERITAGE_SPLINE_SCENE_URL,
+    heroSplinePoster: "poster-cover-dadju-tayc-heritage.jpg",
     tools: ["Blender", "Photoshop", "Premiere Pro"],
     links: {
       instagram: "https://www.instagram.com/reel/C5oKWQnoIHl/",

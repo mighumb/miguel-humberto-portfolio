@@ -21,6 +21,7 @@ import {
   type ProcessItem,
   projectAssetBase,
   projectCoverUrl,
+  projectHeroSplinePosterUrl,
   projectVideoPosterUrl,
 } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
@@ -1148,6 +1149,7 @@ function ProjectPanel({
   const [touchControls, setTouchControls] = useState(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroSplineScene = project.heroSplineScene;
+  const heroSplinePoster = heroSplineScene ? projectHeroSplinePosterUrl(project) : null;
   const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible && !heroSplineScene;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
@@ -1285,6 +1287,7 @@ function ProjectPanel({
                     {heroSplineScene ? (
                       <HeroSplineOverlay
                         scene={heroSplineScene}
+                        poster={heroSplinePoster}
                         visible={isActive && sharedContentVisible}
                       />
                     ) : null}

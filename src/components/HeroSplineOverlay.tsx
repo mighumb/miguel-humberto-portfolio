@@ -13,14 +13,17 @@ import {
 
 export function HeroSplineOverlay({
   scene,
+  poster,
   visible = true,
 }: {
   scene: string;
+  poster?: string | null;
   visible?: boolean;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const [rendered, setRendered] = useState(() => isSplineSceneReady(scene));
-  const show = visible && rendered;
+  const showSpline = visible && rendered;
+  const showPoster = visible && Boolean(poster) && !rendered;
 
   useLayoutEffect(() => {
     preloadSplineScene(scene);
@@ -51,16 +54,31 @@ export function HeroSplineOverlay({
 
   useLayoutEffect(() => {
     updateSplineAnchorVisibility(scene, {
-      interactive: show,
-      shown: show,
+      interactive: showSpline,
+      shown: showSpline,
     });
-  }, [scene, show]);
+  }, [scene, showSpline]);
 
   return (
-    <div
-      ref={anchorRef}
-      className="hero-spline-anchor pointer-events-none absolute inset-0 z-10"
-      aria-hidden={!show}
-    />
+    <>
+      {poster ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={poster}
+          alt=""
+          className="hero-spline-poster pointer-events-none absolute inset-0 z-[15] h-full w-full object-cover"
+          style={{
+            opacity: showPoster ? 1 : 0,
+            transition: showPoster ? "none" : "opacity 180ms ease-out",
+          }}
+          aria-hidden={!showPoster}
+        />
+      ) : null}
+      <div
+        ref={anchorRef}
+        className="hero-spline-anchor pointer-events-none absolute inset-0 z-10"
+        aria-hidden={!showSpline}
+      />
+    </>
   );
 }
