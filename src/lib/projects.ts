@@ -60,6 +60,11 @@ export interface Project {
   videoPoster?: string;
   /** Start the modal hero unmuted once the open transition lands. */
   unmuteOnOpen?: boolean;
+  /**
+   * Spline scene URL stacked on the modal hero. The cover video loops muted
+   * underneath with no controls; audio and interaction live in the embed.
+   */
+  heroSplineScene?: string;
   tools: string[];
   links: {
     notion?: string;
@@ -417,6 +422,47 @@ export const projects: Project[] = [
         file: "process/process-figma-weave-verdio.png",
         fullBleed: true,
       },
+    ],
+  },
+  {
+    id: "07",
+    slug: "dadju-tayc-heritage",
+    collection: "main",
+    categories: ["3d"],
+    assetGroup: "3d",
+    title: {
+      en: "Dadju & Tayc - Héritage",
+      fr: "Dadju & Tayc - Héritage",
+    },
+    context: {
+      en: 'For the release of "Héritage" by Dadju and Tayc, I created a promotional video and a YouTube visualizer. Building on artwork by [Mister Fifou](https://www.misterfifou.com/), I modeled and animated the album\'s 3D world.',
+      fr: "Pour la sortie de l'album « Héritage » de Dadju et Tayc, j'ai créé une vidéo promo et un visualizer YouTube. En partant du graphisme de [Mister Fifou](https://www.misterfifou.com/), j'ai modélisé et animé l'univers 3D de la pochette.",
+    },
+    tags: [
+      { en: "3D", fr: "3D" },
+      { en: "Music", fr: "Music" },
+      { en: "Social", fr: "Social" },
+    ],
+    year: "2024",
+    type: "Video",
+    hasVideo: true,
+    videoUrl: "/projects/3d/dadju-tayc-heritage/cover-video-dadju-tayc-heritage.mp4",
+    videoPoster: "poster-cover-dadju-tayc-heritage.jpg",
+    heroSplineScene: "https://prod.spline.design/6FgauUWPH8678Jwn/scene.splinecode",
+    tools: ["Blender", "Photoshop", "Premiere Pro"],
+    links: {
+      youtube: "https://www.youtube.com/watch?v=LmUmViADgOc",
+      instagram: "https://www.instagram.com/reel/C5oKWQnoIHl/",
+    },
+    deliverableCount: 0,
+    deliverableLayout: "stack",
+    deliverables: [
+      {
+        type: "video",
+        url: "deliverables/deliverable-dadju-tayc-heritage.mp4",
+        sound: true,
+      },
+      { type: "youtube", videoId: "LmUmViADgOc" },
     ],
   },
   {
