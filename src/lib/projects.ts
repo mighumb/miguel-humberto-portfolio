@@ -14,7 +14,12 @@ export type ProjectAssetGroup = "ai" | "product" | "3d";
 export type LocalizedCopy = { en: string; fr: string };
 
 export type Deliverable =
-  | { type: "video"; url: string }
+  /**
+   * `sound` keeps the original audio, unmuted on the viewer's own play click.
+   * `poster` overrides the frame shown at rest, for videos that open on black.
+   */
+  | { type: "video"; url: string; sound?: boolean; poster?: string }
+  | { type: "youtube"; videoId: string }
   | { type: "instagram"; url: string }
   | { type: "image"; url: string; fallback: string; group?: string }
   | { type: "placeholder" };
@@ -68,8 +73,13 @@ export interface Project {
   deliverableCount: number;
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
   deliverables?: Deliverable[];
-  /** Optional full-viewport, staggered layout for image deliverables. */
-  deliverableLayout?: "bento" | "category-bento";
+  /**
+   * How the deliverables section is laid out.
+   * - `bento` / `category-bento`: full-viewport staggered grids for image sets.
+   * - `stack`: one deliverable per row, each keeping its own aspect ratio, for
+   *   sets that mix orientations (a vertical social cut next to a 16:9 embed).
+   */
+  deliverableLayout?: "bento" | "category-bento" | "stack";
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
@@ -149,45 +159,6 @@ export const projects: Project[] = [
     ],
   },
   {
-    id: "02",
-    slug: "big-flo-oli-colors-show",
-    collection: "main",
-    categories: ["ai"],
-    assetGroup: "ai",
-    title: { en: "Big Flo & Oli - Colors Show", fr: "Big Flo & Oli - Colors Show" },
-    context: {
-      en: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) is a live music series shot against a flat backdrop, and a global visual reference. Big Flo & Oli had never been invited: their [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25) video, filmed in an Airbus hangar in Toulouse, reignited the debate. I turned that scene into a real COLORS Show, with a pink set as a nod to Toulouse, known as the Pink City.",
-      fr: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) est une série de lives musicaux filmés sur fond uni, devenue une référence visuelle mondiale. Big Flo & Oli n’y avaient jamais été invités : leur clip de [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25), tourné dans un hangar Airbus à Toulouse, a relancé le débat. J’ai transformé cette scène en un vrai COLORS Show, rose en clin d’œil à Toulouse, appelée la ville rose.",
-    },
-    tags: [
-      { en: "VFX", fr: "VFX" },
-      { en: "Music", fr: "Musique" },
-      { en: "Social", fr: "Social" },
-      { en: "Viral", fr: "Viral" },
-    ],
-    year: "2025",
-    type: "Video",
-    hasVideo: true,
-    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=3",
-    videoPoster: "poster-cover-big-flo-oli-colors-show.jpg",
-    unmuteOnOpen: true,
-    tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
-    links: {
-      instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
-    },
-    deliverableCount: 0,
-    processTitle: { en: "Workflow", fr: "Workflow" },
-    processItems: [
-      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4?v=3" },
-      {
-        type: "image",
-        file: "process/process-magnific-big-flo-oli-colors-show.png",
-        fullBleed: true,
-      },
-      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=5" },
-    ],
-  },
-  {
     id: "03",
     slug: "goodies-factory",
     collection: "main",
@@ -241,6 +212,96 @@ export const projects: Project[] = [
         file: "process/process-figma-weave-goodies-factory.png",
         fullBleed: true,
       },
+    ],
+  },
+  {
+    id: "06",
+    slug: "gims-dystinct-spider",
+    collection: "main",
+    categories: ["3d"],
+    assetGroup: "3d",
+    title: {
+      en: "Gims & Dystinct - Spider",
+      fr: "Gims & Dystinct - Spider",
+    },
+    context: {
+      en: 'Commissioned by the label [Play Two](https://playtwo.fr/), I created 3D animations to announce the release of "Spider" by Gims and Dystinct across social media, along with a visualizer for YouTube. From modeling to final render, I built a cohesive visual world around the launch.',
+      fr: "À la demande du label [Play Two](https://playtwo.fr/), j'ai conçu des animations 3D pour annoncer la sortie du single « Spider » de Gims et Dystinct sur les réseaux sociaux, ainsi qu'un visualizer pour YouTube. De la modélisation au rendu, j'ai construit un univers visuel cohérent pour accompagner le lancement.",
+    },
+    tags: [
+      { en: "3D", fr: "3D" },
+      { en: "Music", fr: "Music" },
+      { en: "Social", fr: "Social" },
+    ],
+    year: "2024",
+    type: "Video",
+    hasVideo: true,
+    videoUrl: "/projects/3d/gims-dystinct-spider/cover-video-gims-dystinct-spider.mp4",
+    videoPoster: "poster-cover-gims-dystinct-spider.jpg",
+    unmuteOnOpen: true,
+    tools: ["Blender", "Premiere Pro", "Photoshop"],
+    links: {
+      youtube: "https://www.youtube.com/watch?v=aUjAD7g2JWA",
+      instagram: "https://www.instagram.com/reel/C6_qUupoPJo/",
+    },
+    deliverableCount: 0,
+    deliverableLayout: "stack",
+    deliverables: [
+      // Social cut first: the hero already plays an extract of the visualizer.
+      // It fades in from pure black, so it needs a frame from further in.
+      {
+        type: "video",
+        url: "deliverables/deliverable-gims-dystinct-spider.mp4",
+        sound: true,
+        poster: "deliverables/poster-deliverable-gims-dystinct-spider.jpg",
+      },
+      { type: "youtube", videoId: "aUjAD7g2JWA" },
+    ],
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [
+      { type: "loop", file: "process/process-blender-0-gims-dystinct-spider.mp4" },
+      { type: "image", file: "process/process-blender-1-gims-dystinct-spider.png" },
+      { type: "loop", file: "process/process-blender-2-gims-dystinct-spider.mp4" },
+      { type: "image", file: "process/process-blender-3-gims-dystinct-spider.png" },
+    ],
+  },
+  {
+    id: "02",
+    slug: "big-flo-oli-colors-show",
+    collection: "main",
+    categories: ["ai"],
+    assetGroup: "ai",
+    title: { en: "Big Flo & Oli - Colors Show", fr: "Big Flo & Oli - Colors Show" },
+    context: {
+      en: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) is a live music series shot against a flat backdrop, and a global visual reference. Big Flo & Oli had never been invited: their [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25) video, filmed in an Airbus hangar in Toulouse, reignited the debate. I turned that scene into a real COLORS Show, with a pink set as a nod to Toulouse, known as the Pink City.",
+      fr: "[COLORS](https://www.youtube.com/channel/UC2Qw1dzXDBAZPwS7zm37g8g) est une série de lives musicaux filmés sur fond uni, devenue une référence visuelle mondiale. Big Flo & Oli n’y avaient jamais été invités : leur clip de [44D](https://youtu.be/tjsmTPVZhjk?si=mjBRzfW0a-TAJU7_&t=25), tourné dans un hangar Airbus à Toulouse, a relancé le débat. J’ai transformé cette scène en un vrai COLORS Show, rose en clin d’œil à Toulouse, appelée la ville rose.",
+    },
+    tags: [
+      { en: "VFX", fr: "VFX" },
+      { en: "Music", fr: "Musique" },
+      { en: "Social", fr: "Social" },
+      { en: "Viral", fr: "Viral" },
+    ],
+    year: "2025",
+    type: "Video",
+    hasVideo: true,
+    videoUrl: "/projects/ai/big-flo-oli-colors-show/cover-video-big-flo-oli-colors-show.mp4?v=3",
+    videoPoster: "poster-cover-big-flo-oli-colors-show.jpg",
+    unmuteOnOpen: true,
+    tools: ["Beeble", "Switch X", "Magnific", "Nano Banana", "Photoshop", "After Effects"],
+    links: {
+      instagram: "https://www.instagram.com/p/DV1U-P-iKRG/",
+    },
+    deliverableCount: 0,
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [
+      { type: "loop", file: "process/process-psd-big-flo-oli-colors-show.mp4?v=3" },
+      {
+        type: "image",
+        file: "process/process-magnific-big-flo-oli-colors-show.png",
+        fullBleed: true,
+      },
+      { type: "loop", file: "process/process-compare-big-flo-oli-colors-show.mp4?v=5" },
     ],
   },
   {

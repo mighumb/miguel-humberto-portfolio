@@ -830,34 +830,113 @@ function ProcessStackedCards({ images, assetBase }: { images: string[]; assetBas
   );
 }
 
-function DeliverableVideo({ src }: { src: string }) {
+function DeliverableYouTube({ videoId, title }: { videoId: string; title: string }) {
+  return (
+    <div className="aspect-video w-full overflow-hidden rounded-xl bg-bg-secondary">
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}`}
+        title={title}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+        className="h-full w-full border-0"
+      />
+    </div>
+  );
+}
+
+/**
+ * One deliverable per row, each keeping its own aspect ratio. A vertical social
+ * cut is capped to a phone-like width so it does not tower over a 16:9 embed.
+ */
+function DeliverablesStack({
+  deliverables,
+  assetBase,
+  youtubeTitle,
+}: {
+  deliverables: Deliverable[];
+  assetBase: string;
+  youtubeTitle: string;
+}) {
+  return (
+    <div className="space-y-10 md:space-y-14">
+      {deliverables.map((deliverable, index) => {
+        if (deliverable.type === "youtube") {
+          return (
+            <DeliverableYouTube
+              key={`${deliverable.videoId}-${index}`}
+              videoId={deliverable.videoId}
+              title={youtubeTitle}
+            />
+          );
+        }
+
+        if (deliverable.type === "video") {
+          return (
+            <div
+              key={`${deliverable.url}-${index}`}
+              className="mx-auto aspect-[9/16] w-full max-w-[22rem]"
+            >
+              <DeliverableVideo
+                src={`${assetBase}/${deliverable.url}`}
+                sound={deliverable.sound}
+                poster={
+                  deliverable.poster ? `${assetBase}/${deliverable.poster}` : undefined
+                }
+              />
+            </div>
+          );
+        }
+
+        return null;
+      })}
+    </div>
+  );
+}
+
+function DeliverableVideo({
+  src,
+  sound = false,
+  poster,
+}: {
+  src: string;
+  sound?: boolean;
+  poster?: string;
+}) {
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const onPause = () => setPlaying(false);
+    const onPause = () => {
+      if (!video.ended) setPlaying(false);
+    };
     video.addEventListener("pause", onPause);
     return () => video.removeEventListener("pause", onPause);
   }, []);
 
   const handlePlay = () => {
     setPlaying(true);
-    videoRef.current?.play().catch(() => {});
+    const video = videoRef.current;
+    if (!video) return;
+    // Unmuting is safe here: this runs from the viewer's own click, so no
+    // autoplay policy applies.
+    if (sound) video.muted = false;
+    video.play().catch(() => {});
   };
 
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-bg-secondary">
+    <div className="group relative h-full overflow-hidden rounded-xl bg-bg-secondary">
       <video
         ref={videoRef}
         // #t=0.1 forces iOS Safari to seek and decode a frame at rest; without
         // it, preload="metadata" leaves the video black until playback starts
         // there (desktop browsers already paint the first frame on their own).
-        src={`${src}#t=0.1`}
+        src={poster ? src : `${src}#t=0.1`}
+        poster={poster}
         controls={playing}
         muted
-        loop
         playsInline
         preload="metadata"
         className="h-full w-full object-cover"
@@ -1044,7 +1123,6 @@ function ProjectPanel({
                           : undefined
                       }
                       autoPlay
-                      loop
                       muted={!heroUnmuted}
                       playsInline
                       preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
@@ -1135,6 +1213,12 @@ function ProjectPanel({
                   )}
                   assetBase={projectAssetBase(project)}
                   locale={locale}
+                />
+              ) : project.deliverables && project.deliverableLayout === "stack" ? (
+                <DeliverablesStack
+                  deliverables={project.deliverables}
+                  assetBase={projectAssetBase(project)}
+                  youtubeTitle={mt.youtube}
                 />
               ) : project.deliverables && project.deliverableLayout === "bento" ? (
                 <DeliverablesBento
