@@ -1163,6 +1163,7 @@ function ProjectPanel({
   );
   const [touchControls, setTouchControls] = useState(false);
   const [heroAwaitingPlay, setHeroAwaitingPlay] = useState(false);
+  const heroEndedRef = useRef(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroSplineScene = project.heroSplineScene;
   const heroSplinePoster = heroSplineScene ? projectHeroSplinePosterUrl(project) : null;
@@ -1210,6 +1211,12 @@ function ProjectPanel({
   }, [heroVideoReady]);
 
   useEffect(() => {
+    heroEndedRef.current = false;
+    setHeroAwaitingPlay(false);
+    setTouchControls(false);
+  }, [project.id, project.videoUrl]);
+
+  useEffect(() => {
     const video = heroVideoRef.current;
     if (!video || !project.hasVideo || !project.videoUrl) return;
     // A panel sliding out keeps playing silently: unmuting both would overlap
@@ -1239,28 +1246,45 @@ function ProjectPanel({
     keepSplineDuringExit,
   ]);
 
-  useEffect(() => {
+  const markHeroEnded = useCallback(() => {
+    if (heroEndedRef.current || heroSplineScene) return;
     const video = heroVideoRef.current;
-    if (!video || heroSplineScene) return;
+    if (!video || video.loop) return;
 
-    const onEnded = () => {
+    heroEndedRef.current = true;
+    video.pause();
+    try {
       video.currentTime = 0;
-      setHeroAwaitingPlay(true);
-      setTouchControls(false);
-    };
-    const onPlay = () => setHeroAwaitingPlay(false);
+    } catch {
+      // Ignore seek errors while the browser is tearing down playback.
+    }
+    setHeroAwaitingPlay(true);
+    setTouchControls(false);
+  }, [heroSplineScene]);
 
-    video.addEventListener("ended", onEnded);
-    video.addEventListener("play", onPlay);
-    return () => {
-      video.removeEventListener("ended", onEnded);
-      video.removeEventListener("play", onPlay);
-    };
-  }, [heroSplineScene, project.videoUrl]);
+  const markHeroPlaying = useCallback(() => {
+    heroEndedRef.current = false;
+    setHeroAwaitingPlay(false);
+  }, []);
+
+  const handleHeroTimeUpdate = useCallback(
+    (event: React.SyntheticEvent<HTMLVideoElement>) => {
+      if (heroSplineScene || heroEndedRef.current) return;
+      const video = event.currentTarget;
+      if (!video.duration || video.loop) return;
+      // iOS Safari often skips `ended` for modal hero videos — detect the last
+      // quarter-second while playback is still running.
+      if (!video.paused && !video.ended && video.currentTime >= video.duration - 0.25) {
+        markHeroEnded();
+      }
+    },
+    [heroSplineScene, markHeroEnded],
+  );
 
   const handleHeroReplay = () => {
     const video = heroVideoRef.current;
     if (!video) return;
+    heroEndedRef.current = false;
     setHeroAwaitingPlay(false);
     if (unmuteOnOpen) video.muted = false;
     if (isTouch) setTouchControls(true);
@@ -1320,6 +1344,9 @@ function ProjectPanel({
                             ? () => setTouchControls(true)
                             : undefined
                       }
+                      onEnded={heroSplineScene ? undefined : markHeroEnded}
+                      onPlay={heroSplineScene ? undefined : markHeroPlaying}
+                      onTimeUpdate={heroSplineScene ? undefined : handleHeroTimeUpdate}
                       autoPlay
                       loop={!!heroSplineScene}
                       muted={heroSplineScene ? true : !heroUnmuted}
