@@ -372,6 +372,12 @@ spline-viewer::part(logo) {
   height: 100% !important;
 }
 
+.hero-spline-mount canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .work-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
