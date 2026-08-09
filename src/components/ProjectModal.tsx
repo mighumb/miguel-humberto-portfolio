@@ -847,6 +847,116 @@ function DeliverableYouTube({ videoId, title }: { videoId: string; title: string
 }
 
 /**
+ * Full-bleed mockup frame with a video slotted over a placeholder area — used
+ * when a still ships with a black (or empty) region meant to carry motion.
+ */
+function DeliverableComposite({
+  deliverable,
+  assetBase,
+}: {
+  deliverable: Extract<Deliverable, { type: "composite" }>;
+  assetBase: string;
+}) {
+  const slot = deliverable.slot ?? {
+    left: "50%",
+    top: "0%",
+    width: "50%",
+    height: "100%",
+  };
+
+  return (
+    <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
+      <div className="relative w-full" style={{ aspectRatio: "2953 / 1535" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`${assetBase}/${deliverable.frame}`}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="block h-full w-full object-cover"
+        />
+        <div
+          className="absolute"
+          style={{
+            left: slot.left,
+            top: slot.top,
+            width: slot.width,
+            height: slot.height,
+          }}
+        >
+          <DeliverableVideo
+            src={`${assetBase}/${deliverable.video.url}`}
+            sound={deliverable.video.sound}
+            poster={
+              deliverable.video.poster
+                ? `${assetBase}/${deliverable.video.poster}`
+                : undefined
+            }
+            className="h-full"
+            rounded={false}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeliverablesCompositeStack({
+  deliverables,
+  assetBase,
+  youtubeTitle,
+}: {
+  deliverables: Deliverable[];
+  assetBase: string;
+  youtubeTitle: string;
+}) {
+  const composite = deliverables.find(
+    (deliverable): deliverable is Extract<Deliverable, { type: "composite" }> =>
+      deliverable.type === "composite",
+  );
+  const stills = deliverables.filter(
+    (deliverable): deliverable is Extract<Deliverable, { type: "still" }> =>
+      deliverable.type === "still",
+  );
+
+  return (
+    <div className="space-y-10 md:space-y-14">
+      {composite ? (
+        <DeliverableComposite deliverable={composite} assetBase={assetBase} />
+      ) : null}
+      {stills.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {stills.map((still) => (
+            <div
+              key={still.file}
+              className="aspect-square overflow-hidden rounded-xl bg-bg-secondary"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${assetBase}/${still.file}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="block h-full w-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {deliverables.map((deliverable, index) =>
+        deliverable.type === "youtube" ? (
+          <DeliverableYouTube
+            key={`${deliverable.videoId}-${index}`}
+            videoId={deliverable.videoId}
+            title={youtubeTitle}
+          />
+        ) : null,
+      )}
+    </div>
+  );
+}
+
+/**
  * One deliverable per row, each keeping its own aspect ratio. A vertical social
  * cut is capped to a phone-like width so it does not tower over a 16:9 embed.
  */
@@ -899,10 +1009,14 @@ function DeliverableVideo({
   src,
   sound = false,
   poster,
+  className = "",
+  rounded = true,
 }: {
   src: string;
   sound?: boolean;
   poster?: string;
+  className?: string;
+  rounded?: boolean;
 }) {
   const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -928,7 +1042,11 @@ function DeliverableVideo({
   };
 
   return (
-    <div className="group relative h-full overflow-hidden rounded-xl bg-bg-secondary">
+    <div
+      className={`group relative h-full overflow-hidden bg-bg-secondary${
+        rounded ? " rounded-xl" : ""
+      }${className ? ` ${className}` : ""}`}
+    >
       <video
         ref={videoRef}
         // #t=0.1 forces iOS Safari to seek and decode a frame at rest; without
@@ -1236,6 +1354,12 @@ function ProjectPanel({
                   )}
                   assetBase={projectAssetBase(project)}
                   locale={locale}
+                />
+              ) : project.deliverables && project.deliverableLayout === "composite-stack" ? (
+                <DeliverablesCompositeStack
+                  deliverables={project.deliverables}
+                  assetBase={projectAssetBase(project)}
+                  youtubeTitle={mt.youtube}
                 />
               ) : project.deliverables && project.deliverableLayout === "stack" ? (
                 <DeliverablesStack

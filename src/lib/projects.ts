@@ -22,6 +22,14 @@ export type Deliverable =
   | { type: "youtube"; videoId: string }
   | { type: "instagram"; url: string }
   | { type: "image"; url: string; fallback: string; group?: string }
+  | {
+      type: "composite";
+      frame: string;
+      video: { url: string; sound?: boolean; poster?: string };
+      /** CSS percentages for the video slot over the frame. Defaults to the right half. */
+      slot?: { left: string; top: string; width: string; height: string };
+    }
+  | { type: "still"; file: string }
   | { type: "placeholder" };
 
 /** Vertical workflow media (not the Ekara stacked-card pile). */
@@ -83,8 +91,10 @@ export interface Project {
    * - `bento` / `category-bento`: full-viewport staggered grids for image sets.
    * - `stack`: one deliverable per row, each keeping its own aspect ratio, for
    *   sets that mix orientations (a vertical social cut next to a 16:9 embed).
+   * - `composite-stack`: full-bleed composite frame + video slot, then a grid
+   *   of stills, then any trailing embeds.
    */
-  deliverableLayout?: "bento" | "category-bento" | "stack";
+  deliverableLayout?: "bento" | "category-bento" | "stack" | "composite-stack";
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
@@ -455,13 +465,19 @@ export const projects: Project[] = [
       instagram: "https://www.instagram.com/reel/C5oKWQnoIHl/",
     },
     deliverableCount: 0,
-    deliverableLayout: "stack",
+    deliverableLayout: "composite-stack",
     deliverables: [
       {
-        type: "video",
-        url: "deliverables/deliverable-dadju-tayc-heritage.mp4",
-        sound: true,
+        type: "composite",
+        frame: "deliverables/deliverable-1-dadju-tayc-heritage.jpg",
+        video: {
+          url: "deliverables/deliverable-2-dadju-tayc-heritage.mp4",
+          sound: true,
+        },
+        slot: { left: "50%", top: "0%", width: "50%", height: "100%" },
       },
+      { type: "still", file: "deliverables/deliverable-3-dadju-tayc-heritage.jpeg" },
+      { type: "still", file: "deliverables/deliverable-4-dadju-tayc-heritage.jpeg" },
       { type: "youtube", videoId: "LmUmViADgOc" },
     ],
   },
