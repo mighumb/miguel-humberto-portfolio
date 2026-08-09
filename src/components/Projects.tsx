@@ -15,6 +15,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useWorkScrollFocus, type CarouselPauseMode } from "@/hooks/useWorkScrollFocus";
 import { translations } from "@/lib/i18n";
 import { projectsForCollection, type Project } from "@/lib/projects";
+import { preloadSplineScene } from "@/lib/splinePreload";
 import {
   getFocusedWorkCardIndex,
   getWorkCarouselEndGutterWidth,
@@ -634,6 +635,10 @@ export default function Projects() {
     setSwitchDirection(null);
     setOutgoingProject(null);
     setOutgoingStyle(undefined);
+
+    if (project.heroSplineScene) {
+      preloadSplineScene(project.heroSplineScene);
+    }
 
     if (!origin || prefersReducedMotion()) {
       setSharedContentVisible(true);

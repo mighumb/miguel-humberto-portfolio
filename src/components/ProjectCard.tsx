@@ -6,6 +6,7 @@ import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
 import type { Project } from "@/lib/projects";
 import { projectThumbnailUrl, projectVideoPosterUrl } from "@/lib/projects";
+import { preloadSplineScene } from "@/lib/splinePreload";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
 
@@ -116,6 +117,12 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
 
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (isNearViewport && project.heroSplineScene) {
+      preloadSplineScene(project.heroSplineScene);
+    }
+  }, [isNearViewport, project.heroSplineScene]);
 
   useEffect(() => {
     const video = videoRef.current;

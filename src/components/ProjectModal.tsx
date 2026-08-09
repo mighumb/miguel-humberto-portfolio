@@ -1282,8 +1282,11 @@ function ProjectPanel({
                         transitionDuration: heroVideoReady ? "200ms" : "0ms",
                       }}
                     />
-                    {heroSplineScene && isActive && sharedContentVisible ? (
-                      <HeroSplineOverlay scene={heroSplineScene} />
+                    {heroSplineScene ? (
+                      <HeroSplineOverlay
+                        scene={heroSplineScene}
+                        visible={isActive && sharedContentVisible}
+                      />
                     ) : null}
                   </>
                 ) : coverUrl ? (

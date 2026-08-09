@@ -1,41 +1,76 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Application } from "@splinetool/runtime";
+import {
+  attachSplineScene,
+  isSplineSceneReady,
+  preloadSplineScene,
+} from "@/lib/splinePreload";
 
-export function HeroSplineOverlay({ scene }: { scene: string }) {
+export function HeroSplineOverlay({
+  scene,
+  visible = true,
+}: {
+  scene: string;
+  visible?: boolean;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
+  const [rendered, setRendered] = useState(() => isSplineSceneReady(scene));
+
+  useEffect(() => {
+    preloadSplineScene(scene);
+  }, [scene]);
 
   useEffect(() => {
     let cancelled = false;
+    let detach: (() => void) | undefined;
     const host = hostRef.current;
     if (!host) return;
 
-    const canvas = document.createElement("canvas");
-    canvas.className = "block h-full w-full touch-none";
-    host.replaceChildren(canvas);
+    if (!isSplineSceneReady(scene)) setRendered(false);
 
-    import("@splinetool/runtime")
-      .then(({ Application }) => {
-        if (cancelled || !hostRef.current) return;
-        const app = new Application(canvas);
+    attachSplineScene(scene, host)
+      .then(({ app, ready, detach: release }) => {
+        if (cancelled) {
+          release();
+          return;
+        }
+        detach = release;
         appRef.current = app;
-        return app.load(scene);
+        if (ready) {
+          setRendered(true);
+          return;
+        }
+
+        const onRendered = () => {
+          if (!cancelled) setRendered(true);
+        };
+        app.addEventListener("rendered", onRendered);
       })
       .catch(() => {});
 
     return () => {
       cancelled = true;
-      appRef.current?.dispose?.();
+      detach?.();
       appRef.current = null;
     };
   }, [scene]);
+
+  const show = visible && rendered;
+  const fadeMs = isSplineSceneReady(scene) ? 0 : 500;
 
   return (
     <div
       ref={hostRef}
       className="hero-spline-overlay absolute inset-0 z-10 h-full w-full"
+      style={{
+        opacity: show ? 1 : 0,
+        pointerEvents: show ? "auto" : "none",
+        transition: fadeMs ? `opacity ${fadeMs}ms ease-out` : undefined,
+      }}
+      aria-hidden={!show}
     />
   );
 }
