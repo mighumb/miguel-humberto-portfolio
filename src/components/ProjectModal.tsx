@@ -1099,6 +1099,7 @@ function ProjectPanel({
   project,
   locale,
   isActive,
+  keepSplineDuringExit,
   sharedContentVisible,
   sharedHidden,
   videoPlaying,
@@ -1115,6 +1116,8 @@ function ProjectPanel({
   locale: "en" | "fr";
   /** Only the active panel drives playback and the shared-flight measurement. */
   isActive: boolean;
+  /** Keep the Spline hero visible while this panel slides out. */
+  keepSplineDuringExit?: boolean;
   sharedContentVisible: boolean;
   sharedHidden: boolean;
   videoPlaying: boolean;
@@ -1150,6 +1153,9 @@ function ProjectPanel({
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroSplineScene = project.heroSplineScene;
   const heroSplinePoster = heroSplineScene ? projectHeroSplinePosterUrl(project) : null;
+  const heroSplineVisible =
+    sharedContentVisible && (isActive || Boolean(keepSplineDuringExit));
+  const heroSplineInteractive = sharedContentVisible && isActive;
   const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible && !heroSplineScene;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
@@ -1198,7 +1204,7 @@ function ProjectPanel({
     if (heroSplineScene) {
       video.muted = true;
       video.loop = true;
-      if (isActive && sharedContentVisible) {
+      if (sharedContentVisible && (isActive || keepSplineDuringExit)) {
         video.play().catch(() => {});
       }
     } else if (isActive && sharedContentVisible) {
@@ -1217,6 +1223,7 @@ function ProjectPanel({
     videoPlaying,
     unmuteOnOpen,
     heroSplineScene,
+    keepSplineDuringExit,
   ]);
 
 
@@ -1288,7 +1295,8 @@ function ProjectPanel({
                       <HeroSplineOverlay
                         scene={heroSplineScene}
                         poster={heroSplinePoster}
-                        visible={isActive && sharedContentVisible}
+                        visible={heroSplineVisible}
+                        interactive={heroSplineInteractive}
                       />
                     ) : null}
                   </>
@@ -1752,6 +1760,7 @@ export default function ProjectModal({
               project={panel.project}
               locale={locale}
               isActive={panel.isActive}
+              keepSplineDuringExit={!panel.isActive && !!switchDirection}
               sharedContentVisible={sharedContentVisible}
               sharedHidden={panel.isActive && !sharedContentVisible}
               videoPlaying={panel.isActive && videoPlaying}

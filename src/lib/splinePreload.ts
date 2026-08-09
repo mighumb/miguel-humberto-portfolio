@@ -12,6 +12,7 @@ type SceneEntry = {
   rendered: boolean;
   floatHost: HTMLDivElement;
   anchor: HTMLElement | null;
+  mount: HTMLElement | null;
   anchorOptions: AnchorOptions;
   resizeObserver: ResizeObserver | null;
   scrollCleanups: Array<() => void>;
@@ -65,6 +66,7 @@ function getOrCreateEntry(sceneUrl: string): SceneEntry {
       rendered: false,
       floatHost,
       anchor: null,
+      mount: null,
       anchorOptions: { interactive: false, shown: false },
       resizeObserver: null,
       scrollCleanups: [],
@@ -83,36 +85,38 @@ function teardownAnchorListeners(entry: SceneEntry) {
   entry.scrollCleanups = [];
 }
 
-function syncAnchor(entry: SceneEntry) {
-  const { anchor, app, floatHost } = entry;
-  if (!anchor || !app) return;
-
-  const rect = anchor.getBoundingClientRect();
-  if (rect.width < 1 || rect.height < 1) return;
+function applyMountVisibility(entry: SceneEntry) {
+  const mount = entry.mount;
+  if (!mount) return;
 
   const { interactive, shown } = entry.anchorOptions;
-  const width = Math.round(rect.width);
-  const height = Math.round(rect.height);
-
-  Object.assign(floatHost.style, {
-    position: "fixed",
-    left: `${rect.left}px`,
-    top: `${rect.top}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
+  Object.assign(mount.style, {
     opacity: shown ? "1" : "0",
     visibility: shown ? "visible" : "hidden",
     pointerEvents: shown && interactive ? "auto" : "none",
-    zIndex: shown ? "210" : "-1",
-    overflow: "hidden",
   });
+}
 
-  if (width !== entry.lastWidth || height !== entry.lastHeight) {
-    entry.lastWidth = width;
-    entry.lastHeight = height;
-    app.setSize(width, height);
-    app.requestRender?.();
-  }
+function syncMountSize(entry: SceneEntry) {
+  const { mount, app } = entry;
+  if (!mount || !app) return;
+
+  const { width, height } = mount.getBoundingClientRect();
+  if (width < 1 || height < 1) return;
+
+  const nextWidth = Math.round(width);
+  const nextHeight = Math.round(height);
+  if (nextWidth === entry.lastWidth && nextHeight === entry.lastHeight) return;
+
+  entry.lastWidth = nextWidth;
+  entry.lastHeight = nextHeight;
+  app.setSize(nextWidth, nextHeight);
+  app.requestRender?.();
+}
+
+function syncAnchor(entry: SceneEntry) {
+  applyMountVisibility(entry);
+  syncMountSize(entry);
 }
 
 function parkFloatHost(entry: SceneEntry) {
@@ -120,6 +124,7 @@ function parkFloatHost(entry: SceneEntry) {
   if (!app || !canvas) return;
 
   entry.anchor = null;
+  entry.mount = null;
   teardownAnchorListeners(entry);
   entry.anchorOptions = { interactive: false, shown: false };
 
@@ -144,16 +149,27 @@ function parkFloatHost(entry: SceneEntry) {
   entry.lastHeight = height;
 }
 
-function bindAnchor(entry: SceneEntry, anchor: HTMLElement, options: AnchorOptions) {
+function bindAnchor(
+  entry: SceneEntry,
+  anchor: HTMLElement,
+  mount: HTMLElement,
+  options: AnchorOptions,
+) {
   entry.anchor = anchor;
+  entry.mount = mount;
   entry.anchorOptions = options;
   teardownAnchorListeners(entry);
+
+  const { canvas, app } = entry;
+  if (!canvas || !app) return;
+
+  if (!mount.contains(canvas)) mount.replaceChildren(canvas);
 
   const sync = () => syncAnchor(entry);
   sync();
 
   entry.resizeObserver = new ResizeObserver(sync);
-  entry.resizeObserver.observe(anchor);
+  entry.resizeObserver.observe(mount);
 
   const scrollRoot = anchor.closest(".project-modal-scroll");
   if (scrollRoot) {
@@ -161,11 +177,33 @@ function bindAnchor(entry: SceneEntry, anchor: HTMLElement, options: AnchorOptio
     entry.scrollCleanups.push(() => scrollRoot.removeEventListener("scroll", sync));
   }
 
-  window.addEventListener("scroll", sync, { passive: true });
-  entry.scrollCleanups.push(() => window.removeEventListener("scroll", sync));
-
   window.addEventListener("resize", sync, { passive: true });
   entry.scrollCleanups.push(() => window.removeEventListener("resize", sync));
+
+  // Panel switch uses CSS animation, not transition — keep the mount sized
+  // while the entering hero slides into place.
+  let raf = 0;
+  const end = performance.now() + 700;
+  const tick = () => {
+    sync();
+    if (performance.now() < end) raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
+  entry.scrollCleanups.push(() => cancelAnimationFrame(raf));
+
+  const onAnimationEnd = (event: AnimationEvent) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (!target.classList.contains("project-modal-switch")) return;
+    if (!target.contains(anchor)) return;
+    sync();
+  };
+  document.addEventListener("animationend", onAnimationEnd);
+  entry.scrollCleanups.push(() =>
+    document.removeEventListener("animationend", onAnimationEnd),
+  );
+
+  app.play();
 }
 
 async function createPreloadedApp(
@@ -224,22 +262,36 @@ export function isSplineSceneReady(sceneUrl: string) {
   return sceneCache.get(sceneUrl)?.rendered ?? false;
 }
 
+export function ensureSplineCanvasMounted(sceneUrl: string, mount: HTMLElement | null) {
+  const entry = sceneCache.get(sceneUrl);
+  if (!entry?.canvas || !mount) return false;
+  if (!mount.contains(entry.canvas)) mount.replaceChildren(entry.canvas);
+  entry.mount = mount;
+  return true;
+}
+
 export function attachSplineAnchorIfReady(
   sceneUrl: string,
   anchor: HTMLElement,
+  mount: HTMLElement,
   options: AnchorOptions,
 ) {
   const entry = sceneCache.get(sceneUrl);
   if (!entry?.rendered || !entry.app || !entry.canvas) return false;
-  bindAnchor(entry, anchor, options);
-  entry.app.play();
+  bindAnchor(entry, anchor, mount, options);
   return true;
 }
 
 export function updateSplineAnchorVisibility(sceneUrl: string, options: AnchorOptions) {
   const entry = sceneCache.get(sceneUrl);
-  if (!entry?.anchor) return;
+  if (!entry?.mount) return;
   entry.anchorOptions = options;
+  syncAnchor(entry);
+}
+
+export function syncSplineAnchor(sceneUrl: string) {
+  const entry = sceneCache.get(sceneUrl);
+  if (!entry?.mount) return;
   syncAnchor(entry);
 }
 
@@ -252,12 +304,12 @@ export function releaseSplineAnchor(sceneUrl: string) {
 export async function attachSplineAnchor(
   sceneUrl: string,
   anchor: HTMLElement,
+  mount: HTMLElement,
   options: AnchorOptions,
 ) {
   const entry = getOrCreateEntry(sceneUrl);
   await entry.loadPromise;
-  bindAnchor(entry, anchor, options);
-  entry.app!.play();
+  bindAnchor(entry, anchor, mount, options);
   return {
     app: entry.app!,
     ready: entry.rendered,

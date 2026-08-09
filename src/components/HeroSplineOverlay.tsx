@@ -4,9 +4,11 @@ import { useLayoutEffect, useRef, useState } from "react";
 import {
   attachSplineAnchor,
   attachSplineAnchorIfReady,
+  ensureSplineCanvasMounted,
   isSplineSceneReady,
   preloadSplineScene,
   releaseSplineAnchor,
+  syncSplineAnchor,
   updateSplineAnchorVisibility,
   waitForSplineScene,
 } from "@/lib/splinePreload";
@@ -15,33 +17,48 @@ export function HeroSplineOverlay({
   scene,
   poster,
   visible = true,
+  interactive = true,
 }: {
   scene: string;
   poster?: string | null;
   visible?: boolean;
+  interactive?: boolean;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
+  const mountRef = useRef<HTMLDivElement>(null);
   const [rendered, setRendered] = useState(() => isSplineSceneReady(scene));
   const showSpline = visible && rendered;
   const showPoster = visible && Boolean(poster) && !rendered;
+  const allowInteraction = interactive && showSpline;
 
   useLayoutEffect(() => {
     preloadSplineScene(scene);
     const anchor = anchorRef.current;
-    if (!anchor) return;
+    const mount = mountRef.current;
+    if (!anchor || !mount) return;
 
     let cancelled = false;
     const hidden = { interactive: false, shown: false };
 
-    if (attachSplineAnchorIfReady(scene, anchor, hidden)) {
-      setRendered(true);
-    } else {
+    const attach = () => {
+      if (cancelled || !anchorRef.current || !mountRef.current) return;
+      ensureSplineCanvasMounted(scene, mountRef.current);
+      if (attachSplineAnchorIfReady(scene, anchorRef.current, mountRef.current, hidden)) {
+        setRendered(true);
+      }
+    };
+
+    attach();
+
+    if (!isSplineSceneReady(scene)) {
       waitForSplineScene(scene)
         .then(() => {
-          if (cancelled || !anchorRef.current) return;
-          attachSplineAnchor(scene, anchorRef.current, hidden).then(({ ready }) => {
-            if (!cancelled && ready) setRendered(true);
-          });
+          if (cancelled || !anchorRef.current || !mountRef.current) return;
+          ensureSplineCanvasMounted(scene, mountRef.current);
+          return attachSplineAnchor(scene, anchorRef.current, mountRef.current, hidden);
+        })
+        .then((attached) => {
+          if (!cancelled && attached?.ready) setRendered(true);
         })
         .catch(() => {});
     }
@@ -53,11 +70,17 @@ export function HeroSplineOverlay({
   }, [scene]);
 
   useLayoutEffect(() => {
+    ensureSplineCanvasMounted(scene, mountRef.current);
     updateSplineAnchorVisibility(scene, {
-      interactive: showSpline,
+      interactive: allowInteraction,
       shown: showSpline,
     });
-  }, [scene, showSpline]);
+    syncSplineAnchor(scene);
+  }, [scene, showSpline, allowInteraction]);
+
+  useLayoutEffect(() => {
+    ensureSplineCanvasMounted(scene, mountRef.current);
+  });
 
   return (
     <>
@@ -78,7 +101,12 @@ export function HeroSplineOverlay({
         ref={anchorRef}
         className="hero-spline-anchor pointer-events-none absolute inset-0 z-10"
         aria-hidden={!showSpline}
-      />
+      >
+        <div
+          ref={mountRef}
+          className="hero-spline-mount absolute inset-0 overflow-hidden touch-none"
+        />
+      </div>
     </>
   );
 }
