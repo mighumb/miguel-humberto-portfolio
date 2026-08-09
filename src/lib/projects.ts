@@ -14,7 +14,12 @@ export type ProjectAssetGroup = "ai" | "product" | "3d";
 export type LocalizedCopy = { en: string; fr: string };
 
 export type Deliverable =
-  | { type: "video"; url: string }
+  /**
+   * `sound` keeps the original audio, unmuted on the viewer's own play click.
+   * `poster` overrides the frame shown at rest, for videos that open on black.
+   */
+  | { type: "video"; url: string; sound?: boolean; poster?: string }
+  | { type: "youtube"; videoId: string }
   | { type: "instagram"; url: string }
   | { type: "image"; url: string; fallback: string; group?: string }
   | { type: "placeholder" };
@@ -68,8 +73,13 @@ export interface Project {
   deliverableCount: number;
   /** Explicit deliverables list. When set, overrides deliverableCount placeholders. */
   deliverables?: Deliverable[];
-  /** Optional full-viewport, staggered layout for image deliverables. */
-  deliverableLayout?: "bento" | "category-bento";
+  /**
+   * How the deliverables section is laid out.
+   * - `bento` / `category-bento`: full-viewport staggered grids for image sets.
+   * - `stack`: one deliverable per row, each keeping its own aspect ratio, for
+   *   sets that mix orientations (a vertical social cut next to a 16:9 embed).
+   */
+  deliverableLayout?: "bento" | "category-bento" | "stack";
   /** Filenames relative to the project folder shown in the Process section. */
   processImages?: string[];
   /** Vertical workflow items (loops / images). Takes priority over processImages. */
@@ -146,6 +156,57 @@ export const projects: Project[] = [
       { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f.mp4?v=3" },
       { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-2.mp4?v=3" },
       { type: "video", url: "deliverables/deliverable-video-ai-cgi-station-f-3.mp4?v=3" },
+    ],
+  },
+  {
+    id: "06",
+    slug: "gims-dystinct-spider",
+    collection: "main",
+    categories: ["3d"],
+    assetGroup: "3d",
+    title: {
+      en: "Gims & Dystinct - Spider",
+      fr: "Gims & Dystinct - Spider",
+    },
+    context: {
+      en: 'Commissioned by the label [Play Two](https://playtwo.fr/), I created 3D animations to announce the release of "Spider" by Gims and Dystinct across social media, along with a visualizer for YouTube. From modeling to final render, I built a cohesive visual world around the launch.',
+      fr: "À la demande du label [Play Two](https://playtwo.fr/), j'ai conçu des animations 3D pour annoncer la sortie du single « Spider » de Gims et Dystinct sur les réseaux sociaux, ainsi qu'un visualizer pour YouTube. De la modélisation au rendu, j'ai construit un univers visuel cohérent pour accompagner le lancement.",
+    },
+    tags: [
+      { en: "3D", fr: "3D" },
+      { en: "Music", fr: "Music" },
+      { en: "Social", fr: "Social" },
+    ],
+    year: "2024",
+    type: "Video",
+    hasVideo: true,
+    videoUrl: "/projects/3d/gims-dystinct-spider/cover-video-gims-dystinct-spider.mp4",
+    videoPoster: "poster-cover-gims-dystinct-spider.jpg",
+    unmuteOnOpen: true,
+    tools: ["Blender"],
+    links: {
+      youtube: "https://www.youtube.com/watch?v=aUjAD7g2JWA",
+      instagram: "https://www.instagram.com/reel/C6_qUupoPJo/",
+    },
+    deliverableCount: 0,
+    deliverableLayout: "stack",
+    deliverables: [
+      // Social cut first: the hero already plays an extract of the visualizer.
+      // It fades in from pure black, so it needs a frame from further in.
+      {
+        type: "video",
+        url: "deliverables/deliverable-gims-dystinct-spider.mp4",
+        sound: true,
+        poster: "deliverables/poster-deliverable-gims-dystinct-spider.jpg",
+      },
+      { type: "youtube", videoId: "aUjAD7g2JWA" },
+    ],
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [
+      { type: "loop", file: "process/process-blender-0-gims-dystinct-spider.mp4" },
+      { type: "image", file: "process/process-blender-1-gims-dystinct-spider.png" },
+      { type: "loop", file: "process/process-blender-2-gims-dystinct-spider.mp4" },
+      { type: "image", file: "process/process-blender-3-gims-dystinct-spider.png" },
     ],
   },
   {
