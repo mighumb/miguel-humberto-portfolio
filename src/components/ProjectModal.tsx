@@ -25,6 +25,7 @@ import {
 } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
 import EkaraUIKit from "@/components/EkaraUIKit";
+import { HeroSplineOverlay } from "@/components/HeroSplineOverlay";
 
 interface ProjectModalProps {
   project: Project;
@@ -1025,7 +1026,8 @@ function ProjectPanel({
   );
   const [touchControls, setTouchControls] = useState(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
-  const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible;
+  const heroSplineScene = project.heroSplineScene;
+  const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible && !heroSplineScene;
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
 
@@ -1063,7 +1065,13 @@ function ProjectPanel({
     if (!video || !project.hasVideo || !project.videoUrl) return;
     // A panel sliding out keeps playing silently: unmuting both would overlap
     // two soundtracks for the length of the transition.
-    if (isActive && sharedContentVisible) {
+    if (heroSplineScene) {
+      video.muted = true;
+      video.loop = true;
+      if (isActive && sharedContentVisible) {
+        video.play().catch(() => {});
+      }
+    } else if (isActive && sharedContentVisible) {
       video.muted = !unmuteOnOpen;
       // iOS can reject the play() issued while the modal was still hidden, and
       // nothing else would retry it. play() on a playing video is a no-op.
@@ -1078,6 +1086,7 @@ function ProjectPanel({
     project.videoUrl,
     videoPlaying,
     unmuteOnOpen,
+    heroSplineScene,
   ]);
 
 
@@ -1116,17 +1125,28 @@ function ProjectPanel({
                       // renders black for a beat — the flash at the end of the
                       // card→modal transition.
                       poster={heroStill ?? undefined}
-                      controls={isTouch ? touchControls : sharedContentVisible}
+                      controls={
+                        heroSplineScene
+                          ? false
+                          : isTouch
+                            ? touchControls
+                            : sharedContentVisible
+                      }
                       onClick={
-                        isTouch && !touchControls
-                          ? () => setTouchControls(true)
-                          : undefined
+                        heroSplineScene
+                          ? undefined
+                          : isTouch && !touchControls
+                            ? () => setTouchControls(true)
+                            : undefined
                       }
                       autoPlay
-                      muted={!heroUnmuted}
+                      loop={!!heroSplineScene}
+                      muted={heroSplineScene ? true : !heroUnmuted}
                       playsInline
                       preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
-                      className="h-full w-full object-cover transition-opacity"
+                      className={`h-full w-full object-cover transition-opacity${
+                        heroSplineScene ? " pointer-events-none" : ""
+                      }`}
                       // Fading IN is a nicety; hiding must be immediate, or the
                       // fade-out itself shows the undecoded frame it exists to hide.
                       style={{
@@ -1134,6 +1154,9 @@ function ProjectPanel({
                         transitionDuration: heroVideoReady ? "200ms" : "0ms",
                       }}
                     />
+                    {heroSplineScene && isActive && sharedContentVisible ? (
+                      <HeroSplineOverlay scene={heroSplineScene} />
+                    ) : null}
                   </>
                 ) : coverUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
