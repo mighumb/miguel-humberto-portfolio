@@ -19,6 +19,7 @@ import {
 import {
   type Project,
   projectCoverUrl,
+  projectHeroTags,
   projectVideoPosterUrl,
   type LocalizedCopy,
 } from "@/lib/projects";
@@ -412,7 +413,7 @@ export default function ProjectSharedFlight({
           perspective={metaPerspective}
         />
         <FlightTags
-          tags={project.tags}
+          tags={projectHeroTags(project)}
           locale={locale}
           frame={tagsFrame}
           variant={tagsVariant}

@@ -148,6 +148,24 @@ export function projectHeroSplinePosterUrl(project: Project) {
   );
 }
 
+const CATEGORY_CHIP: Record<ProjectCategory, LocalizedCopy> = {
+  ai: { en: "AI", fr: "AI" },
+  "3d": { en: "3D", fr: "3D" },
+  product: { en: "Product", fr: "Produit" },
+};
+
+/** Category chip first, then project tags — mirrors 3D projects in the modal hero. */
+export function projectHeroTags(project: Project): LocalizedCopy[] {
+  const primary = project.categories[0];
+  if (!primary) return project.tags;
+
+  const chip = CATEGORY_CHIP[primary];
+  const rest = project.tags.filter(
+    (tag) => tag.en.toLowerCase() !== chip.en.toLowerCase(),
+  );
+  return [chip, ...rest];
+}
+
 export const projects: Project[] = [
   {
     id: "01",

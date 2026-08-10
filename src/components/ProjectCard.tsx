@@ -5,7 +5,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { translations } from "@/lib/i18n";
 import { toRect, type CardOrigin } from "@/lib/motion";
 import type { Project } from "@/lib/projects";
-import { projectThumbnailUrl, projectVideoPosterUrl } from "@/lib/projects";
+import { projectThumbnailUrl, projectVideoPosterUrl, projectHeroTags } from "@/lib/projects";
 import { preloadSplineScene } from "@/lib/splinePreload";
 import { computeCardFocus, FLAT_PERSPECTIVE } from "@/lib/workCardFocus";
 import { shouldIgnoreWorkCardClick } from "@/lib/workDragScroll";
@@ -443,7 +443,7 @@ const ProjectCard = forwardRef<HTMLElement, ProjectCardProps>(function ProjectCa
             className={`work-card-tags pointer-events-none absolute inset-x-0 top-7 flex flex-wrap gap-1.5 opacity-0 ${hiddenClass}`}
             aria-hidden
           >
-            {project.tags.map((tag) => (
+            {projectHeroTags(project).map((tag) => (
               <span
                 key={tag.en}
                 className="rounded-full bg-chip px-2.5 py-0.5 text-xs text-chip-text"
