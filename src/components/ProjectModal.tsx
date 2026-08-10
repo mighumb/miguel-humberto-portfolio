@@ -22,6 +22,7 @@ import {
   projectAssetBase,
   projectCoverUrl,
   projectHeroSplinePosterUrl,
+  projectHeroTags,
   projectVideoPosterUrl,
 } from "@/lib/projects";
 import { syncVideoPlayback } from "@/lib/videoHandoff";
@@ -1169,6 +1170,7 @@ function ProjectPanel({
     sharedContentVisible && (isActive || Boolean(keepSplineDuringExit));
   const heroSplineInteractive = sharedContentVisible && isActive;
   const heroUnmuted = isActive && unmuteOnOpen && sharedContentVisible && !heroSplineScene;
+  const heroTags = projectHeroTags(project);
   const hasDeliverables =
     (project.deliverables?.length ?? 0) > 0 || project.deliverableCount > 0;
   const hasYoutubeDeliverable = project.deliverables?.some(
@@ -1348,7 +1350,7 @@ function ProjectPanel({
                     sharedHidden ? "is-shared-hidden" : ""
                   }`}
                 >
-                  {project.tags.map((tag) => (
+                  {heroTags.map((tag) => (
                     <span
                       key={tag.en}
                       className="rounded-full bg-chip px-3 py-1 text-xs text-chip-text"
