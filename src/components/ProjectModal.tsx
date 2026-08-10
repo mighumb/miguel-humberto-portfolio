@@ -1162,7 +1162,6 @@ function ProjectPanel({
     () => typeof window !== "undefined" && window.matchMedia("(hover: none)").matches,
   );
   const [touchControls, setTouchControls] = useState(false);
-  const [heroAwaitingPlay, setHeroAwaitingPlay] = useState(false);
   const unmuteOnOpen = Boolean(project.unmuteOnOpen);
   const heroSplineScene = project.heroSplineScene;
   const heroSplinePoster = heroSplineScene ? projectHeroSplinePosterUrl(project) : null;
@@ -1239,36 +1238,6 @@ function ProjectPanel({
     keepSplineDuringExit,
   ]);
 
-  useEffect(() => {
-    const video = heroVideoRef.current;
-    if (!video || heroSplineScene) return;
-
-    const onEnded = () => {
-      video.currentTime = 0;
-      setHeroAwaitingPlay(true);
-      setTouchControls(false);
-    };
-    const onPlay = () => setHeroAwaitingPlay(false);
-
-    video.addEventListener("ended", onEnded);
-    video.addEventListener("play", onPlay);
-    return () => {
-      video.removeEventListener("ended", onEnded);
-      video.removeEventListener("play", onPlay);
-    };
-  }, [heroSplineScene, project.videoUrl]);
-
-  const handleHeroReplay = () => {
-    const video = heroVideoRef.current;
-    if (!video) return;
-    setHeroAwaitingPlay(false);
-    if (unmuteOnOpen) video.muted = false;
-    if (isTouch) setTouchControls(true);
-    video.currentTime = 0;
-    video.play().catch(() => {});
-  };
-
-
   return (
     <div className={className} style={style} aria-hidden={!isActive || undefined}>
       <div className="mx-auto max-w-5xl px-6 pb-24 md:px-10">
@@ -1307,11 +1276,9 @@ function ProjectPanel({
                       controls={
                         heroSplineScene
                           ? false
-                          : heroAwaitingPlay
-                            ? false
-                            : isTouch
-                              ? touchControls
-                              : sharedContentVisible
+                          : isTouch
+                            ? touchControls
+                            : sharedContentVisible
                       }
                       onClick={
                         heroSplineScene
@@ -1321,7 +1288,7 @@ function ProjectPanel({
                             : undefined
                       }
                       autoPlay
-                      loop={!!heroSplineScene}
+                      loop
                       muted={heroSplineScene ? true : !heroUnmuted}
                       playsInline
                       preload={videoPlaying || sharedContentVisible ? "auto" : "metadata"}
@@ -1335,9 +1302,6 @@ function ProjectPanel({
                         transitionDuration: heroVideoReady ? "200ms" : "0ms",
                       }}
                     />
-                    {heroAwaitingPlay && sharedContentVisible && !heroSplineScene ? (
-                      <VideoPlayOverlay onPlay={handleHeroReplay} className="z-20" />
-                    ) : null}
                     {heroSplineScene ? (
                       <HeroSplineOverlay
                         scene={heroSplineScene}
