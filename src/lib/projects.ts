@@ -511,6 +511,11 @@ export const projects: Project[] = [
       { type: "still", file: "deliverables/deliverable-4-dadju-tayc-heritage.jpeg" },
       { type: "youtube", videoId: "LmUmViADgOc" },
     ],
+    processTitle: { en: "Workflow", fr: "Workflow" },
+    processItems: [
+      { type: "loop", file: "process/process-psd-dadju-tayc-heritage.mp4" },
+      { type: "loop", file: "process/process-blender-dadju-tayc-heritage.mp4" },
+    ],
   },
   {
     id: "c01",
