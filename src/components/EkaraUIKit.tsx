@@ -1592,14 +1592,24 @@ export default function EkaraUIKit() {
     if (!sentinel) return;
     const scrollRoot = sentinel.closest<HTMLElement>(".project-modal-scroll");
 
-    // Debounced: while the section first scrolls into view, images/video
-    // above it are still loading and reflowing the layout, which can nudge
-    // the sentinel across the boundary for a single frame and report a
-    // stuck state that immediately reverts — a white flash on the button.
-    // Only commit a reading that survives 60ms, past that kind of blip.
+    // `entry.isIntersecting` is false both when the sentinel has scrolled up
+    // past the sticky offset (genuinely stuck) AND when it hasn't scrolled
+    // into view yet at all (still below the fold on modal open) — the modal
+    // mounts the whole kit up front, well before the visitor reaches it, so
+    // that second case fired first and set stuck=true from the very start.
+    // The button then rendered its "stuck" solid white the instant the
+    // section scrolled into view, until this observer's next real callback
+    // corrected it — the reported flash. boundingClientRect.top gives an
+    // unambiguous read: stuck only once the sentinel has actually crossed
+    // the offset line, never just because it hasn't arrived yet.
+    //
+    // Also debounced: while the section is loading in (images/video above
+    // it still reflowing the layout), the sentinel can cross the boundary
+    // for a single frame and revert immediately — only a reading that
+    // survives 60ms is committed.
     const observer = new IntersectionObserver(
       ([entry]) => {
-        const next = !entry.isIntersecting;
+        const next = entry.boundingClientRect.top < 73;
         window.clearTimeout(stuckTimeoutRef.current);
         stuckTimeoutRef.current = window.setTimeout(() => setStuck(next), 60);
       },
