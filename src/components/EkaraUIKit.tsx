@@ -1585,14 +1585,24 @@ export default function EkaraUIKit() {
   // dropping any hover flip that lands while a scroll is actively happening.
   const scrollingRef = useRef(false);
   const scrollingTimeoutRef = useRef<number | undefined>(undefined);
+  const stuckTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const scrollRoot = sentinel.closest<HTMLElement>(".project-modal-scroll");
 
+    // Debounced: while the section first scrolls into view, images/video
+    // above it are still loading and reflowing the layout, which can nudge
+    // the sentinel across the boundary for a single frame and report a
+    // stuck state that immediately reverts — a white flash on the button.
+    // Only commit a reading that survives 60ms, past that kind of blip.
     const observer = new IntersectionObserver(
-      ([entry]) => setStuck(!entry.isIntersecting),
+      ([entry]) => {
+        const next = !entry.isIntersecting;
+        window.clearTimeout(stuckTimeoutRef.current);
+        stuckTimeoutRef.current = window.setTimeout(() => setStuck(next), 60);
+      },
       { root: scrollRoot ?? null, rootMargin: "-73px 0px 0px 0px", threshold: 0 }
     );
     observer.observe(sentinel);
@@ -1611,6 +1621,7 @@ export default function EkaraUIKit() {
       observer.disconnect();
       scrollRoot?.removeEventListener("scroll", onScroll);
       window.clearTimeout(scrollingTimeoutRef.current);
+      window.clearTimeout(stuckTimeoutRef.current);
     };
   }, []);
 
