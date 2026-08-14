@@ -2,6 +2,11 @@
 
 Interactive portfolio for AI-generated content, workflows, and creative production.
 
+## Live
+
+- **AI mode (default):** https://miguel-humberto-portfolio.vercel.app/
+- **Craft mode:** https://miguel-humberto-portfolio.vercel.app/?mode=craft
+
 ## Features
 
 - **Hero** — Fluid 3D particle scene (React Three Fiber) with typography overlay
