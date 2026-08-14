@@ -3,6 +3,11 @@ import { HERITAGE_SPLINE_SCENE_URL } from "@/lib/splineScenes";
 /** Which page a project shows up on today. */
 export type ProjectCollection = "main" | "craft";
 
+/** Pages: `craft` is a subset of `main` — a project on a page carries it along. */
+function projectCollections(project: Pick<Project, "collection">): ProjectCollection[] {
+  return Array.isArray(project.collection) ? project.collection : [project.collection];
+}
+
 /**
  * What a project actually demonstrates. Only ever set from what the work shows,
  * never to widen a profile. Not surfaced yet: this is the ground for the filters
@@ -44,7 +49,8 @@ export interface Project {
   id: string;
   /** Folder name under public/projects/{assetGroup}/ */
   slug: string;
-  collection: ProjectCollection;
+  /** Single page, or several when the project belongs on more than one. */
+  collection: ProjectCollection | ProjectCollection[];
   categories: ProjectCategory[];
   assetGroup: ProjectAssetGroup;
   title: LocalizedCopy;
@@ -520,7 +526,7 @@ export const projects: Project[] = [
   {
     id: "c01",
     slug: "ekara-design-system",
-    collection: "main",
+    collection: ["main", "craft"],
     categories: ["product"],
     assetGroup: "product",
     title: { en: "Ekara Design System", fr: "Ekara Design System" },
@@ -561,5 +567,5 @@ export const projects: Project[] = [
 ];
 
 export function projectsForCollection(collection: ProjectCollection) {
-  return projects.filter((project) => project.collection === collection);
+  return projects.filter((project) => projectCollections(project).includes(collection));
 }
