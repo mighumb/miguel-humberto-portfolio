@@ -1614,12 +1614,17 @@ export default function EkaraUIKit() {
               gap: 7,
               padding: "6px 14px",
               borderRadius: 20,
-              // No outline — the button reads through a soft fill instead, alpha-
-              // blended against the theme's own foreground color so both the
-              // Light and Dark states carry the exact same weight at rest and
-              // on hover, whichever surface (near-white or near-black) sits behind it.
+              // No outline — the button reads through a soft fill instead. Blended
+              // against the SITE's own foreground token (not the UI Kit demo's
+              // tok.text): at rest the button sits directly on the surrounding
+              // page chrome, which stays on the site's real theme regardless of
+              // which Light/Dark state is picked inside the kit — using the
+              // demo token here made the fill invisible in the Light state
+              // whenever the surrounding chrome was dark.
               border: "none",
-              background: stuck ? tok.cellBg : `${tok.text}${toggleHov ? "1f" : "0d"}`,
+              background: stuck
+                ? tok.cellBg
+                : `color-mix(in srgb, var(--text-primary) ${toggleHov ? 16 : 8}%, transparent)`,
               boxShadow: stuck ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
               backdropFilter: stuck ? "blur(8px)" : "none",
               cursor: "pointer",
