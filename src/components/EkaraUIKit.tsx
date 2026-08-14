@@ -1578,16 +1578,40 @@ export default function EkaraUIKit() {
   const [toggleHov, setToggleHov] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  // While the toggle is still in normal flow (not yet stuck), scrolling moves
+  // it past a stationary cursor — the browser re-hit-tests and fires a real
+  // mouseenter/mouseleave as it passes underneath, which read as a hover
+  // flicker even though the visitor never touched the mouse. Suppressed by
+  // dropping any hover flip that lands while a scroll is actively happening.
+  const scrollingRef = useRef(false);
+  const scrollingTimeoutRef = useRef<number | undefined>(undefined);
+
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const scrollRoot = sentinel.closest<HTMLElement>(".project-modal-scroll");
+
     const observer = new IntersectionObserver(
       ([entry]) => setStuck(!entry.isIntersecting),
       { root: scrollRoot ?? null, rootMargin: "-73px 0px 0px 0px", threshold: 0 }
     );
     observer.observe(sentinel);
-    return () => observer.disconnect();
+
+    const onScroll = () => {
+      scrollingRef.current = true;
+      setToggleHov(false);
+      window.clearTimeout(scrollingTimeoutRef.current);
+      scrollingTimeoutRef.current = window.setTimeout(() => {
+        scrollingRef.current = false;
+      }, 150);
+    };
+    scrollRoot?.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      scrollRoot?.removeEventListener("scroll", onScroll);
+      window.clearTimeout(scrollingTimeoutRef.current);
+    };
   }, []);
 
   return (
@@ -1606,7 +1630,9 @@ export default function EkaraUIKit() {
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: "100%" }}>
           <button
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
-            onMouseEnter={() => setToggleHov(true)}
+            onMouseEnter={() => {
+              if (!scrollingRef.current) setToggleHov(true);
+            }}
             onMouseLeave={() => setToggleHov(false)}
             style={{
               display: "inline-flex",
