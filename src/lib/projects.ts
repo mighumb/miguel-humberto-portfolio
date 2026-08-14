@@ -536,6 +536,7 @@ export const projects: Project[] = [
     },
     tags: [
       { en: "UI", fr: "UI" },
+      { en: "SaaS", fr: "SaaS" },
       { en: "Design System", fr: "Design System" },
       { en: "Product", fr: "Produit" },
     ],

@@ -1575,6 +1575,7 @@ export default function EkaraUIKit() {
   // opposed to just sitting in its normal spot) so its look only changes
   // once scrolling has carried it there — never at rest, on load.
   const [stuck, setStuck] = useState(false);
+  const [toggleHov, setToggleHov] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1605,14 +1606,19 @@ export default function EkaraUIKit() {
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: "100%" }}>
           <button
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+            onMouseEnter={() => setToggleHov(true)}
+            onMouseLeave={() => setToggleHov(false)}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 7,
               padding: "6px 14px",
               borderRadius: 20,
-              border: `1px solid ${tok.border}`,
-              background: stuck ? tok.cellBg : "transparent",
+              // Alpha-blended against the theme's own foreground color instead of a
+              // fixed swatch, so the outline reads with the same weight whether the
+              // surface underneath is near-white (light) or near-black (dark).
+              border: `1px solid ${tok.text}2e`,
+              background: stuck ? tok.cellBg : toggleHov ? `${tok.text}0d` : "transparent",
               boxShadow: stuck ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
               backdropFilter: stuck ? "blur(8px)" : "none",
               cursor: "pointer",
