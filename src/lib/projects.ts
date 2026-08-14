@@ -520,7 +520,7 @@ export const projects: Project[] = [
   {
     id: "c01",
     slug: "ekara-design-system",
-    collection: "craft",
+    collection: "main",
     categories: ["product"],
     assetGroup: "product",
     title: { en: "Ekara Design System", fr: "Ekara Design System" },
