@@ -1614,11 +1614,12 @@ export default function EkaraUIKit() {
               gap: 7,
               padding: "6px 14px",
               borderRadius: 20,
-              // Alpha-blended against the theme's own foreground color instead of a
-              // fixed swatch, so the outline reads with the same weight whether the
-              // surface underneath is near-white (light) or near-black (dark).
-              border: `1px solid ${tok.text}2e`,
-              background: stuck ? tok.cellBg : toggleHov ? `${tok.text}0d` : "transparent",
+              // No outline — the button reads through a soft fill instead, alpha-
+              // blended against the theme's own foreground color so both the
+              // Light and Dark states carry the exact same weight at rest and
+              // on hover, whichever surface (near-white or near-black) sits behind it.
+              border: "none",
+              background: stuck ? tok.cellBg : `${tok.text}${toggleHov ? "1f" : "0d"}`,
               boxShadow: stuck ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
               backdropFilter: stuck ? "blur(8px)" : "none",
               cursor: "pointer",
@@ -1626,7 +1627,7 @@ export default function EkaraUIKit() {
               fontFamily: OS,
               fontSize: 12,
               fontWeight: 600,
-              transition: "border-color 200ms, color 200ms, background 200ms, box-shadow 200ms",
+              transition: "color 200ms, background 200ms, box-shadow 200ms",
               whiteSpace: "nowrap",
             }}
           >
