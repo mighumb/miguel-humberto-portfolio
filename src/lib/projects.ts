@@ -546,7 +546,7 @@ export const projects: Project[] = [
     type: "Craft",
     hasVideo: true,
     videoUrl: "/projects/product/ekara-design-system/cover-video-dashboard-ekara-design-system.mp4",
-    videoPoster: "thumbnail-ekara-design-system.png",
+    videoPoster: "poster-cover-ekara-design-system.jpg",
     tools: ["Figma"],
     links: { figma: "https://www.figma.com/design/Fwn3pUkAQweQvuf2MVnqLH/0.-Design-system?node-id=3547-28514&t=VREC3uAjRDX57LBz-1" },
     deliverableCount: 2,
