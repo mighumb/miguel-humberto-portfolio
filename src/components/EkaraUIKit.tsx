@@ -1575,18 +1575,64 @@ export default function EkaraUIKit() {
   // opposed to just sitting in its normal spot) so its look only changes
   // once scrolling has carried it there — never at rest, on load.
   const [stuck, setStuck] = useState(false);
+  const [toggleHov, setToggleHov] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // While the toggle is still in normal flow (not yet stuck), scrolling moves
+  // it past a stationary cursor — the browser re-hit-tests and fires a real
+  // mouseenter/mouseleave as it passes underneath, which read as a hover
+  // flicker even though the visitor never touched the mouse. Suppressed by
+  // dropping any hover flip that lands while a scroll is actively happening.
+  const scrollingRef = useRef(false);
+  const scrollingTimeoutRef = useRef<number | undefined>(undefined);
+  const stuckTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
     const scrollRoot = sentinel.closest<HTMLElement>(".project-modal-scroll");
+
+    // `entry.isIntersecting` is false both when the sentinel has scrolled up
+    // past the sticky offset (genuinely stuck) AND when it hasn't scrolled
+    // into view yet at all (still below the fold on modal open) — the modal
+    // mounts the whole kit up front, well before the visitor reaches it, so
+    // that second case fired first and set stuck=true from the very start.
+    // The button then rendered its "stuck" solid white the instant the
+    // section scrolled into view, until this observer's next real callback
+    // corrected it — the reported flash. boundingClientRect.top gives an
+    // unambiguous read: stuck only once the sentinel has actually crossed
+    // the offset line, never just because it hasn't arrived yet.
+    //
+    // Also debounced: while the section is loading in (images/video above
+    // it still reflowing the layout), the sentinel can cross the boundary
+    // for a single frame and revert immediately — only a reading that
+    // survives 60ms is committed.
     const observer = new IntersectionObserver(
-      ([entry]) => setStuck(!entry.isIntersecting),
+      ([entry]) => {
+        const next = entry.boundingClientRect.top < 73;
+        window.clearTimeout(stuckTimeoutRef.current);
+        stuckTimeoutRef.current = window.setTimeout(() => setStuck(next), 60);
+      },
       { root: scrollRoot ?? null, rootMargin: "-73px 0px 0px 0px", threshold: 0 }
     );
     observer.observe(sentinel);
-    return () => observer.disconnect();
+
+    const onScroll = () => {
+      scrollingRef.current = true;
+      setToggleHov(false);
+      window.clearTimeout(scrollingTimeoutRef.current);
+      scrollingTimeoutRef.current = window.setTimeout(() => {
+        scrollingRef.current = false;
+      }, 150);
+    };
+    scrollRoot?.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      scrollRoot?.removeEventListener("scroll", onScroll);
+      window.clearTimeout(scrollingTimeoutRef.current);
+      window.clearTimeout(stuckTimeoutRef.current);
+    };
   }, []);
 
   return (
@@ -1605,14 +1651,27 @@ export default function EkaraUIKit() {
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", height: "100%" }}>
           <button
             onClick={() => setTheme((t) => (t === "light" ? "dark" : "light"))}
+            onMouseEnter={() => {
+              if (!scrollingRef.current) setToggleHov(true);
+            }}
+            onMouseLeave={() => setToggleHov(false)}
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 7,
               padding: "6px 14px",
               borderRadius: 20,
-              border: `1px solid ${tok.border}`,
-              background: stuck ? tok.cellBg : "transparent",
+              // No outline — the button reads through a soft fill instead. Blended
+              // against the SITE's own foreground token (not the UI Kit demo's
+              // tok.text): at rest the button sits directly on the surrounding
+              // page chrome, which stays on the site's real theme regardless of
+              // which Light/Dark state is picked inside the kit — using the
+              // demo token here made the fill invisible in the Light state
+              // whenever the surrounding chrome was dark.
+              border: "none",
+              background: stuck
+                ? tok.cellBg
+                : `color-mix(in srgb, var(--text-primary) ${toggleHov ? 16 : 8}%, transparent)`,
               boxShadow: stuck ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
               backdropFilter: stuck ? "blur(8px)" : "none",
               cursor: "pointer",
@@ -1620,7 +1679,7 @@ export default function EkaraUIKit() {
               fontFamily: OS,
               fontSize: 12,
               fontWeight: 600,
-              transition: "border-color 200ms, color 200ms, background 200ms, box-shadow 200ms",
+              transition: "color 200ms, background 200ms, box-shadow 200ms",
               whiteSpace: "nowrap",
             }}
           >
