@@ -268,6 +268,7 @@ export default function Projects() {
   const pinnedCardIndexRef = useRef<number | null>(null);
   const scrollSettleCleanupRef = useRef<(() => void) | null>(null);
   const switchTimersRef = useRef<number[]>([]);
+  const deepLinkAttemptedRef = useRef(false);
 
   const pauseCarousel: CarouselPauseMode =
     phase === "open"
@@ -810,6 +811,42 @@ export default function Projects() {
       viewportRestoreCleanupRef.current?.();
     };
   }, []);
+
+  // Reflects whichever project is open (or none) in the URL as `?project=<slug>`,
+  // so a modal view can be copied and shared. Deliberately a plain replaceState,
+  // not a router push: this only mirrors state into the address bar, it doesn't
+  // add a history entry per open/switch/close — wiring the back button into the
+  // shared-element flight/close animations is a separate, riskier piece of work.
+  //
+  // Held off until the deep-link effect below has had its turn: on the very
+  // first render activeProject is still null (deep-link's openProject() call
+  // hasn't landed yet), and without this guard this effect would run first in
+  // that same pass and strip an incoming `?project=` before it's ever read.
+  useEffect(() => {
+    if (!deepLinkAttemptedRef.current) return;
+
+    const url = new URL(window.location.href);
+    if (activeProject) url.searchParams.set("project", activeProject.slug);
+    else url.searchParams.delete("project");
+
+    if (url.toString() === window.location.href) return;
+    window.history.replaceState(window.history.state, "", url.toString());
+  }, [activeProject]);
+
+  // Deep link: a `?project=<slug>` present on load opens that project's modal
+  // directly, no flight animation (origin: null takes the same fast path used
+  // when reduced motion is on). Runs once — the ref guards against `projects`
+  // identity changing later (e.g. a mode switch) re-triggering it.
+  useEffect(() => {
+    if (deepLinkAttemptedRef.current) return;
+    deepLinkAttemptedRef.current = true;
+
+    const slug = new URLSearchParams(window.location.search).get("project");
+    if (!slug) return;
+
+    const match = projects.find((project) => project.slug === slug);
+    if (match) openProject(match, null);
+  }, [projects, openProject]);
 
   const registerMeasure = useCallback((fn: (() => ModalTargets | null) | null) => {
     measureRef.current = fn;
