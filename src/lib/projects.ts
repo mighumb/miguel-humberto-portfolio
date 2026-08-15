@@ -554,7 +554,7 @@ export const projects: Project[] = [
     deliverables: [
       { type: "still", file: "deliverables/deliverable-ekara-design-system-incident-guard.jpg" },
       { type: "loop", url: "deliverables/deliverable-ekara-design-system-rum-sessions.mp4" },
-      { type: "still", file: "deliverables/deliverable-screens-ekara-design-system.jpg.jpg" },
+      { type: "still", file: "deliverables/deliverable-screens-ekara-design-system.jpg" },
     ],
     processTitle: { en: "Brand system", fr: "Brand system" },
     processImages: [
