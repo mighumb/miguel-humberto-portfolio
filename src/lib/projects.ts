@@ -549,11 +549,12 @@ export const projects: Project[] = [
     videoPoster: "poster-cover-ekara-design-system.jpg",
     tools: ["Figma"],
     links: { figma: "https://www.figma.com/design/Fwn3pUkAQweQvuf2MVnqLH/0.-Design-system?node-id=3547-28514&t=VREC3uAjRDX57LBz-1" },
-    deliverableCount: 2,
+    deliverableCount: 3,
     deliverableLayout: "stack",
     deliverables: [
-      { type: "loop", url: "deliverables/deliverable-ekara-design-system-rum-sessions.mp4" },
       { type: "still", file: "deliverables/deliverable-ekara-design-system-incident-guard.jpg" },
+      { type: "loop", url: "deliverables/deliverable-ekara-design-system-rum-sessions.mp4" },
+      { type: "still", file: "deliverables/deliverable-screens-ekara-design-system.jpg.jpg" },
     ],
     processTitle: { en: "Brand system", fr: "Brand system" },
     processImages: [
