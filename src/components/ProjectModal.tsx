@@ -1420,6 +1420,12 @@ function ProjectPanel({
                       <DeliverableVideo
                         key={i}
                         src={`${projectAssetBase(project)}/${deliverable.url}`}
+                        sound={deliverable.sound}
+                        poster={
+                          deliverable.poster
+                            ? `${projectAssetBase(project)}/${deliverable.poster}`
+                            : undefined
+                        }
                       />
                     ) : deliverable.type === "instagram" ? (
                       <div key={i} className="overflow-hidden rounded-xl">
