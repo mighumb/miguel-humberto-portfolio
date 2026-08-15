@@ -1002,6 +1002,47 @@ function DeliverablesStack({
           );
         }
 
+        if (deliverable.type === "loop") {
+          return (
+            <div
+              key={`${deliverable.url}-${index}`}
+              // Edge to edge: breaks out of the modal's own max-width column,
+              // same trick as a fullBleed process image, no rounding/UI.
+              className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2"
+            >
+              <video
+                src={`${assetBase}/${deliverable.url}`}
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="metadata"
+                disablePictureInPicture
+                controlsList="nodownload noplaybackrate noremoteplayback"
+                className="pointer-events-none block h-auto w-full"
+                aria-hidden
+              />
+            </div>
+          );
+        }
+
+        if (deliverable.type === "still") {
+          return (
+            <div
+              key={`${deliverable.file}-${index}`}
+              className="mx-auto w-full max-w-3xl overflow-hidden rounded-xl bg-bg-secondary"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${assetBase}/${deliverable.file}`}
+                alt=""
+                className="block h-auto w-full"
+                loading="lazy"
+              />
+            </div>
+          );
+        }
+
         return null;
       })}
     </div>
