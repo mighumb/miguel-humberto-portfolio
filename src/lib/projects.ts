@@ -26,6 +26,8 @@ export type Deliverable =
    * `poster` overrides the frame shown at rest, for videos that open on black.
    */
   | { type: "video"; url: string; sound?: boolean; poster?: string }
+  /** Silent autoplaying loop, no controls/overlay — same spirit as ProcessItem's `loop`. */
+  | { type: "loop"; url: string }
   | { type: "youtube"; videoId: string }
   | { type: "instagram"; url: string }
   | { type: "image"; url: string; fallback: string; group?: string }
@@ -542,11 +544,17 @@ export const projects: Project[] = [
     ],
     year: "2025",
     type: "Craft",
-    hasVideo: false,
-    thumbnail: "thumbnail-ekara-design-system.png",
+    hasVideo: true,
+    videoUrl: "/projects/product/ekara-design-system/cover-video-dashboard-ekara-design-system.mp4",
+    videoPoster: "thumbnail-ekara-design-system.png",
     tools: ["Figma"],
     links: { figma: "https://www.figma.com/design/Fwn3pUkAQweQvuf2MVnqLH/0.-Design-system?node-id=3547-28514&t=VREC3uAjRDX57LBz-1" },
-    deliverableCount: 8,
+    deliverableCount: 2,
+    deliverableLayout: "stack",
+    deliverables: [
+      { type: "loop", url: "deliverables/deliverable-ekara-design-system-rum-sessions.mp4" },
+      { type: "still", file: "deliverables/deliverable-ekara-design-system-incident-guard.jpg" },
+    ],
     processTitle: { en: "Brand system", fr: "Brand system" },
     processImages: [
       "process/deliverable-ekara-design-system-tokens-colors.png",
