@@ -295,6 +295,11 @@ export const projects: Project[] = [
         linkedinUrl:
           "https://www.linkedin.com/feed/update/urn:li:activity:7394426310997069825/?originTrackingId=b1ex0b%2BQTLC9VZf8HqCGOQ%3D%3D",
       },
+      {
+        type: "image",
+        file: "process/process-figma-2-verdio.png",
+        fullBleed: true,
+      },
     ],
   },
   {
