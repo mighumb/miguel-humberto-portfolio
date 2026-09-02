@@ -223,7 +223,6 @@ export const projects: Project[] = [
       fr: "Verdio est une marque de cosmétiques naturels construite autour d’une identité botanique sobre. J’ai conçu le logo, le système visuel et la direction artistique, puis généré des packshots photoréalistes pour quatre produits : crème, gel et huile.",
     },
     tags: [
-      { en: "Packaging", fr: "Packaging" },
       { en: "Cosmetic", fr: "Cosmétique" },
       { en: "Branding", fr: "Branding" },
       { en: "Commercial", fr: "Publicité" },
