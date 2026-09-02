@@ -234,7 +234,7 @@ export const projects: Project[] = [
     videoUrl: "/projects/ai/verdio/cover-video-verdio.mp4?v=2",
     videoPoster: "poster-cover-verdio.jpg",
     unmuteOnOpen: true,
-    tools: ["Figma Weave", "Figma", "Nano Banana"],
+    tools: ["Figma Weave", "Figma", "Magnific", "Higgsfield", "Premiere Pro", "Photoshop"],
     links: {
       notion:
         "https://zenith-flood-86d.notion.site/WORKFLOW-Packaging-Photor-aliste-avec-l-IA-2717cd46589480ea9f76ecb39715256d?source=copy_link",
