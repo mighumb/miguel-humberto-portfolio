@@ -5,11 +5,13 @@ import Manifesto from "@/components/Manifesto";
 import Showreel from "@/components/Showreel";
 import Contact from "@/components/Contact";
 import StickyHeader from "@/components/StickyHeader";
+import ScrollToTopButton from "@/components/ScrollToTopButton";
 
 export default function Home() {
   return (
     <main>
       <StickyHeader />
+      <ScrollToTopButton />
       <AmbientBackground />
       {/* Above the later sections so the manifesto's upward fade band, which
           reaches 12rem over the carousel, stays behind the cards. */}
