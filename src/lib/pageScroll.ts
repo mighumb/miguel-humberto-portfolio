@@ -15,22 +15,46 @@ function easeInOutQuart(progress: number) {
     : 1 - Math.pow(-2 * progress + 2, 4) / 2;
 }
 
-/** Smooth, interruptible page scroll for section-to-section journeys. */
-export function scrollPageTo(top: number) {
+/** Whatever is actually scrolling: the window, or a container with its own overflow. */
+interface ScrollTarget {
+  getTop(): number;
+  setTop(top: number): void;
+  maxTop(): number;
+}
+
+function windowTarget(): ScrollTarget {
+  return {
+    getTop: () => window.scrollY,
+    setTop: (top) => window.scrollTo({ top }),
+    maxTop: () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight),
+  };
+}
+
+function elementTarget(element: HTMLElement): ScrollTarget {
+  return {
+    getTop: () => element.scrollTop,
+    setTop: (top) => {
+      element.scrollTop = top;
+    },
+    maxTop: () => Math.max(0, element.scrollHeight - element.clientHeight),
+  };
+}
+
+/** Smooth, interruptible scroll shared by the page and any scrollable container. */
+function runScrollTo(target: ScrollTarget, top: number) {
   cancelActiveScroll?.();
 
-  const maxTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  const targetTop = Math.max(0, Math.min(top, maxTop));
+  const targetTop = Math.max(0, Math.min(top, target.maxTop()));
 
   if (
     window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-    Math.abs(targetTop - window.scrollY) < 1
+    Math.abs(targetTop - target.getTop()) < 1
   ) {
-    window.scrollTo({ top: targetTop, behavior: "auto" });
+    target.setTop(targetTop);
     return;
   }
 
-  const startTop = window.scrollY;
+  const startTop = target.getTop();
   const distance = targetTop - startTop;
   const duration = Math.min(
     MAX_DURATION_MS,
@@ -68,7 +92,7 @@ export function scrollPageTo(top: number) {
 
   const step = (now: number) => {
     const progress = Math.min(1, (now - startTime) / duration);
-    window.scrollTo({ top: startTop + distance * easeInOutQuart(progress) });
+    target.setTop(startTop + distance * easeInOutQuart(progress));
 
     if (progress < 1) {
       raf = requestAnimationFrame(step);
@@ -86,6 +110,17 @@ export function scrollPageTo(top: number) {
   raf = requestAnimationFrame(step);
 }
 
+/** Smooth, interruptible page scroll for section-to-section journeys. */
+export function scrollPageTo(top: number) {
+  runScrollTo(windowTarget(), top);
+}
+
 export function scrollPageToElement(element: HTMLElement) {
   scrollPageTo(window.scrollY + element.getBoundingClientRect().top);
+}
+
+/** Same easing/interrupt behavior as scrollPageTo, for a scrollable container
+ * (e.g. the project modal) instead of the window. */
+export function scrollElementTo(container: HTMLElement, top: number) {
+  runScrollTo(elementTarget(container), top);
 }
