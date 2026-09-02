@@ -226,6 +226,7 @@ export const projects: Project[] = [
       { en: "Packaging", fr: "Packaging" },
       { en: "Cosmetic", fr: "Cosmétique" },
       { en: "Branding", fr: "Branding" },
+      { en: "Commercial", fr: "Publicité" },
     ],
     year: "2025",
     type: "Video",
