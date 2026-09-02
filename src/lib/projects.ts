@@ -266,10 +266,10 @@ export const projects: Project[] = [
     processItems: [
       {
         type: "player",
-        file: "process/process-linkedin-verdio.mp4",
-        poster: "process/poster-linkedin-verdio.jpg",
+        file: "process/process-linkedin-verdio-1.mp4",
+        poster: "process/poster-linkedin-verdio-1.jpg",
         linkedinUrl:
-          "https://www.linkedin.com/posts/miguel-humberto-a15b4794_directionartistique-designgraphique-moodboard-activity-7391889587675045888-ewkf",
+          "https://www.linkedin.com/feed/update/urn:li:activity:7389352843159171072/?originTrackingId=aT2Bb7EaRvi%2Fy6sMzU%2F0Ag%3D%3D",
       },
       {
         type: "image",
@@ -277,9 +277,23 @@ export const projects: Project[] = [
         fullBleed: true,
       },
       {
+        type: "player",
+        file: "process/process-linkedin-verdio-2.mp4",
+        poster: "process/poster-linkedin-verdio-2.jpg",
+        linkedinUrl:
+          "https://www.linkedin.com/feed/update/urn:li:activity:7391889587675045888/?originTrackingId=fpgUiaFRSxeK02KE6OgNEg%3D%3D",
+      },
+      {
         type: "image",
         file: "process/process-figma-1-verdio.png",
         fullBleed: true,
+      },
+      {
+        type: "player",
+        file: "process/process-linkedin-verdio-3.mp4",
+        poster: "process/poster-linkedin-verdio-3.jpg",
+        linkedinUrl:
+          "https://www.linkedin.com/feed/update/urn:li:activity:7394426310997069825/?originTrackingId=b1ex0b%2BQTLC9VZf8HqCGOQ%3D%3D",
       },
     ],
   },
