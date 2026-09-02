@@ -265,11 +265,6 @@ export const projects: Project[] = [
     processTitle: { en: "Workflow", fr: "Workflow" },
     processItems: [
       {
-        type: "image",
-        file: "process/process-figma-1-verdio.png",
-        fullBleed: true,
-      },
-      {
         type: "player",
         file: "process/process-linkedin-verdio.mp4",
         poster: "process/poster-linkedin-verdio.jpg",
@@ -279,6 +274,11 @@ export const projects: Project[] = [
       {
         type: "image",
         file: "process/process-figma-weave-verdio.png",
+        fullBleed: true,
+      },
+      {
+        type: "image",
+        file: "process/process-figma-1-verdio.png",
         fullBleed: true,
       },
     ],
