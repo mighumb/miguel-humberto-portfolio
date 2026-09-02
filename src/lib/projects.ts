@@ -238,6 +238,9 @@ export const projects: Project[] = [
     links: {
       notion:
         "https://zenith-flood-86d.notion.site/WORKFLOW-Packaging-Photor-aliste-avec-l-IA-2717cd46589480ea9f76ecb39715256d?source=copy_link",
+      youtube: "https://www.youtube.com/watch?v=aGTpC6KeGLs",
+      instagram:
+        "https://www.instagram.com/p/DcgyLTFozF7/?ref=xav_igxfb_comet_ig_bookmark_mega_menu_launch",
     },
     deliverableCount: 14,
     deliverableLayout: "category-bento",
