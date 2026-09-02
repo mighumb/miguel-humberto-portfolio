@@ -304,6 +304,26 @@ export const projects: Project[] = [
         file: "process/process-figma-2-verdio.png",
         fullBleed: true,
       },
+      {
+        type: "image",
+        file: "process/process-magnific-1-verdio.png",
+        fullBleed: true,
+      },
+      {
+        type: "image",
+        file: "process/process-magnific-2-verdio.png",
+        fullBleed: true,
+      },
+      {
+        type: "image",
+        file: "process/process-magnific-3-verdio.png",
+        fullBleed: true,
+      },
+      {
+        type: "image",
+        file: "process/process-magnific-4-verdio.png",
+        fullBleed: true,
+      },
     ],
   },
   {
