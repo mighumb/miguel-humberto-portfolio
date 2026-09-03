@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Miguel Humberto, AI Creative Designer",
   description:
     "I design distinctive digital experiences, connecting art and technology. Portfolio of Miguel Humberto.",
+  icons: {
+    icon: "/favicon-miguel-humberto-ai-creative-designer.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
