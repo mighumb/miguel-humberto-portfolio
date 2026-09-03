@@ -34,7 +34,14 @@ export default function Contact() {
             >
               {t.linkedin}
             </a>
-            <span className="text-sm text-accent">{t.cvSoon}</span>
+            <a
+              href="https://www.instagram.com/mighumm/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer text-sm text-text-secondary transition-colors hover:text-text-primary"
+            >
+              {t.instagram}
+            </a>
           </div>
         </div>
       </div>
