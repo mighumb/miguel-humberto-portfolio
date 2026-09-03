@@ -32,7 +32,7 @@ export const translations = {
     contactSubtitle: "Open to collaborations, freelance projects, and creative roles.",
     email: "miguelhumberto.pro@gmail.com",
     linkedin: "LinkedIn",
-    cvSoon: "CV, coming soon",
+    instagram: "Instagram",
     modal: {
       context: "Context",
       deliverables: "Deliverables",
@@ -91,7 +91,7 @@ export const translations = {
     contactSubtitle: "Ouvert aux collaborations, projets freelance et rôles créatifs.",
     email: "miguelhumberto.pro@gmail.com",
     linkedin: "LinkedIn",
-    cvSoon: "CV, bientôt disponible",
+    instagram: "Instagram",
     modal: {
       context: "Contexte",
       deliverables: "Livrables",
