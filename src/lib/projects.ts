@@ -227,7 +227,7 @@ export const projects: Project[] = [
       { en: "Branding", fr: "Branding" },
       { en: "Commercial", fr: "Publicité" },
     ],
-    year: "2025",
+    year: "2026",
     type: "Video",
     hasVideo: true,
     // ?v=2 busts browser media caches after the cover re-upload.
